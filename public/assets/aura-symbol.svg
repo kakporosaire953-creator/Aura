@@ -1,0 +1,221 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- 1. Upper-left outer emerald wing gradient -->
+    <linearGradient id="wingLeftOuter" x1="210" y1="430" x2="480" y2="165" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#A5E838" />
+      <stop offset="26%" stop-color="#43BC2C" />
+      <stop offset="68%" stop-color="#0D852A" />
+      <stop offset="100%" stop-color="#29A832" />
+    </linearGradient>
+
+    <!-- 2. Inner-left emerald-to-chartreuse fold -->
+    <linearGradient id="wingLeftInner" x1="335" y1="560" x2="485" y2="145" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#148B2E" />
+      <stop offset="35%" stop-color="#1E9B33" />
+      <stop offset="72%" stop-color="#5AC62B" />
+      <stop offset="100%" stop-color="#A8E436" />
+    </linearGradient>
+
+    <!-- 3. Main central S-ribbon (Top golden crest -> chartreuse diagonal -> lime-gold lower left) -->
+    <linearGradient id="mainSRibbon" x1="530" y1="140" x2="340" y2="795" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FCE029" />
+      <stop offset="22%" stop-color="#F7B318" />
+      <stop offset="44%" stop-color="#A7DE2C" />
+      <stop offset="64%" stop-color="#48B729" />
+      <stop offset="82%" stop-color="#BCE329" />
+      <stop offset="100%" stop-color="#FCC117" />
+    </linearGradient>
+
+    <!-- 4. Upper-right golden-amber lobe of the main S-ribbon -->
+    <radialGradient id="topRightAmber" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(575 315) rotate(115) scale(250 190)">
+      <stop offset="0%" stop-color="#FFF04D" />
+      <stop offset="45%" stop-color="#FBB819" />
+      <stop offset="85%" stop-color="#F68B12" />
+      <stop offset="100%" stop-color="#D46B08" />
+    </radialGradient>
+
+    <!-- 5. Inner-bottom-left warm orange-amber cradle around the central aperture -->
+    <linearGradient id="innerApertureLeft" x1="425" y1="530" x2="465" y2="810" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F48811" />
+      <stop offset="48%" stop-color="#FF6D08" />
+      <stop offset="100%" stop-color="#FDB816" />
+    </linearGradient>
+
+    <!-- 6. Inner-right deep vermilion-amber wall -->
+    <linearGradient id="innerRightWall" x1="635" y1="305" x2="505" y2="785" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FCE338" />
+      <stop offset="32%" stop-color="#FBA115" />
+      <stop offset="68%" stop-color="#F25C05" />
+      <stop offset="100%" stop-color="#D94302" />
+    </linearGradient>
+
+    <!-- 7. Middle-right golden-orange fold -->
+    <linearGradient id="midRightFold" x1="745" y1="415" x2="520" y2="770" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFF14F" />
+      <stop offset="38%" stop-color="#FDA616" />
+      <stop offset="76%" stop-color="#F56607" />
+      <stop offset="100%" stop-color="#E04B03" />
+    </linearGradient>
+
+    <!-- 8. Front lower-right sweeping ribbon (Golden right crest -> vibrant tangerine bottom) -->
+    <linearGradient id="frontRightSweep" x1="800" y1="495" x2="475" y2="865" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFF248" />
+      <stop offset="28%" stop-color="#FDB41A" />
+      <stop offset="62%" stop-color="#FF7809" />
+      <stop offset="88%" stop-color="#F45604" />
+      <stop offset="100%" stop-color="#FC8A12" />
+    </linearGradient>
+
+    <!-- 9. Bottom curled lip highlight -->
+    <linearGradient id="bottomCurlLip" x1="468" y1="865" x2="625" y2="765" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFA51E" />
+      <stop offset="50%" stop-color="#FF7408" />
+      <stop offset="100%" stop-color="#D84302" />
+    </linearGradient>
+
+    <!-- Specular white-gold rim gradients -->
+    <linearGradient id="rimLeftS" x1="484" y1="142" x2="255" y2="625" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFBE0" stop-opacity="0.95" />
+      <stop offset="45%" stop-color="#FFFFFF" stop-opacity="0.92" />
+      <stop offset="85%" stop-color="#F7FFCC" stop-opacity="0.88" />
+      <stop offset="100%" stop-color="#E6F98B" stop-opacity="0.2" />
+    </linearGradient>
+
+    <linearGradient id="rimRightS" x1="802" y1="502" x2="462" y2="835" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.96" />
+      <stop offset="45%" stop-color="#FFF5D6" stop-opacity="0.9" />
+      <stop offset="85%" stop-color="#FFD08A" stop-opacity="0.82" />
+      <stop offset="100%" stop-color="#FF9E3D" stop-opacity="0.3" />
+    </linearGradient>
+
+    <linearGradient id="rimTopInner" x1="484" y1="140" x2="632" y2="395" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFDF0" stop-opacity="0.9" />
+      <stop offset="60%" stop-color="#FFF2B2" stop-opacity="0.75" />
+      <stop offset="100%" stop-color="#FFD26A" stop-opacity="0.15" />
+    </linearGradient>
+  </defs>
+
+  <!-- =========================================================================
+       RIBBON 1: Upper-Left Outer Emerald Wing
+  ========================================================================== -->
+  <path
+    d="M484 142 C455 212 392 252 318 298 C246 343 218 398 232 478 C242 536 284 585 335 615 C312 525 334 415 398 312 C438 248 472 196 484 142 Z"
+    fill="url(#wingLeftOuter)"
+  />
+
+  <!-- =========================================================================
+       RIBBON 2: Inner-Left Emerald-to-Chartreuse Fold
+  ========================================================================== -->
+  <path
+    d="M484 142 C464 218 415 288 368 378 C326 458 324 548 348 625 C395 575 446 502 486 418 C516 355 516 225 484 142 Z"
+    fill="url(#wingLeftInner)"
+  />
+
+  <!-- Subtle internal crease highlight between Ribbon 1 and Ribbon 2 -->
+  <path
+    d="M484 142 C456 224 398 295 358 392 C332 455 326 520 335 572"
+    stroke="#9EE638"
+    stroke-opacity="0.55"
+    stroke-width="3.5"
+    stroke-linecap="round"
+  />
+
+  <!-- =========================================================================
+       RIBBON 4: Inner-Right & Lower-Aperture Amber-Orange Wall
+       (Leaves the central diamond-teardrop hollow aperture completely open!)
+  ========================================================================== -->
+  <path
+    d="M632 302 C674 352 678 438 642 528 C606 618 542 688 472 798 C448 752 418 688 420 618 C422 562 456 506 512 465 C548 508 574 555 562 612 C550 668 502 715 466 756 C528 698 584 612 604 516 C622 430 612 355 632 302 Z"
+    fill="url(#innerRightWall)"
+  />
+
+  <!-- Inner-left warm orange fold cradling the bottom-left of the hollow aperture -->
+  <path
+    d="M442 536 C418 586 414 652 466 756 C474 780 478 802 472 816 C416 762 365 712 356 645 C350 598 392 562 442 536 Z"
+    fill="url(#innerApertureLeft)"
+  />
+
+  <!-- =========================================================================
+       RIBBON 4B: Middle-Right Golden-Orange Wing
+  ========================================================================== -->
+  <path
+    d="M632 302 C715 358 798 426 802 504 C758 552 678 614 584 686 C532 726 492 768 472 812 C504 745 574 662 628 564 C676 476 678 378 632 302 Z"
+    fill="url(#midRightFold)"
+  />
+
+  <!-- Subtle luminous crease along middle-right wing -->
+  <path
+    d="M632 302 C686 382 682 478 628 568 C584 642 525 712 478 784"
+    stroke="#FFD86B"
+    stroke-opacity="0.55"
+    stroke-width="3.5"
+    stroke-linecap="round"
+  />
+
+  <!-- =========================================================================
+       RIBBON 3: Main Central Sweeping S-Ribbon
+       (From Top Golden Apex -> Right Amber Shoulder -> Diagonal Lime Sweep -> Lower-Left Fold)
+  ========================================================================== -->
+  <path
+    d="M484 140 C556 154 636 226 634 316 C632 384 576 426 512 468 C438 516 376 564 366 636 C356 704 412 762 472 814 C378 768 272 714 254 616 C238 534 304 468 382 396 C458 326 520 242 484 140 Z"
+    fill="url(#mainSRibbon)"
+  />
+
+  <!-- Top-right warm golden-amber glow overlay on the upper shoulder of Ribbon 3 -->
+  <path
+    d="M484 140 C556 154 636 226 634 316 C632 384 576 426 512 468 C472 494 434 522 406 554 C416 485 478 422 512 346 C538 286 522 204 484 140 Z"
+    fill="url(#topRightAmber)"
+    opacity="0.88"
+  />
+
+  <!-- =========================================================================
+       RIBBON 5: Front Lower-Right Sweeping Tangerine-to-Gold Ribbon & Bottom Loop
+  ========================================================================== -->
+  <!-- Bottom curled tail under-fold -->
+  <path
+    d="M472 828 C482 868 518 874 562 842 C594 818 618 788 632 760 C586 786 536 812 472 828 Z"
+    fill="url(#bottomCurlLip)"
+  />
+
+  <!-- Main front lower-right belly ribbon -->
+  <path
+    d="M802 502 C798 612 738 712 632 778 C568 818 514 854 486 862 C464 856 456 824 472 786 C496 730 562 674 644 614 C718 560 772 528 802 502 Z"
+    fill="url(#frontRightSweep)"
+  />
+
+  <!-- =========================================================================
+       SIGNATURE SPECULAR WHITE-GOLD RIMS (Exact match to official symbol)
+  ========================================================================== -->
+  <!-- 1. Left S-curve bright white-gold rim (Top apex -> center diagonal -> lower-left lobe) -->
+  <path
+    d="M484 140 C520 242 458 326 382 396 C304 468 238 534 254 616"
+    stroke="url(#rimLeftS)"
+    stroke-width="6.5"
+    stroke-linecap="round"
+  />
+
+  <!-- 2. Upper-right shoulder rim of main S-ribbon -->
+  <path
+    d="M484 140 C556 154 636 226 634 316 C632 384 576 426 512 468"
+    stroke="url(#rimTopInner)"
+    stroke-width="4.5"
+    stroke-linecap="round"
+  />
+
+  <!-- 3. Front lower-right sweeping white-gold rim (Rightmost tip -> bottom apex) -->
+  <path
+    d="M802 502 C772 528 718 560 644 614 C562 674 496 730 472 786 C458 818 464 848 482 860"
+    stroke="url(#rimRightS)"
+    stroke-width="6.5"
+    stroke-linecap="round"
+  />
+
+  <!-- 4. Delicate bottom loop inner rim -->
+  <path
+    d="M482 860 C514 868 566 838 618 774"
+    stroke="#FFD384"
+    stroke-opacity="0.75"
+    stroke-width="3.5"
+    stroke-linecap="round"
+  />
+</svg>

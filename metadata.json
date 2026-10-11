@@ -1,0 +1,6 @@
+{
+  "name": "Aura — Plateforme d'Intelligence Artificielle Multimodale",
+  "description": "Plus qu'une IA. Un espace pour créer demain. Aura réunit conversation, recherche web sourcée, génération de code et création dans un seul espace de travail intelligent.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,1106 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    /* Palette officielle Aura Signature */
+    --aura-bg-primary: #FBFAF5;
+    --aura-bg-secondary: #FFFDF8;
+    --aura-bg-subtle: #F4F2EA;
+    --aura-text-primary: #14282D;
+    --aura-text-secondary: #77817F;
+    --aura-green: #078348;
+    --aura-green-light: #8CCB4A;
+    --aura-yellow: #EACB37;
+    --aura-orange: #FF790D;
+    --aura-border: #E8E6DE;
+    --aura-active-pill: #EAF1E8;
+
+    /* Typographie Aura Signature */
+    --aura-font-display: 'Manrope', 'Sora', -apple-system, BlinkMacSystemFont, sans-serif;
+    --aura-font-sans: 'DM Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --aura-font-mono: 'JetBrains Mono', monospace;
+
+    /* Espacements équilibrés */
+    --aura-space-xs: 0.375rem;
+    --aura-space-sm: 0.625rem;
+    --aura-space-md: 1rem;
+    --aura-space-lg: 1.5rem;
+    --aura-space-xl: 2.25rem;
+    --aura-space-2xl: 3.5rem;
+
+    /* Rayons de bordure */
+    --aura-radius-sm: 0.625rem;
+    --aura-radius-md: 0.875rem;
+    --aura-radius-lg: 1.25rem;
+    --aura-radius-xl: 1.75rem;
+    --aura-radius-full: 9999px;
+
+    /* Ombres & Élévations */
+    --aura-shadow-xs: 0 2px 8px rgba(20, 40, 45, 0.025);
+    --aura-shadow-sm: 0 4px 18px rgba(20, 40, 45, 0.035);
+    --aura-shadow-md: 0 10px 34px rgba(20, 40, 45, 0.048);
+    --aura-shadow-lg: 0 24px 60px rgba(20, 40, 45, 0.08);
+    --aura-shadow-glow: 0 12px 32px rgba(7, 131, 72, 0.12);
+
+    /* Transitions maîtrisées */
+    --aura-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --aura-transition-fast: 150ms cubic-bezier(0.16, 1, 0.3, 1);
+    --aura-transition-base: 240ms cubic-bezier(0.16, 1, 0.3, 1);
+    --aura-transition-slow: 480ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .dark {
+    --aura-bg-primary: #0E1618;
+    --aura-bg-secondary: #152023;
+    --aura-bg-subtle: #1B292D;
+    --aura-text-primary: #F3F2EC;
+    --aura-text-secondary: #94A09E;
+    --aura-border: #243337;
+    --aura-active-pill: #182E24;
+    --aura-shadow-xs: 0 2px 8px rgba(0, 0, 0, 0.2);
+    --aura-shadow-sm: 0 4px 18px rgba(0, 0, 0, 0.28);
+    --aura-shadow-md: 0 10px 34px rgba(0, 0, 0, 0.35);
+    --aura-shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.45);
+  }
+
+  body {
+    font-family: var(--aura-font-sans);
+    background-color: var(--aura-bg-primary);
+    color: var(--aura-text-primary);
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4, .font-display {
+    font-family: var(--aura-font-display);
+  }
+
+  code, pre, .font-mono {
+    font-family: var(--aura-font-mono);
+  }
+}
+
+/* Signature Aura Text & CTA Gradients */
+.aura-text-gradient {
+  background: linear-gradient(92deg, #078348 0%, #8CCB4A 38%, #EACB37 68%, #FF790D 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.aura-text-gradient-explore {
+  background: linear-gradient(90deg, #52B149 0%, #9FD148 30%, #F0AC28 65%, #FF790D 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.aura-btn-gradient {
+  background: linear-gradient(92deg, #056A3A 0%, #078348 24%, #8CCB4A 54%, #EACB37 76%, #FF790D 100%);
+  transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1), opacity 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.aura-btn-gradient:hover {
+  opacity: 0.96;
+  transform: translateY(-1px);
+}
+
+.aura-btn-gradient:active {
+  transform: translateY(0);
+}
+
+.aura-glow-backdrop {
+  background: radial-gradient(
+    circle at 50% 45%,
+    rgba(140, 203, 74, 0.22) 0%,
+    rgba(234, 203, 55, 0.18) 35%,
+    rgba(255, 121, 13, 0.14) 65%,
+    rgba(251, 250, 245, 0) 100%
+  );
+}
+
+/* ============================================================================
+   AURA LUMINOUS BRAND ANIMATION SYSTEM (5-LAYER DASHBOARD FOCAL ENGINE)
+   - Layer 1: Multi-tone progressive radial halo (Green -> Yellow -> Orange -> Ivory)
+   - Layer 2: Slow, organic luminous breathing (4.8s - 5.4s cycle)
+   - Layer 3: Silhouette-masked diagonal ribbon light reflection (mask-image)
+   - Layer 4: Subtle vertical levitation / suspension (transform only)
+   - Layer 5: Interactive state reactions (idle, hover, activating, generating)
+============================================================================ */
+
+/* Couche 1 & 2 : Halo lumineux progressif + Respiration lumineuse */
+.aura-hero-halo {
+  position: absolute;
+  inset: -38%;
+  border-radius: 9999px;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(
+      circle at 38% 36%,
+      rgba(7, 131, 72, 0.20) 0%,
+      rgba(140, 203, 74, 0.18) 28%,
+      transparent 68%
+    ),
+    radial-gradient(
+      circle at 52% 48%,
+      rgba(234, 203, 55, 0.24) 0%,
+      rgba(255, 121, 13, 0.16) 36%,
+      transparent 72%
+    ),
+    radial-gradient(
+      circle at 64% 58%,
+      rgba(255, 121, 13, 0.22) 0%,
+      rgba(234, 203, 55, 0.12) 38%,
+      rgba(251, 250, 245, 0) 74%
+    );
+  filter: blur(26px);
+  opacity: 0.78;
+  transform: translate3d(0, 0, 0) scale(1);
+  transition: opacity 500ms cubic-bezier(0.16, 1, 0.3, 1), transform 500ms cubic-bezier(0.16, 1, 0.3, 1);
+  animation: auraHaloBreathe 5.2s ease-in-out infinite;
+}
+
+.dark .aura-hero-halo {
+  background:
+    radial-gradient(
+      circle at 38% 36%,
+      rgba(7, 131, 72, 0.28) 0%,
+      rgba(140, 203, 74, 0.20) 28%,
+      transparent 68%
+    ),
+    radial-gradient(
+      circle at 52% 48%,
+      rgba(234, 203, 55, 0.22) 0%,
+      rgba(255, 121, 13, 0.20) 36%,
+      transparent 72%
+    ),
+    radial-gradient(
+      circle at 64% 58%,
+      rgba(255, 121, 13, 0.25) 0%,
+      rgba(14, 22, 24, 0) 75%
+    );
+}
+
+/* Halo secondaire pour petits indicateurs avec glow="subtle" ou glow="active" */
+.aura-subtle-halo {
+  position: absolute;
+  inset: -28%;
+  border-radius: 9999px;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(140, 203, 74, 0.22) 0%,
+    rgba(234, 203, 55, 0.20) 42%,
+    rgba(255, 121, 13, 0.16) 68%,
+    transparent 100%
+  );
+  filter: blur(10px);
+  opacity: 0.72;
+  animation: auraHaloBreathe 4.8s ease-in-out infinite;
+}
+
+/* Ombre lumineuse au sol sous le symbole en lévitation */
+.aura-ground-glow {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 56%;
+  height: 14px;
+  border-radius: 9999px;
+  pointer-events: none;
+  z-index: 1;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(234, 203, 55, 0.36) 0%,
+    rgba(7, 131, 72, 0.16) 52%,
+    transparent 100%
+  );
+  filter: blur(6px);
+  animation: auraGroundShadow 5.6s ease-in-out infinite;
+}
+
+/* Couche 3 : Reflet lumineux masqué par la silhouette exacte du symbole */
+.aura-ribbon-shimmer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 20;
+  -webkit-mask-image: url('/assets/aura-symbol.png');
+  mask-image: url('/assets/aura-symbol.png');
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  mix-blend-mode: soft-light;
+  overflow: hidden;
+}
+
+.aura-ribbon-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: -60%;
+  background: linear-gradient(
+    118deg,
+    rgba(255, 255, 255, 0) 34%,
+    rgba(255, 253, 232, 0.28) 46%,
+    rgba(255, 255, 255, 0.62) 50%,
+    rgba(255, 236, 179, 0.28) 54%,
+    rgba(255, 255, 255, 0) 66%
+  );
+  transform: translate3d(-120%, -20%, 0) rotate(8deg);
+  animation: auraRibbonSweep 6.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+/* Couche 4 : Flottement vertical subtil (quelques pixels seulement, sans rotation ni rebond) */
+.aura-symbol-levitate {
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+  transition: filter 360ms cubic-bezier(0.16, 1, 0.3, 1), transform 360ms cubic-bezier(0.16, 1, 0.3, 1);
+  animation: auraGentleFloat 5.6s ease-in-out infinite;
+}
+
+/* Couche 5 : Réactions aux interactions (Survol, Nouvelle conversation, Génération IA) */
+@media (hover: hover) {
+  .aura-interactive-group:hover .aura-hero-halo {
+    opacity: 0.96;
+    transform: translate3d(0, 0, 0) scale(1.06);
+  }
+  .aura-interactive-group:hover .aura-symbol-levitate {
+    filter: brightness(1.05) saturate(1.04);
+  }
+}
+
+/* État : Nouvelle conversation (brève montée de luminosité puis retour progressif) */
+.aura-state-activating .aura-hero-halo {
+  animation: auraActivateHalo 1.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.aura-state-activating .aura-symbol-levitate {
+  animation: auraActivateSymbol 1.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* État : Pendant la génération d'une réponse IA (halo légèrement plus actif, reflet un peu plus fréquent) */
+.aura-state-generating .aura-hero-halo,
+.aura-state-generating .aura-subtle-halo {
+  animation: auraHaloGenerating 3.1s ease-in-out infinite;
+}
+.aura-state-generating .aura-ribbon-shimmer::after {
+  animation: auraRibbonSweep 3.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+@keyframes auraHaloBreathe {
+  0%, 100% {
+    opacity: 0.68;
+    transform: translate3d(0, 0, 0) scale(0.97);
+  }
+  50% {
+    opacity: 0.94;
+    transform: translate3d(0, 0, 0) scale(1.05);
+  }
+}
+
+@keyframes auraHaloGenerating {
+  0%, 100% {
+    opacity: 0.78;
+    transform: translate3d(0, 0, 0) scale(0.98);
+  }
+  50% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1.09);
+  }
+}
+
+@keyframes auraGentleFloat {
+  0%, 100% {
+    transform: translate3d(0, 0px, 0);
+  }
+  50% {
+    transform: translate3d(0, -5px, 0);
+  }
+}
+
+@keyframes auraGroundShadow {
+  0%, 100% {
+    opacity: 0.75;
+    transform: translateX(-50%) scaleX(1);
+  }
+  50% {
+    opacity: 0.48;
+    transform: translateX(-50%) scaleX(0.9);
+  }
+}
+
+@keyframes auraRibbonSweep {
+  0% {
+    transform: translate3d(-115%, -18%, 0) rotate(8deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.85;
+  }
+  55% {
+    transform: translate3d(115%, 18%, 0) rotate(8deg);
+    opacity: 0.85;
+  }
+  65%, 100% {
+    transform: translate3d(125%, 22%, 0) rotate(8deg);
+    opacity: 0;
+  }
+}
+
+@keyframes auraActivateHalo {
+  0% {
+    opacity: 0.75;
+    transform: scale(1);
+  }
+  38% {
+    opacity: 1;
+    transform: scale(1.14);
+  }
+  100% {
+    opacity: 0.78;
+    transform: scale(1);
+  }
+}
+
+@keyframes auraActivateSymbol {
+  0% {
+    filter: brightness(1);
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  38% {
+    filter: brightness(1.12) saturate(1.08);
+    transform: translate3d(0, -4px, 0) scale(1.03);
+  }
+  100% {
+    filter: brightness(1);
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+/* ============================================================================
+   LANDING PAGE MOTION SYSTEM
+   - Animation 01: Aura Bloom (Hero Staggered Entrance + Multi-Radial Breathing Halo)
+   - Animation 05: Scroll Reveal (IntersectionObserver one-way reveal, 16px translateY)
+   - Animation 06: Micro-Interactions (CTA arrow glide, card elevation, subtle borders)
+   - Animation 09: Aura Signature Footer SVG Stroke Draw
+============================================================================ */
+
+/* --- Animation 01: Aura Bloom (Hero Entrance 800-1250ms) --- */
+@keyframes auraBloomFadeUp {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes auraBloomPreviewReveal {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0) scale(0.985);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes auraBloomHaloIntro {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.92);
+  }
+  100% {
+    opacity: 0.88;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes auraBloomHaloBreathe {
+  0%, 100% {
+    opacity: 0.82;
+    transform: translate3d(0, 0, 0) scale(0.985);
+  }
+  50% {
+    opacity: 0.96;
+    transform: translate3d(0, 0, 0) scale(1.025);
+  }
+}
+
+.aura-bloom-item-1 {
+  opacity: 0;
+  animation: auraBloomFadeUp 680ms cubic-bezier(0.16, 1, 0.3, 1) 40ms forwards;
+}
+
+.aura-bloom-item-2 {
+  opacity: 0;
+  animation: auraBloomFadeUp 720ms cubic-bezier(0.16, 1, 0.3, 1) 140ms forwards;
+}
+
+.aura-bloom-item-3 {
+  opacity: 0;
+  animation: auraBloomFadeUp 720ms cubic-bezier(0.16, 1, 0.3, 1) 240ms forwards;
+}
+
+.aura-bloom-item-4 {
+  opacity: 0;
+  animation: auraBloomFadeUp 720ms cubic-bezier(0.16, 1, 0.3, 1) 340ms forwards;
+}
+
+.aura-bloom-preview {
+  opacity: 0;
+  animation: auraBloomPreviewReveal 860ms cubic-bezier(0.16, 1, 0.3, 1) 200ms forwards;
+}
+
+/* Superposed radial gradients behind Hero preview: Green -> Soft Yellow -> Discreet Orange -> Ivory */
+.aura-bloom-halo {
+  position: absolute;
+  inset: -2.25rem;
+  border-radius: 44px;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(
+      circle at 28% 34%,
+      rgba(7, 131, 72, 0.18) 0%,
+      rgba(140, 203, 74, 0.16) 32%,
+      transparent 68%
+    ),
+    radial-gradient(
+      circle at 56% 46%,
+      rgba(234, 203, 55, 0.20) 0%,
+      rgba(140, 203, 74, 0.10) 40%,
+      transparent 72%
+    ),
+    radial-gradient(
+      circle at 76% 62%,
+      rgba(255, 121, 13, 0.15) 0%,
+      rgba(234, 203, 55, 0.08) 38%,
+      rgba(251, 250, 245, 0) 74%
+    );
+  filter: blur(28px);
+  opacity: 0;
+  animation:
+    auraBloomHaloIntro 1050ms cubic-bezier(0.16, 1, 0.3, 1) 280ms forwards,
+    auraBloomHaloBreathe 6.2s ease-in-out 1350ms infinite;
+}
+
+.dark .aura-bloom-halo {
+  background:
+    radial-gradient(
+      circle at 28% 34%,
+      rgba(7, 131, 72, 0.24) 0%,
+      rgba(140, 203, 74, 0.16) 32%,
+      transparent 68%
+    ),
+    radial-gradient(
+      circle at 56% 46%,
+      rgba(234, 203, 55, 0.18) 0%,
+      transparent 70%
+    ),
+    radial-gradient(
+      circle at 76% 62%,
+      rgba(255, 121, 13, 0.18) 0%,
+      rgba(14, 22, 24, 0) 75%
+    );
+}
+
+/* --- Animation 05: Scroll Reveal (One-way, 16px vertical translation) --- */
+.aura-reveal {
+  opacity: 0;
+  transform: translate3d(0, 16px, 0);
+  transition:
+    opacity 520ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 520ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.aura-reveal.is-visible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+.aura-reveal-delay-1 {
+  transition-delay: 85ms;
+}
+
+.aura-reveal-delay-2 {
+  transition-delay: 170ms;
+}
+
+.aura-reveal-delay-3 {
+  transition-delay: 255ms;
+}
+
+.aura-reveal-delay-4 {
+  transition-delay: 340ms;
+}
+
+/* --- Animation 06: Micro-Interactions (CTA, Secondary Buttons, Mode Cards) --- */
+.aura-btn-gradient .aura-cta-arrow {
+  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (hover: hover) {
+  .aura-btn-gradient:hover .aura-cta-arrow {
+    transform: translate3d(3px, 0, 0);
+  }
+
+  .aura-living-card {
+    transition:
+      transform 260ms cubic-bezier(0.16, 1, 0.3, 1),
+      border-color 260ms cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow 260ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .aura-living-card:hover {
+    transform: translate3d(0, -3px, 0);
+    border-color: rgba(7, 131, 72, 0.34);
+    box-shadow: 0 14px 34px rgba(20, 40, 45, 0.06);
+  }
+
+  .dark .aura-living-card:hover {
+    border-color: rgba(140, 203, 74, 0.34);
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.28);
+  }
+
+  .aura-living-card:hover .aura-living-preview {
+    border-color: rgba(7, 131, 72, 0.26);
+  }
+}
+
+/* --- Animation 09: Footer SVG Curve Progressive Draw --- */
+.aura-footer-curve-path {
+  stroke-dasharray: 1480;
+  stroke-dashoffset: 1480;
+  transition: stroke-dashoffset 1350ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.aura-footer-curve-visible .aura-footer-curve-path {
+  stroke-dashoffset: 0;
+}
+
+/* ============================================================================
+   AURA SIGNATURE LOADING SYSTEM
+   - Animation A: Aura Genesis (Initial Cold Boot Cinematic Awakening on #081B19)
+   - Animation B: Aura Intelligence Core (Asymmetric SVG Arcs + Symbol Shimmer)
+   - Lightweight Route Transition Fade
+============================================================================ */
+
+/* --- Animation A: Aura Genesis --- */
+@keyframes auraGenesisHaloAwaken {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.84);
+  }
+  55% {
+    opacity: 0.95;
+    transform: translate3d(0, 0, 0) scale(1.04);
+  }
+  100% {
+    opacity: 0.82;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes auraGenesisRibbonDraw {
+  0% {
+    stroke-dashoffset: 640;
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.92;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0.78;
+  }
+}
+
+@keyframes auraGenesisSymbolReveal {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0) scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes auraGenesisSweepOnce {
+  0% {
+    transform: translate3d(-120%, -20%, 0) rotate(10deg);
+    opacity: 0;
+  }
+  25% {
+    opacity: 0.9;
+  }
+  85% {
+    transform: translate3d(120%, 20%, 0) rotate(10deg);
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate3d(135%, 24%, 0) rotate(10deg);
+    opacity: 0;
+  }
+}
+
+@keyframes auraGenesisTextReveal {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes auraGenesisLineExpand {
+  0% {
+    opacity: 0;
+    transform: scaleX(0.2);
+  }
+  100% {
+    opacity: 0.9;
+    transform: scaleX(1);
+  }
+}
+
+.aura-genesis-halo {
+  background:
+    radial-gradient(
+      circle at 46% 44%,
+      rgba(7, 131, 72, 0.34) 0%,
+      rgba(57, 185, 105, 0.22) 32%,
+      transparent 68%
+    ),
+    radial-gradient(
+      circle at 56% 54%,
+      rgba(234, 203, 55, 0.18) 0%,
+      rgba(255, 121, 13, 0.14) 38%,
+      rgba(8, 27, 25, 0) 74%
+    );
+  filter: blur(32px);
+  animation: auraGenesisHaloAwaken 1250ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.aura-genesis-ribbon-1 {
+  stroke-dasharray: 640;
+  stroke-dashoffset: 640;
+  animation: auraGenesisRibbonDraw 820ms cubic-bezier(0.22, 1, 0.36, 1) 180ms forwards;
+}
+
+.aura-genesis-ribbon-2 {
+  stroke-dasharray: 640;
+  stroke-dashoffset: 640;
+  animation: auraGenesisRibbonDraw 880ms cubic-bezier(0.22, 1, 0.36, 1) 280ms forwards;
+}
+
+.aura-genesis-symbol {
+  opacity: 0;
+  animation: auraGenesisSymbolReveal 620ms cubic-bezier(0.16, 1, 0.3, 1) 460ms forwards;
+}
+
+.aura-genesis-shimmer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  -webkit-mask-image: url('/assets/aura-symbol.png');
+  mask-image: url('/assets/aura-symbol.png');
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  mix-blend-mode: soft-light;
+  overflow: hidden;
+}
+
+.aura-genesis-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: -60%;
+  background: linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0) 35%,
+    rgba(203, 230, 92, 0.35) 46%,
+    rgba(255, 255, 255, 0.75) 50%,
+    rgba(255, 121, 13, 0.35) 54%,
+    rgba(255, 255, 255, 0) 65%
+  );
+  transform: translate3d(-120%, -20%, 0) rotate(10deg);
+  animation: auraGenesisSweepOnce 850ms cubic-bezier(0.22, 1, 0.36, 1) 620ms forwards;
+}
+
+.aura-genesis-brand {
+  opacity: 0;
+  animation: auraGenesisTextReveal 540ms cubic-bezier(0.16, 1, 0.3, 1) 760ms forwards;
+}
+
+.aura-genesis-signature {
+  opacity: 0;
+  animation: auraGenesisTextReveal 540ms cubic-bezier(0.16, 1, 0.3, 1) 900ms forwards;
+}
+
+.aura-genesis-line {
+  opacity: 0;
+  animation: auraGenesisLineExpand 600ms cubic-bezier(0.16, 1, 0.3, 1) 980ms forwards;
+}
+
+/* --- Animation B: Aura Intelligence Core (Slow Coordinated SVG Arcs) --- */
+@keyframes auraCoreOrbitSlowCW {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes auraCoreOrbitSlowCCW {
+  0% {
+    transform: rotate(360deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes auraCoreHaloPulse {
+  0%, 100% {
+    opacity: 0.52;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 0.88;
+    transform: scale(1.05);
+  }
+}
+
+.aura-core-arc-1 {
+  transform-origin: 50% 50%;
+  animation: auraCoreOrbitSlowCW 9.5s linear infinite;
+}
+
+.aura-core-arc-2 {
+  transform-origin: 50% 50%;
+  animation: auraCoreOrbitSlowCCW 12.5s linear infinite;
+}
+
+.aura-core-arc-3 {
+  transform-origin: 50% 50%;
+  animation: auraCoreOrbitSlowCW 14s linear infinite;
+}
+
+.aura-core-halo {
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(57, 185, 105, 0.24) 0%,
+    rgba(234, 203, 55, 0.18) 45%,
+    rgba(255, 121, 13, 0.14) 72%,
+    transparent 100%
+  );
+  filter: blur(12px);
+  animation: auraCoreHaloPulse 4.8s ease-in-out infinite;
+}
+
+/* --- Lightweight Internal Route Transition --- */
+@keyframes auraRouteGentleFade {
+  0% {
+    opacity: 0.92;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.aura-route-fade {
+  animation: auraRouteGentleFade 220ms ease-out forwards;
+}
+
+/* ============================================================================
+   AURA PREMIUM LANDING MOTION REFINEMENT
+   - Hero Aura Light: Word-group mask reveal, SVG trace, soft halo breathe
+   - Idea Flow: Progressive connector trace & step highlight transitions
+   - Living Interface: Distinct directional transitions per capability mode
+   - Aura Gallery: Subtle depth & hover scale without aggressive 3D tilt
+   - CTA & Footer: Scroll-triggered SVG ribbon draw & link micro-interactions
+============================================================================ */
+
+@keyframes auraWordGroupReveal {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 22px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes auraSvgStrokeDraw {
+  0% {
+    stroke-dashoffset: 960;
+    opacity: 0.15;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+.aura-word-mask {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+  padding-bottom: 0.06em;
+  margin-bottom: -0.06em;
+}
+
+.aura-word-group-1 {
+  display: inline-block;
+  opacity: 0;
+  animation: auraWordGroupReveal 680ms cubic-bezier(0.16, 1, 0.3, 1) 80ms forwards;
+}
+
+.aura-word-group-2 {
+  display: inline-block;
+  opacity: 0;
+  animation: auraWordGroupReveal 720ms cubic-bezier(0.16, 1, 0.3, 1) 190ms forwards;
+}
+
+.aura-word-group-3 {
+  display: inline-block;
+  opacity: 0;
+  animation: auraWordGroupReveal 760ms cubic-bezier(0.16, 1, 0.3, 1) 300ms forwards;
+}
+
+.aura-svg-trace-hero {
+  stroke-dasharray: 960;
+  stroke-dashoffset: 960;
+  animation: auraSvgStrokeDraw 1450ms cubic-bezier(0.22, 1, 0.36, 1) 220ms forwards;
+}
+
+.aura-svg-trace-scroll {
+  stroke-dasharray: 900;
+  stroke-dashoffset: 900;
+  transition: stroke-dashoffset 1350ms cubic-bezier(0.22, 1, 0.36, 1), opacity 600ms ease;
+}
+
+.aura-svg-trace-scroll.is-drawn {
+  stroke-dashoffset: 0;
+}
+
+/* --- Living Interface Capability Mode Transitions (Distinct per tab) --- */
+@keyframes auraCapChatEnter {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes auraCapExploreEnter {
+  0% {
+    opacity: 0;
+    transform: translate3d(16px, 0, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes auraCapStudioEnter {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0) scale(0.985);
+    clip-path: inset(0 0 8% 0 round 16px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    clip-path: inset(0 0 0% 0 round 16px);
+  }
+}
+
+@keyframes auraCapMissionsEnter {
+  0% {
+    opacity: 0;
+    transform: translate3d(-14px, 6px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.aura-cap-panel-chat {
+  animation: auraCapChatEnter 340ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.aura-cap-panel-explore {
+  animation: auraCapExploreEnter 340ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.aura-cap-panel-studio {
+  animation: auraCapStudioEnter 360ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.aura-cap-panel-missions {
+  animation: auraCapMissionsEnter 340ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* --- Aura Gallery Card Micro-Interactions --- */
+.aura-gallery-card {
+  transition:
+    transform 340ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 280ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 340ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.aura-gallery-img {
+  transition: transform 520ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+@media (hover: hover) {
+  .aura-gallery-card:hover {
+    transform: translate3d(0, -4px, 0);
+    border-color: rgba(7, 131, 72, 0.38);
+    box-shadow: 0 18px 42px rgba(20, 40, 45, 0.085);
+  }
+
+  .aura-gallery-card:hover .aura-gallery-img {
+    transform: scale(1.032);
+  }
+}
+
+/* --- Footer & CTA Link Micro-Interactions --- */
+.aura-nav-link {
+  position: relative;
+}
+
+.aura-nav-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -3px;
+  width: 100%;
+  height: 1.5px;
+  background: linear-gradient(90deg, #078348, #8CCB4A, #FF790D);
+  transform: scaleX(0);
+  transform-origin: right center;
+  transition: transform 240ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (hover: hover) {
+  .aura-nav-link:hover::after {
+    transform: scaleX(1);
+    transform-origin: left center;
+  }
+}
+
+/* Hide native scrollbar on touch gallery track while keeping full scrollability */
+.aura-no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.aura-no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Strict accessibility compliance: prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .aura-hero-halo,
+  .aura-subtle-halo,
+  .aura-ground-glow,
+  .aura-symbol-levitate,
+  .aura-ribbon-shimmer::after,
+  .aura-state-activating .aura-hero-halo,
+  .aura-state-activating .aura-symbol-levitate,
+  .aura-state-generating .aura-hero-halo,
+  .aura-state-generating .aura-subtle-halo,
+  .aura-state-generating .aura-ribbon-shimmer::after,
+  .aura-bloom-item-1,
+  .aura-bloom-item-2,
+  .aura-bloom-item-3,
+  .aura-bloom-item-4,
+  .aura-bloom-preview,
+  .aura-bloom-halo,
+  .aura-word-group-1,
+  .aura-word-group-2,
+  .aura-word-group-3,
+  .aura-svg-trace-hero,
+  .aura-svg-trace-scroll,
+  .aura-cap-panel-chat,
+  .aura-cap-panel-explore,
+  .aura-cap-panel-studio,
+  .aura-cap-panel-missions,
+  .aura-genesis-halo,
+  .aura-genesis-ribbon-1,
+  .aura-genesis-ribbon-2,
+  .aura-genesis-symbol,
+  .aura-genesis-shimmer::after,
+  .aura-genesis-brand,
+  .aura-genesis-signature,
+  .aura-genesis-line,
+  .aura-core-arc-1,
+  .aura-core-arc-2,
+  .aura-core-arc-3,
+  .aura-core-halo,
+  .aura-route-fade {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    stroke-dashoffset: 0 !important;
+    clip-path: none !important;
+  }
+
+  .aura-reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .aura-footer-curve-path {
+    stroke-dashoffset: 0 !important;
+    transition: none !important;
+  }
+
+  .aura-gallery-card,
+  .aura-gallery-img {
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+/* Custom subtle scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(119, 129, 127, 0.25);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(119, 129, 127, 0.45);
+}
