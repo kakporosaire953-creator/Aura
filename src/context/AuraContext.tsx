@@ -13,6 +13,7 @@ import {
   UsageMetrics,
   UserProfile,
 } from '../shared/types';
+import { aiService } from '../services/aiService';
 
 interface PersistenceInfo {
   engine: string;
@@ -27,6 +28,7 @@ interface AuraContextValue {
   theme: AuraTheme;
   language: AuraLanguage;
   activeMode: AuraMode;
+  activeModelId: string;
   activeProjectId?: string;
   conversations: Conversation[];
   projects: AuraProject[];
@@ -43,6 +45,7 @@ interface AuraContextValue {
   toggleTheme: () => void;
   setLanguage: (lang: AuraLanguage) => void;
   setActiveMode: (mode: AuraMode) => void;
+  setActiveModelId: (modelId: string) => void;
   setActiveProjectId: (projectId?: string) => void;
   sendMessage: (params: {
     conversationId?: string;
@@ -51,6 +54,11 @@ interface AuraContextValue {
     projectId?: string;
     providerId?: string;
     modelId?: string;
+    mediaOptions?: {
+      aspectRatio?: '1:1' | '16:9' | '9:16' | '4:3' | '3:4';
+      slideCount?: number;
+      style?: string;
+    };
     attachments?: AttachmentItem[];
     activeArtifactContext?: {
       title?: string;
@@ -222,6 +230,7 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return saved === 'en' ? 'en' : 'fr';
   });
   const [activeMode, setActiveMode] = useState<AuraMode>('chat');
+  const [activeModelId, setActiveModelId] = useState<string>('aura-3.8-flash');
   const [activeProjectId, setActiveProjectId] = useState<string | undefined>(undefined);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [projects, setProjects] = useState<AuraProject[]>([]);
@@ -385,6 +394,11 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
       projectId?: string;
       providerId?: string;
       modelId?: string;
+      mediaOptions?: {
+        aspectRatio?: '1:1' | '16:9' | '9:16' | '4:3' | '3:4';
+        slideCount?: number;
+        style?: string;
+      };
       attachments?: AttachmentItem[];
       activeArtifactContext?: {
         title?: string;
@@ -403,7 +417,18 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsSending(true);
       setErrorBanner(null);
 
-      const modeToUse = params.mode || activeMode;
+      const requestedMode = params.mode || activeMode;
+      const requestedModel = params.modelId || activeModelId || 'aura-3.8-flash';
+      const route = aiService.resolveModelRouting({
+        modelId: requestedModel,
+        providerId:
+          params.providerId || authenticatedUser.preferences.defaultProvider,
+        mode: requestedMode,
+        providers,
+      });
+
+      const modeToUse = route.effectiveMode;
+      const modelToUse = route.effectiveModelId;
       const targetConvId =
         params.conversationId ||
         `conv-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
@@ -452,46 +477,29 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       try {
-        const res = await fetchWithTimeout(
-          '/api/ai/chat',
+        const result = await aiService.sendAIRequest(
           {
-            method: 'POST',
-            headers: authHeaders({ 'Content-Type': 'application/json' }),
-            body: JSON.stringify({
-              conversationId: targetConvId,
-              projectId: params.projectId ?? activeProjectId,
-              mode: modeToUse,
-              message: params.message,
-              providerId:
-                params.providerId ||
-                authenticatedUser.preferences.defaultProvider ||
-                'gemini',
-              modelId: params.modelId || 'gemini-3.8-flash',
-              language,
-              attachments: params.attachments,
-              activeArtifactContext: params.activeArtifactContext,
-            }),
+            conversationId: targetConvId,
+            projectId: params.projectId ?? activeProjectId,
+            mode: modeToUse,
+            message: params.message,
+            providerId: route.providerId,
+            modelId: modelToUse,
+            mediaOptions: params.mediaOptions,
+            language,
+            attachments: params.attachments,
+            activeArtifactContext: params.activeArtifactContext,
           },
-          60000,
-          1
+          providers
         );
 
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          setErrorBanner(
-            data.error || 'Une erreur est survenue lors de la génération.'
-          );
-          if (data.usage) setUsage(data.usage);
-          return null;
-        }
-
-        const updatedConv: Conversation = data.conversation;
+        const updatedConv: Conversation = result.conversation;
         setConversations((prev) => {
           const filtered = prev.filter((c) => c.id !== updatedConv.id);
           return [updatedConv, ...filtered];
         });
-        if (data.usage) {
-          setUsage(data.usage);
+        if (result.usage) {
+          setUsage(result.usage);
         }
         if (params.attachments && params.attachments.length > 0) {
           const libRes = await fetchWithTimeout('/api/library', {
@@ -504,9 +512,13 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         return updatedConv;
       } catch (err) {
+        const typedErr = err as Error & { usage?: UsageMetrics };
+        if (typedErr.usage) {
+          setUsage(typedErr.usage);
+        }
         const msg =
-          err instanceof Error && err.message !== 'Failed to fetch'
-            ? err.message
+          typedErr instanceof Error && typedErr.message !== 'Failed to fetch'
+            ? typedErr.message
             : 'Impossible de contacter le serveur Aura. Veuillez réessayer.';
         setErrorBanner(msg);
         return null;
@@ -514,7 +526,7 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsSending(false);
       }
     },
-    [activeMode, activeProjectId, authenticatedUser, language]
+    [activeMode, activeModelId, activeProjectId, authenticatedUser, language, providers]
   );
 
   const updateConversationArtifact = useCallback(
@@ -904,6 +916,7 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
         theme,
         language,
         activeMode,
+        activeModelId,
         activeProjectId,
         conversations,
         projects,
@@ -920,6 +933,7 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
         toggleTheme,
         setLanguage,
         setActiveMode,
+        setActiveModelId,
         setActiveProjectId,
         sendMessage,
         updateConversationArtifact,

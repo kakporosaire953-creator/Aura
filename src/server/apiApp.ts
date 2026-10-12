@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import express, { Request, Response } from 'express';
+import { GoogleGenAI, GenerateVideosOperation } from '@google/genai';
 import { aiRegistry } from './ai/externalAdapters.ts';
 import { dataStore } from './dataStore.ts';
 import { SendMessagePayloadSchema, ChatMessage, UserProfile } from '../shared/types.ts';
@@ -295,7 +296,7 @@ export function createApiApp() {
     }
 
     try {
-      const adapter = aiRegistry.getAdapter(payload.providerId);
+      const adapter = aiRegistry.getAdapter(payload.providerId, payload.modelId);
       const existingConv = payload.conversationId
         ? dataStore.getConversationById(user.id, payload.conversationId)
         : undefined;
@@ -339,6 +340,7 @@ export function createApiApp() {
         language: payload.language || user.preferences.language || 'fr',
         systemContext: project?.systemContext,
         attachments: payload.attachments,
+        mediaOptions: payload.mediaOptions,
         activeArtifactContext: payload.activeArtifactContext,
       });
 
@@ -372,6 +374,9 @@ export function createApiApp() {
         sources: aiResponse.sources,
         codeArtifact: aiResponse.codeArtifact,
         creativeArtifact: aiResponse.creativeArtifact,
+        imageArtifact: aiResponse.imageArtifact,
+        videoArtifact: aiResponse.videoArtifact,
+        slideArtifact: aiResponse.slideArtifact,
         isUncertainNote: aiResponse.isUncertainNote,
       };
 
@@ -419,7 +424,7 @@ export function createApiApp() {
 
       dataStore.recordUsage(user.id, {
         mode: payload.mode,
-        modelId: payload.modelId || 'gemini-3.8-flash',
+        modelId: payload.modelId || 'aura-3.8-flash',
         providerId: payload.providerId || 'gemini',
         inputTokens: 0,
         outputTokens: 0,
@@ -431,6 +436,68 @@ export function createApiApp() {
         error: errMessage.replace('PROVIDER_NOT_CONFIGURED: ', ''),
         code: isNotConfigured ? 'PROVIDER_NOT_CONFIGURED' : 'AI_PROVIDER_ERROR',
       });
+    }
+  });
+
+  // --- API: Veo 3.1 Video Operation Polling & Secure Download ---
+  app.post('/api/ai/video-status', async (req: Request, res: Response) => {
+    const user = getAuthenticatedUser(req);
+    if (!user) {
+      res.status(401).json({ error: 'Non authentifié.' });
+      return;
+    }
+    const { operationName } = req.body || {};
+    if (!operationName || !process.env.GEMINI_API_KEY) {
+      res.json({ done: false });
+      return;
+    }
+    try {
+      const ai = new GoogleGenAI({
+        apiKey: process.env.GEMINI_API_KEY,
+        httpOptions: { headers: { 'User-Agent': 'aistudio-build' } },
+      });
+      const op = new GenerateVideosOperation();
+      op.name = String(operationName);
+      const updated = await ai.operations.getVideosOperation({ operation: op });
+      res.json({ done: Boolean(updated.done) });
+    } catch {
+      res.json({ done: false });
+    }
+  });
+
+  app.post('/api/ai/video-download', async (req: Request, res: Response) => {
+    const user = getAuthenticatedUser(req);
+    if (!user) {
+      res.status(401).json({ error: 'Non authentifié.' });
+      return;
+    }
+    const { operationName } = req.body || {};
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!operationName || !apiKey) {
+      res.status(400).json({ error: 'Opération vidéo introuvable.' });
+      return;
+    }
+    try {
+      const ai = new GoogleGenAI({
+        apiKey,
+        httpOptions: { headers: { 'User-Agent': 'aistudio-build' } },
+      });
+      const op = new GenerateVideosOperation();
+      op.name = String(operationName);
+      const updated = await ai.operations.getVideosOperation({ operation: op });
+      const uri = updated.response?.generatedVideos?.[0]?.video?.uri;
+      if (!uri) {
+        res.status(404).json({ error: 'Flux vidéo non disponible.' });
+        return;
+      }
+      const videoRes = await fetch(uri, {
+        headers: { 'x-goog-api-key': apiKey },
+      });
+      res.setHeader('Content-Type', 'video/mp4');
+      const arrayBuf = await videoRes.arrayBuffer();
+      res.send(Buffer.from(arrayBuf));
+    } catch {
+      res.status(500).json({ error: 'Erreur lors du téléchargement de la vidéo.' });
     }
   });
 

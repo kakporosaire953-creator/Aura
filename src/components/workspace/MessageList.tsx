@@ -335,7 +335,11 @@ export const MessageList: React.FC<MessageListProps> = ({
               </div>
 
               <div className="flex items-center gap-2 text-xs text-[#77817F] tabular-nums">
-                {msg.modelId && <span>{msg.modelId}</span>}
+                {msg.modelId && (
+                  <span className="px-2 py-0.5 rounded-md bg-[#F4F2EA] dark:bg-[#1B292D] text-[11px] font-semibold text-[#14282D] dark:text-[#F3F2EC]">
+                    {msg.modelId}
+                  </span>
+                )}
                 {msg.estimatedTokens && (
                   <>
                     <span aria-hidden="true">·</span>
@@ -411,6 +415,9 @@ export const MessageList: React.FC<MessageListProps> = ({
                               : undefined,
                           files: msg.codeArtifact?.files,
                         },
+                        imageArtifact: msg.imageArtifact,
+                        videoArtifact: msg.videoArtifact,
+                        slideArtifact: msg.slideArtifact,
                         sources: msg.sources,
                         rawContent: msg.content,
                         modelId: msg.modelId,
@@ -420,6 +427,166 @@ export const MessageList: React.FC<MessageListProps> = ({
                   : undefined
               }
             />
+
+            {/* Inline Image Artifact Card (Mode Image HD) */}
+            {msg.imageArtifact && (
+              <div className="mt-5 rounded-2xl overflow-hidden bg-[#FBFAF5] dark:bg-[#1B292D] border border-[#E8E6DE] dark:border-[#243337]">
+                <div className="px-4 py-2.5 border-b border-[#E8E6DE] dark:border-[#243337] flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-[#D97706] dark:text-[#FBBF24]">
+                    <i className="fa-solid fa-image" />
+                    <span>Image HD générée ({msg.imageArtifact.aspectRatio})</span>
+                  </div>
+                  {onOpenInStudio && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onOpenInStudio({
+                          messageId: msg.id,
+                          conversationId: msg.conversationId,
+                          title:
+                            msg.imageArtifact?.title ||
+                            previousUserMsg?.content.slice(0, 56) ||
+                            'Image Aura Studio',
+                          mode: 'image',
+                          imageArtifact: msg.imageArtifact,
+                          rawContent: msg.content,
+                          modelId: msg.modelId,
+                          estimatedTokens: msg.estimatedTokens,
+                          createdAt: msg.createdAt,
+                        })
+                      }
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#EAF1E8] dark:bg-[#182E24] text-[#078348] dark:text-[#8CCB4A] text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer"
+                    >
+                      <i className="fa-solid fa-expand text-[10px]" />
+                      <span>Ouvrir dans Studio</span>
+                    </button>
+                  )}
+                </div>
+                <div className="p-3 flex justify-center bg-[#14282D]/5 dark:bg-[#0B1214]">
+                  <img
+                    src={msg.imageArtifact.imageUrl}
+                    alt={msg.imageArtifact.prompt}
+                    referrerPolicy="no-referrer"
+                    className="max-h-[340px] w-auto rounded-xl object-contain shadow-md"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Inline Video / Motion Artifact Card (Mode Vidéo) */}
+            {msg.videoArtifact && (
+              <div className="mt-5 p-4 rounded-2xl bg-[#FBFAF5] dark:bg-[#1B292D] border border-[#E8E6DE] dark:border-[#243337]">
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-[#EA580C]">
+                    <i className="fa-solid fa-film" />
+                    <span>
+                      {msg.videoArtifact.status === 'polling'
+                        ? 'Rendu vidéo Veo 3.1 en cours + Motion Canvas prêt'
+                        : 'Séquence Vidéo & Storyboard Aura Motion'}
+                    </span>
+                  </div>
+                  {onOpenInStudio && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onOpenInStudio({
+                          messageId: msg.id,
+                          conversationId: msg.conversationId,
+                          title:
+                            msg.videoArtifact?.title ||
+                            previousUserMsg?.content.slice(0, 56) ||
+                            'Séquence Vidéo Aura',
+                          mode: 'video',
+                          videoArtifact: msg.videoArtifact,
+                          codeArtifact: msg.codeArtifact,
+                          rawContent: msg.content,
+                          modelId: msg.modelId,
+                          estimatedTokens: msg.estimatedTokens,
+                          createdAt: msg.createdAt,
+                        })
+                      }
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#EAF1E8] dark:bg-[#182E24] text-[#078348] dark:text-[#8CCB4A] text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer"
+                    >
+                      <i className="fa-solid fa-play text-[10px]" />
+                      <span>Lire dans Aura Studio</span>
+                    </button>
+                  )}
+                </div>
+                {msg.videoArtifact.scenes && msg.videoArtifact.scenes.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {msg.videoArtifact.scenes.slice(0, 4).map((sc) => (
+                      <div
+                        key={sc.sceneNumber}
+                        className="p-2.5 rounded-xl bg-[#FFFDF8] dark:bg-[#152023] border border-[#E8E6DE] dark:border-[#243337]"
+                      >
+                        <div className="flex items-center justify-between text-[10px] font-bold text-[#EA580C] mb-1">
+                          <span>Scène {sc.sceneNumber}</span>
+                          <span>{sc.durationSeconds}s</span>
+                        </div>
+                        <p className="text-[11px] font-semibold text-[#14282D] dark:text-[#F3F2EC] truncate">
+                          {sc.title}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Inline Slide Deck Artifact Card (Mode Slides) */}
+            {msg.slideArtifact && (
+              <div className="mt-5 p-4 rounded-2xl bg-[#FBFAF5] dark:bg-[#1B292D] border border-[#E8E6DE] dark:border-[#243337]">
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-[#078348] dark:text-[#8CCB4A]">
+                    <i className="fa-solid fa-chalkboard-user" />
+                    <span>
+                      Présentation interactive ({msg.slideArtifact.slides.length} slides)
+                    </span>
+                  </div>
+                  {onOpenInStudio && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onOpenInStudio({
+                          messageId: msg.id,
+                          conversationId: msg.conversationId,
+                          title: msg.slideArtifact!.title,
+                          mode: 'slides',
+                          slideArtifact: msg.slideArtifact,
+                          codeArtifact: msg.codeArtifact,
+                          rawContent: msg.content,
+                          modelId: msg.modelId,
+                          estimatedTokens: msg.estimatedTokens,
+                          createdAt: msg.createdAt,
+                        })
+                      }
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#EAF1E8] dark:bg-[#182E24] text-[#078348] dark:text-[#8CCB4A] text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer"
+                    >
+                      <i className="fa-solid fa-display text-[10px]" />
+                      <span>Présenter dans Studio</span>
+                    </button>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {msg.slideArtifact.slides.slice(0, 3).map((sl, sIdx) => (
+                    <div
+                      key={sl.slideNumber || sIdx}
+                      className="p-2.5 rounded-xl bg-[#FFFDF8] dark:bg-[#152023] border border-[#E8E6DE] dark:border-[#243337]"
+                    >
+                      <span className="text-[10px] font-mono font-bold text-[#078348] dark:text-[#8CCB4A]">
+                        Slide {sl.slideNumber || sIdx + 1}
+                      </span>
+                      <p className="text-xs font-bold text-[#14282D] dark:text-[#F3F2EC] truncate mt-0.5">
+                        {sl.title}
+                      </p>
+                      {sl.subtitle && (
+                        <p className="text-[11px] text-[#77817F] truncate mt-0.5">{sl.subtitle}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Aura Studio Summary Card (Mode Créer / Aura Studio) */}
             {msg.creativeArtifact && (
@@ -453,6 +620,9 @@ export const MessageList: React.FC<MessageListProps> = ({
                             mode: 'create',
                             codeArtifact: msg.codeArtifact,
                             creativeArtifact: msg.creativeArtifact,
+                            imageArtifact: msg.imageArtifact,
+                            videoArtifact: msg.videoArtifact,
+                            slideArtifact: msg.slideArtifact,
                             sources: msg.sources,
                             rawContent: msg.content,
                             modelId: msg.modelId,
@@ -538,6 +708,8 @@ export const MessageList: React.FC<MessageListProps> = ({
                   onClick={() =>
                     saveMessageToLibrary({
                       title:
+                        msg.slideArtifact?.title ||
+                        msg.creativeArtifact?.title ||
                         previousUserMsg?.content.slice(0, 64) ||
                         `Réponse Aura (${msg.mode.toUpperCase()})`,
                       excerpt: msg.content.slice(0, 220),
@@ -578,12 +750,16 @@ export const MessageList: React.FC<MessageListProps> = ({
                       messageId: msg.id,
                       conversationId: msg.conversationId,
                       title:
+                        msg.slideArtifact?.title ||
                         msg.creativeArtifact?.title ||
                         previousUserMsg?.content.slice(0, 56) ||
                         'Résultat Aura Studio',
                       mode: msg.mode,
                       codeArtifact: msg.codeArtifact,
                       creativeArtifact: msg.creativeArtifact,
+                      imageArtifact: msg.imageArtifact,
+                      videoArtifact: msg.videoArtifact,
+                      slideArtifact: msg.slideArtifact,
                       sources: msg.sources,
                       rawContent: msg.content,
                       modelId: msg.modelId,

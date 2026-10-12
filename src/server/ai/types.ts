@@ -5,7 +5,10 @@ import {
   CodeArtifact,
   CreativeArtifact,
   GroundingSource,
+  ImageArtifact,
   ProviderStatus,
+  SlideArtifact,
+  VideoArtifact,
 } from '../../shared/types.ts';
 
 export interface AIHistoryMessage {
@@ -21,6 +24,11 @@ export interface AIRequest {
   language: AuraLanguage;
   systemContext?: string;
   attachments?: AttachmentItem[];
+  mediaOptions?: {
+    aspectRatio?: '1:1' | '16:9' | '9:16' | '4:3' | '3:4';
+    slideCount?: number;
+    style?: string;
+  };
   activeArtifactContext?: {
     title?: string;
     mode?: AuraMode;
@@ -39,6 +47,9 @@ export interface AIResponse {
   sources?: GroundingSource[];
   codeArtifact?: CodeArtifact;
   creativeArtifact?: CreativeArtifact;
+  imageArtifact?: ImageArtifact;
+  videoArtifact?: VideoArtifact;
+  slideArtifact?: SlideArtifact;
   isUncertainNote?: string;
 }
 

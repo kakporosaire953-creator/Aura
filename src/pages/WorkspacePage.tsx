@@ -64,7 +64,10 @@ export const WorkspacePage: React.FC = () => {
     const modeParam = searchParams.get('mode') as AuraMode | null;
     const promptParam = searchParams.get('prompt');
     const studioParam = searchParams.get('studio');
-    if (modeParam && ['chat', 'search', 'code', 'create'].includes(modeParam)) {
+    if (
+      modeParam &&
+      ['chat', 'search', 'code', 'create', 'image', 'video', 'slides'].includes(modeParam)
+    ) {
       setActiveMode(modeParam);
     }
     if (promptParam) {
@@ -98,7 +101,13 @@ export const WorkspacePage: React.FC = () => {
     if (assistantMessages.length === 0) return;
 
     const lastMsg = assistantMessages[assistantMessages.length - 1];
-    const resolvedMode: AuraMode = lastMsg.codeArtifact
+    const resolvedMode: AuraMode = lastMsg.slideArtifact
+      ? 'slides'
+      : lastMsg.imageArtifact
+      ? 'image'
+      : lastMsg.videoArtifact
+      ? 'video'
+      : lastMsg.codeArtifact
       ? 'code'
       : lastMsg.creativeArtifact
       ? 'create'
@@ -107,10 +116,16 @@ export const WorkspacePage: React.FC = () => {
     setStudioItem({
       messageId: lastMsg.id,
       conversationId: activeConversation.id,
-      title: lastMsg.creativeArtifact?.title || activeConversation.title,
+      title:
+        lastMsg.slideArtifact?.title ||
+        lastMsg.creativeArtifact?.title ||
+        activeConversation.title,
       mode: resolvedMode,
       codeArtifact: lastMsg.codeArtifact,
       creativeArtifact: lastMsg.creativeArtifact,
+      imageArtifact: lastMsg.imageArtifact,
+      videoArtifact: lastMsg.videoArtifact,
+      slideArtifact: lastMsg.slideArtifact,
       rawContent: lastMsg.content,
       sources: lastMsg.sources,
       modelId: lastMsg.modelId,
@@ -124,9 +139,13 @@ export const WorkspacePage: React.FC = () => {
     }
   }, [activeConversation, userDismissedStudio]);
 
-  // Also open Aura Studio during live generation in code/create modes so user sees live progress
+  // Also open Aura Studio during live generation in studio/media modes so user sees live progress
   useEffect(() => {
-    if (isSending && (activeMode === 'code' || activeMode === 'create') && !userDismissedStudio) {
+    if (
+      isSending &&
+      ['code', 'create', 'image', 'video', 'slides'].includes(activeMode) &&
+      !userDismissedStudio
+    ) {
       setStudioOpen(true);
     }
   }, [isSending, activeMode, userDismissedStudio]);
@@ -159,7 +178,15 @@ export const WorkspacePage: React.FC = () => {
     };
   };
 
-  const handleSend = async (attachments: AttachmentItem[]) => {
+  const handleSend = async (
+    attachments: AttachmentItem[],
+    mediaOptions?: {
+      aspectRatio?: '1:1' | '16:9' | '9:16' | '4:3' | '3:4';
+      slideCount?: number;
+      videoDurationSeconds?: number;
+      stylePreset?: string;
+    }
+  ) => {
     const trimmed = promptInput.trim();
     if (!trimmed && attachments.length === 0) return;
 
@@ -173,6 +200,7 @@ export const WorkspacePage: React.FC = () => {
       message: currentText,
       mode: activeMode,
       attachments,
+      mediaOptions,
       activeArtifactContext: buildActiveArtifactContext(),
       onConversationReady: (readyId) => {
         if (!conversationId) {
@@ -213,7 +241,13 @@ export const WorkspacePage: React.FC = () => {
 
   const handleSelectStudioVersion = (msg: ChatMessage) => {
     if (!activeConversation) return;
-    const resolvedMode: AuraMode = msg.codeArtifact
+    const resolvedMode: AuraMode = msg.slideArtifact
+      ? 'slides'
+      : msg.imageArtifact
+      ? 'image'
+      : msg.videoArtifact
+      ? 'video'
+      : msg.codeArtifact
       ? 'code'
       : msg.creativeArtifact
       ? 'create'
@@ -222,10 +256,16 @@ export const WorkspacePage: React.FC = () => {
     setStudioItem({
       messageId: msg.id,
       conversationId: activeConversation.id,
-      title: msg.creativeArtifact?.title || activeConversation.title,
+      title:
+        msg.slideArtifact?.title ||
+        msg.creativeArtifact?.title ||
+        activeConversation.title,
       mode: resolvedMode,
       codeArtifact: msg.codeArtifact,
       creativeArtifact: msg.creativeArtifact,
+      imageArtifact: msg.imageArtifact,
+      videoArtifact: msg.videoArtifact,
+      slideArtifact: msg.slideArtifact,
       rawContent: msg.content,
       sources: msg.sources,
       modelId: msg.modelId,
@@ -239,7 +279,7 @@ export const WorkspacePage: React.FC = () => {
     setIsActivating(true);
     setTimeout(() => setIsActivating(false), 1150);
 
-    if (mode === 'code' || mode === 'create') {
+    if (['code', 'create', 'image', 'video', 'slides'].includes(mode)) {
       setUserDismissedStudio(false);
       setStudioOpen(true);
     }
@@ -264,16 +304,16 @@ export const WorkspacePage: React.FC = () => {
     });
   };
 
-  // Les 4 cartes d'action pour démarrer une vraie création
+  // Les 4 cartes d'action pour démarrer un workflow complet (Site Web, Image HD, Présentation Slides, Vidéo Motion)
   const actionCards = [
     {
       id: 'website',
       mode: 'code' as AuraMode,
       titleFr: 'Créer un site web',
       titleEn: 'Build a website',
-      descFr: 'Un site moderne et responsive pour mon projet.',
-      descEn: 'A modern and responsive website for my project.',
-      icon: 'fa-solid fa-wand-magic-sparkles',
+      descFr: 'Un site moderne et responsive avec aperçu live.',
+      descEn: 'A modern and responsive website with live preview.',
+      icon: 'fa-solid fa-code',
       iconBg: 'bg-[#EAF2E2] dark:bg-[#182E24]',
       iconColor: '#078348',
       promptFr:
@@ -282,49 +322,49 @@ export const WorkspacePage: React.FC = () => {
         'Create a complete, modern and responsive single-file HTML/CSS landing page for my project.',
     },
     {
-      id: 'document',
-      mode: 'chat' as AuraMode,
-      titleFr: 'Analyser un document',
-      titleEn: 'Analyze a document',
-      descFr: 'Résume et extrait les infos importantes.',
-      descEn: 'Summarize and extract key information.',
-      icon: 'fa-regular fa-file-lines',
+      id: 'image-gen',
+      mode: 'image' as AuraMode,
+      titleFr: 'Générer une image HD',
+      titleEn: 'Generate HD Image',
+      descFr: 'Illustration, concept art ou affiche dans Studio.',
+      descEn: 'Illustration, concept art, or poster in Studio.',
+      icon: 'fa-solid fa-image',
+      iconBg: 'bg-[#FEF3C7] dark:bg-[#2E2514]',
+      iconColor: '#D97706',
+      promptFr:
+        'Génère une illustration architecturale minimaliste baignée de lumière dorée au coucher du soleil, style éditorial contemporain haute résolution.',
+      promptEn:
+        'Generate a minimalist architectural illustration bathed in golden sunset light, high-resolution contemporary editorial style.',
+    },
+    {
+      id: 'slides-gen',
+      mode: 'slides' as AuraMode,
+      titleFr: 'Créer des Slides 16:9',
+      titleEn: 'Create 16:9 Slide Deck',
+      descFr: 'Deck de présentation interactif prêt à projeter.',
+      descEn: 'Interactive presentation deck ready to present.',
+      icon: 'fa-solid fa-chalkboard-user',
       iconBg: 'bg-[#EEF4DC] dark:bg-[#1E2E1A]',
       iconColor: '#4D8B31',
       promptFr:
-        'Aide-moi à structurer l’analyse d’un document professionnel : synthétise les points clés, les chiffres importants et les actions recommandées.',
+        'Crée une présentation exécutive interactive de 6 slides sur le lancement d’une plateforme SaaS IA moderne : vision, problème, produit, architecture, métriques et feuille de route.',
       promptEn:
-        'Help me analyze a document: summarize key takeaways, metrics, and action items.',
+        'Create a 6-slide interactive executive presentation on launching a modern AI SaaS platform: vision, problem, product, architecture, metrics, and roadmap.',
     },
     {
-      id: 'code',
-      mode: 'code' as AuraMode,
-      titleFr: "M'aider à coder",
-      titleEn: 'Help me code',
-      descFr: 'Corrige, explique ou génère du code.',
-      descEn: 'Debug, explain, or generate clean code.',
-      icon: 'fa-solid fa-code',
+      id: 'video-gen',
+      mode: 'video' as AuraMode,
+      titleFr: 'Générer une Vidéo / Motion',
+      titleEn: 'Generate Video / Motion',
+      descFr: 'Animation Motion Canvas et rendu vidéo Veo.',
+      descEn: 'Motion Canvas animation and Veo video render.',
+      icon: 'fa-solid fa-film',
       iconBg: 'bg-[#FDF0DF] dark:bg-[#2E2216]',
-      iconColor: '#EA6B05',
+      iconColor: '#EA580C',
       promptFr:
-        'Écris un composant interactif moderne en HTML/CSS/JS autonome avec aperçu en direct et explique sa structure.',
+        'Crée une séquence vidéo motion design cinématographique présentant l’identité visuelle Aura avec formes organiques lumineuses, typographie fluide et storyboard en 4 scènes.',
       promptEn:
-        'Write an interactive modern web component in self-contained HTML/CSS/JS with live preview.',
-    },
-    {
-      id: 'learn',
-      mode: 'chat' as AuraMode,
-      titleFr: "M'aider à apprendre",
-      titleEn: 'Help me learn',
-      descFr: 'Une explication claire sur un sujet.',
-      descEn: 'A clear, structured explanation on any topic.',
-      icon: 'fa-solid fa-graduation-cap',
-      iconBg: 'bg-[#EAF2E2] dark:bg-[#182E24]',
-      iconColor: '#078348',
-      promptFr:
-        'Explique-moi avec pédagogie, des exemples concrets et un mini-quiz comment fonctionnent les architectures modernes d’intelligence artificielle.',
-      promptEn:
-        'Explain clearly with concrete examples and a short quiz how modern AI architectures work.',
+        'Create a cinematic motion design video sequence showcasing the Aura visual identity with glowing organic shapes, fluid typography, and a 4-scene storyboard.',
     },
   ];
 

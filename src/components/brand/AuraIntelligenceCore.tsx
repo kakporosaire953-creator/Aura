@@ -81,6 +81,51 @@ const MODE_PHASES: Record<
       'Finalizing creative concept...',
     ],
   },
+  image: {
+    badgeFr: 'Génération d’Image IA',
+    badgeEn: 'AI Image Generation',
+    accent: '#FF790D',
+    fr: [
+      'Analyse de la composition visuelle et des couleurs...',
+      'Rendu haute définition du visuel dans Aura Studio...',
+      'Finalisation de l’image et de la palette...',
+    ],
+    en: [
+      'Analyzing visual composition and color palette...',
+      'Rendering high-definition visual in Aura Studio...',
+      'Finalizing image and art direction...',
+    ],
+  },
+  video: {
+    badgeFr: 'Réalisation Vidéo & Motion',
+    badgeEn: 'Video & Motion Direction',
+    accent: '#FF790D',
+    fr: [
+      'Découpage du storyboard scène par scène...',
+      'Génération de la séquence animée et du flux vidéo...',
+      'Synchronisation avec le lecteur Aura Studio...',
+    ],
+    en: [
+      'Structuring scene-by-scene storyboard...',
+      'Generating animated sequence and video stream...',
+      'Synchronizing with Aura Studio video player...',
+    ],
+  },
+  slides: {
+    badgeFr: 'Aura Slides Studio (16:9)',
+    badgeEn: 'Aura Slides Studio (16:9)',
+    accent: '#078348',
+    fr: [
+      'Structuration narrative du pitch deck...',
+      'Conception des diapositives, métriques et visuels...',
+      'Assemblage de la présentation interactive 16:9...',
+    ],
+    en: [
+      'Structuring presentation narrative...',
+      'Designing slides, key metrics, and layouts...',
+      'Assembling interactive 16:9 slide deck...',
+    ],
+  },
 };
 
 /**
