@@ -95,7 +95,11 @@ export const AuthPage: React.FC = () => {
         } else {
           navigate('/app', { replace: true });
         }
+      } else if (result.error) {
+        setLocalError(result.error);
       }
+    } catch {
+      setLocalError('Connexion momentanément indisponible. Veuillez réessayer.');
     } finally {
       setSubmitting(false);
     }
@@ -142,11 +146,15 @@ export const AuthPage: React.FC = () => {
           } else {
             navigate('/app', { replace: true });
           }
+        } else if (result.error) {
+          setLocalError(result.error);
         }
       } else if (mode === 'register') {
         const result = await register(trimmedName, trimmedEmail, trimmedPassword);
         if (result.ok && result.user) {
           navigate('/onboarding', { replace: true });
+        } else if (result.error) {
+          setLocalError(result.error);
         }
       } else {
         const res = await fetch('/api/auth/forgot-password', {
@@ -154,7 +162,7 @@ export const AuthPage: React.FC = () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: trimmedEmail }),
         });
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         if (res.ok) {
           setStatusMessage(
             data.message ||
@@ -164,6 +172,10 @@ export const AuthPage: React.FC = () => {
           setLocalError(data.error || 'Impossible d’envoyer le lien.');
         }
       }
+    } catch {
+      setLocalError(
+        'Le serveur Aura est momentanément injoignable. Veuillez réessayer.'
+      );
     } finally {
       setSubmitting(false);
     }

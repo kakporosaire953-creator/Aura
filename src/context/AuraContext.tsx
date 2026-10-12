@@ -99,17 +99,20 @@ interface AuraContextValue {
   deleteMission: (id: string) => Promise<void>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
   completeOnboarding: (data: Omit<OnboardingData, 'completed'>) => Promise<boolean>;
-  login: (email: string, password: string) => Promise<{ ok: boolean; user?: UserProfile }>;
+  login: (
+    email: string,
+    password: string
+  ) => Promise<{ ok: boolean; user?: UserProfile; error?: string }>;
   register: (
     name: string,
     email: string,
     password: string
-  ) => Promise<{ ok: boolean; user?: UserProfile }>;
+  ) => Promise<{ ok: boolean; user?: UserProfile; error?: string }>;
   loginWithOAuth: (params: {
     provider: 'google' | 'github';
     email: string;
     name: string;
-  }) => Promise<{ ok: boolean; user?: UserProfile; isNewUser?: boolean }>;
+  }) => Promise<{ ok: boolean; user?: UserProfile; isNewUser?: boolean; error?: string }>;
   logout: () => Promise<void>;
   resetQuota: (newLimit?: number) => Promise<void>;
   refreshAll: () => Promise<void>;
@@ -154,15 +157,26 @@ function safeRemoveItem(key: string): void {
 async function fetchWithTimeout(
   url: string,
   options: RequestInit = {},
-  timeoutMs = 6000
+  timeoutMs = 10000,
+  retries = 2
 ): Promise<Response> {
-  const controller = new AbortController();
-  const id = window.setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    return await fetch(url, { ...options, signal: controller.signal });
-  } finally {
-    window.clearTimeout(id);
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const id = window.setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(url, { ...options, signal: controller.signal });
+      window.clearTimeout(id);
+      return response;
+    } catch (err) {
+      window.clearTimeout(id);
+      lastError = err;
+      if (attempt < retries) {
+        await new Promise((r) => window.setTimeout(r, 450 * (attempt + 1)));
+      }
+    }
   }
+  throw lastError;
 }
 
 const emptyGuestPlaceholder: UserProfile = {
@@ -438,26 +452,31 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       try {
-        const res = await fetch('/api/ai/chat', {
-          method: 'POST',
-          headers: authHeaders({ 'Content-Type': 'application/json' }),
-          body: JSON.stringify({
-            conversationId: targetConvId,
-            projectId: params.projectId ?? activeProjectId,
-            mode: modeToUse,
-            message: params.message,
-            providerId:
-              params.providerId ||
-              authenticatedUser.preferences.defaultProvider ||
-              'gemini',
-            modelId: params.modelId || 'gemini-3.8-flash',
-            language,
-            attachments: params.attachments,
-            activeArtifactContext: params.activeArtifactContext,
-          }),
-        });
+        const res = await fetchWithTimeout(
+          '/api/ai/chat',
+          {
+            method: 'POST',
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({
+              conversationId: targetConvId,
+              projectId: params.projectId ?? activeProjectId,
+              mode: modeToUse,
+              message: params.message,
+              providerId:
+                params.providerId ||
+                authenticatedUser.preferences.defaultProvider ||
+                'gemini',
+              modelId: params.modelId || 'gemini-3.8-flash',
+              language,
+              attachments: params.attachments,
+              activeArtifactContext: params.activeArtifactContext,
+            }),
+          },
+          60000,
+          1
+        );
 
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         if (!res.ok) {
           setErrorBanner(
             data.error || 'Une erreur est survenue lors de la génération.'
@@ -475,7 +494,7 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUsage(data.usage);
         }
         if (params.attachments && params.attachments.length > 0) {
-          const libRes = await fetch('/api/library', {
+          const libRes = await fetchWithTimeout('/api/library', {
             headers: authHeaders(),
           });
           if (libRes.ok) {
@@ -486,9 +505,9 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return updatedConv;
       } catch (err) {
         const msg =
-          err instanceof Error
+          err instanceof Error && err.message !== 'Failed to fetch'
             ? err.message
-            : 'Impossible de contacter le serveur Aura.';
+            : 'Impossible de contacter le serveur Aura. Veuillez réessayer.';
         setErrorBanner(msg);
         return null;
       } finally {
@@ -508,7 +527,7 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
       updatedContent?: string;
     }): Promise<Conversation | null> => {
       try {
-        const res = await fetch(`/api/conversations/${params.conversationId}`, {
+        const res = await fetchWithTimeout(`/api/conversations/${params.conversationId}`, {
           method: 'PUT',
           headers: authHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify(params),
@@ -528,10 +547,14 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 
   const deleteConversation = useCallback(async (id: string) => {
-    await fetch(`/api/conversations/${id}`, {
-      method: 'DELETE',
-      headers: authHeaders(),
-    });
+    try {
+      await fetchWithTimeout(`/api/conversations/${id}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+      });
+    } catch {
+      // ignore network error
+    }
     setConversations((prev) => prev.filter((c) => c.id !== id));
     setLibraryItems((prev) => prev.filter((i) => i.conversationId !== id));
   }, []);
@@ -545,41 +568,49 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
       messageId?: string;
       tags?: string[];
     }) => {
-      const res = await fetch('/api/library', {
-        method: 'POST',
-        headers: authHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify({
-          type: 'saved_response',
-          ...params,
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setLibraryItems((prev) => [data.item, ...prev]);
-        if (params.conversationId && params.messageId) {
-          setConversations((prev) =>
-            prev.map((c) =>
-              c.id === params.conversationId
-                ? {
-                    ...c,
-                    messages: c.messages.map((m) =>
-                      m.id === params.messageId ? { ...m, savedToLibrary: true } : m
-                    ),
-                  }
-                : c
-            )
-          );
+      try {
+        const res = await fetchWithTimeout('/api/library', {
+          method: 'POST',
+          headers: authHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({
+            type: 'saved_response',
+            ...params,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setLibraryItems((prev) => [data.item, ...prev]);
+          if (params.conversationId && params.messageId) {
+            setConversations((prev) =>
+              prev.map((c) =>
+                c.id === params.conversationId
+                  ? {
+                      ...c,
+                      messages: c.messages.map((m) =>
+                        m.id === params.messageId ? { ...m, savedToLibrary: true } : m
+                      ),
+                    }
+                  : c
+              )
+            );
+          }
         }
+      } catch {
+        setErrorBanner('Impossible de sauvegarder dans la bibliothèque pour le moment.');
       }
     },
     []
   );
 
   const deleteLibraryItem = useCallback(async (id: string) => {
-    await fetch(`/api/library/${id}`, {
-      method: 'DELETE',
-      headers: authHeaders(),
-    });
+    try {
+      await fetchWithTimeout(`/api/library/${id}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+      });
+    } catch {
+      // ignore network error
+    }
     setLibraryItems((prev) => prev.filter((i) => i.id !== id));
   }, []);
 
@@ -592,15 +623,19 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
       icon: string;
       systemContext?: string;
     }): Promise<AuraProject | null> => {
-      const res = await fetch('/api/projects', {
-        method: 'POST',
-        headers: authHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify(params),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setProjects((prev) => [data.project, ...prev]);
-        return data.project;
+      try {
+        const res = await fetchWithTimeout('/api/projects', {
+          method: 'POST',
+          headers: authHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify(params),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setProjects((prev) => [data.project, ...prev]);
+          return data.project;
+        }
+      } catch {
+        setErrorBanner('Impossible de créer le projet pour le moment.');
       }
       return null;
     },
@@ -609,10 +644,14 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const deleteProject = useCallback(
     async (id: string) => {
-      await fetch(`/api/projects/${id}`, {
-        method: 'DELETE',
-        headers: authHeaders(),
-      });
+      try {
+        await fetchWithTimeout(`/api/projects/${id}`, {
+          method: 'DELETE',
+          headers: authHeaders(),
+        });
+      } catch {
+        // ignore network error
+      }
       setProjects((prev) => prev.filter((p) => p.id !== id));
       if (activeProjectId === id) setActiveProjectId(undefined);
     },
@@ -628,15 +667,19 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
       steps?: { label: string; done: boolean }[];
       prompt?: string;
     }): Promise<AuraMission | null> => {
-      const res = await fetch('/api/missions', {
-        method: 'POST',
-        headers: authHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify(params),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setMissions((prev) => [data.mission, ...prev]);
-        return data.mission;
+      try {
+        const res = await fetchWithTimeout('/api/missions', {
+          method: 'POST',
+          headers: authHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify(params),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setMissions((prev) => [data.mission, ...prev]);
+          return data.mission;
+        }
+      } catch {
+        setErrorBanner('Impossible de créer la mission pour le moment.');
       }
       return null;
     },
@@ -644,46 +687,65 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 
   const deleteMission = useCallback(async (id: string) => {
-    await fetch(`/api/missions/${id}`, {
-      method: 'DELETE',
-      headers: authHeaders(),
-    });
+    try {
+      await fetchWithTimeout(`/api/missions/${id}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+      });
+    } catch {
+      // ignore network error
+    }
     setMissions((prev) => prev.filter((m) => m.id !== id));
   }, []);
 
   const updateProfile = useCallback(async (updates: Partial<UserProfile>) => {
-    const res = await fetch('/api/auth/profile', {
-      method: 'PUT',
-      headers: authHeaders({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify(updates),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      setAuthenticatedUser(data.user);
-      if (updates.preferences?.theme) setThemeState(updates.preferences.theme);
-      if (updates.preferences?.language) setLanguageState(updates.preferences.language);
+    try {
+      const res = await fetchWithTimeout('/api/auth/profile', {
+        method: 'PUT',
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify(updates),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.token) {
+          safeSetItem(SESSION_TOKEN_KEY, data.token);
+        }
+        setAuthenticatedUser(data.user);
+        if (updates.preferences?.theme) setThemeState(updates.preferences.theme);
+        if (updates.preferences?.language) setLanguageState(updates.preferences.language);
+      }
+    } catch {
+      setErrorBanner('Impossible de mettre à jour le profil.');
     }
   }, []);
 
   const completeOnboarding = useCallback(
     async (data: Omit<OnboardingData, 'completed'>): Promise<boolean> => {
-      const res = await fetch('/api/auth/onboarding', {
-        method: 'POST',
-        headers: authHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) return false;
-      const result = await res.json();
-      if (result.user) {
-        setAuthenticatedUser(result.user);
-        if (result.user.preferences?.defaultMode) {
-          setActiveMode(result.user.preferences.defaultMode);
+      try {
+        const res = await fetchWithTimeout('/api/auth/onboarding', {
+          method: 'POST',
+          headers: authHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify(data),
+        });
+        if (!res.ok) return false;
+        const result = await res.json();
+        if (result.token) {
+          safeSetItem(SESSION_TOKEN_KEY, result.token);
         }
-        if (result.user.preferences?.language) {
-          setLanguageState(result.user.preferences.language);
+        if (result.user) {
+          setAuthenticatedUser(result.user);
+          if (result.user.preferences?.defaultMode) {
+            setActiveMode(result.user.preferences.defaultMode);
+          }
+          if (result.user.preferences?.language) {
+            setLanguageState(result.user.preferences.language);
+          }
         }
+        return true;
+      } catch {
+        setErrorBanner('Impossible de finaliser la configuration pour le moment.');
+        return false;
       }
-      return true;
     },
     []
   );
@@ -692,23 +754,31 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
     async (
       email: string,
       password: string
-    ): Promise<{ ok: boolean; user?: UserProfile }> => {
+    ): Promise<{ ok: boolean; user?: UserProfile; error?: string }> => {
       setErrorBanner(null);
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setErrorBanner(data.error || 'Identifiants invalides.');
-        return { ok: false };
-      }
+      try {
+        const res = await fetchWithTimeout('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const errMsg = data.error || 'Identifiants invalides.';
+          setErrorBanner(errMsg);
+          return { ok: false, error: errMsg };
+        }
 
-      safeSetItem(SESSION_TOKEN_KEY, data.token);
-      setAuthenticatedUser(data.user);
-      await refreshAll();
-      return { ok: true, user: data.user };
+        safeSetItem(SESSION_TOKEN_KEY, data.token);
+        setAuthenticatedUser(data.user);
+        await refreshAll();
+        return { ok: true, user: data.user };
+      } catch {
+        const errMsg =
+          'Le serveur Aura est momentanément injoignable. Veuillez réessayer dans quelques secondes.';
+        setErrorBanner(errMsg);
+        return { ok: false, error: errMsg };
+      }
     },
     [refreshAll]
   );
@@ -718,28 +788,36 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
       name: string,
       email: string,
       password: string
-    ): Promise<{ ok: boolean; user?: UserProfile }> => {
+    ): Promise<{ ok: boolean; user?: UserProfile; error?: string }> => {
       setErrorBanner(null);
-      const res = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setErrorBanner(data.error || 'Inscription impossible.');
-        return { ok: false };
-      }
+      try {
+        const res = await fetchWithTimeout('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const errMsg = data.error || 'Inscription impossible.';
+          setErrorBanner(errMsg);
+          return { ok: false, error: errMsg };
+        }
 
-      // Start with a completely fresh session for this newly registered user
-      safeSetItem(SESSION_TOKEN_KEY, data.token);
-      setAuthenticatedUser(data.user);
-      setConversations([]);
-      setProjects([]);
-      setMissions([]);
-      setLibraryItems([]);
-      setActiveProjectId(undefined);
-      return { ok: true, user: data.user };
+        // Start with a completely fresh session for this newly registered user
+        safeSetItem(SESSION_TOKEN_KEY, data.token);
+        setAuthenticatedUser(data.user);
+        setConversations([]);
+        setProjects([]);
+        setMissions([]);
+        setLibraryItems([]);
+        setActiveProjectId(undefined);
+        return { ok: true, user: data.user };
+      } catch {
+        const errMsg =
+          'Le serveur Aura est momentanément injoignable. Veuillez réessayer dans quelques secondes.';
+        setErrorBanner(errMsg);
+        return { ok: false, error: errMsg };
+      }
     },
     []
   );
@@ -749,34 +827,42 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
       provider: 'google' | 'github';
       email: string;
       name: string;
-    }): Promise<{ ok: boolean; user?: UserProfile; isNewUser?: boolean }> => {
+    }): Promise<{ ok: boolean; user?: UserProfile; isNewUser?: boolean; error?: string }> => {
       setErrorBanner(null);
-      const res = await fetch('/api/auth/oauth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(params),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setErrorBanner(data.error || 'Connexion OAuth impossible.');
-        return { ok: false };
-      }
+      try {
+        const res = await fetchWithTimeout('/api/auth/oauth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(params),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const errMsg = data.error || 'Connexion OAuth impossible.';
+          setErrorBanner(errMsg);
+          return { ok: false, error: errMsg };
+        }
 
-      safeSetItem(SESSION_TOKEN_KEY, data.token);
-      setAuthenticatedUser(data.user);
-      await refreshAll();
-      return {
-        ok: true,
-        user: data.user,
-        isNewUser: Boolean(data.isNewUser),
-      };
+        safeSetItem(SESSION_TOKEN_KEY, data.token);
+        setAuthenticatedUser(data.user);
+        await refreshAll();
+        return {
+          ok: true,
+          user: data.user,
+          isNewUser: Boolean(data.isNewUser),
+        };
+      } catch {
+        const errMsg =
+          'Le serveur Aura est momentanément injoignable. Veuillez réessayer dans quelques secondes.';
+        setErrorBanner(errMsg);
+        return { ok: false, error: errMsg };
+      }
     },
     [refreshAll]
   );
 
   const logout = useCallback(async () => {
     try {
-      await fetch('/api/auth/logout', {
+      await fetchWithTimeout('/api/auth/logout', {
         method: 'POST',
         headers: authHeaders(),
       });
@@ -790,15 +876,19 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [clearClientUserData]);
 
   const resetQuota = useCallback(async (newLimit?: number) => {
-    const res = await fetch('/api/usage/reset', {
-      method: 'POST',
-      headers: authHeaders({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({ dailyLimit: newLimit }),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      setUsage(data.usage);
-      setErrorBanner(null);
+    try {
+      const res = await fetchWithTimeout('/api/usage/reset', {
+        method: 'POST',
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ dailyLimit: newLimit }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUsage(data.usage);
+        setErrorBanner(null);
+      }
+    } catch {
+      // ignore network error
     }
   }, []);
 

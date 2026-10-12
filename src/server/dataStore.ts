@@ -36,8 +36,63 @@ interface PersistedDatabase {
   usageByUser: Record<string, UsageMetrics>;
 }
 
-const DATA_DIR = path.resolve(process.cwd(), '.data');
+function resolveWritableDataDir(): string {
+  const isServerless = Boolean(
+    process.env.VERCEL ||
+      process.env.AWS_LAMBDA_FUNCTION_NAME ||
+      process.env.NETLIFY
+  );
+  if (isServerless) {
+    return path.join('/tmp', 'aura-data');
+  }
+  const localDir = path.resolve(process.cwd(), '.data');
+  try {
+    if (!fs.existsSync(localDir)) {
+      fs.mkdirSync(localDir, { recursive: true });
+    }
+    return localDir;
+  } catch {
+    return path.join('/tmp', 'aura-data');
+  }
+}
+
+const DATA_DIR = resolveWritableDataDir();
 const DATA_FILE = path.join(DATA_DIR, 'aura-store.json');
+
+const SESSION_SECRET =
+  process.env.AURA_SESSION_SECRET ||
+  process.env.GEMINI_API_KEY ||
+  'aura-signature-serverless-hmac-key-2026';
+
+function signUserProfileToken(user: UserProfile): string {
+  const payload = Buffer.from(JSON.stringify(user), 'utf-8').toString('base64url');
+  const sig = crypto
+    .createHmac('sha256', SESSION_SECRET)
+    .update(payload)
+    .digest('base64url');
+  return `aura1.${payload}.${sig}`;
+}
+
+function verifyUserProfileToken(token: string): UserProfile | null {
+  if (!token.startsWith('aura1.')) return null;
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  const [, payload, sig] = parts;
+  const expectedSig = crypto
+    .createHmac('sha256', SESSION_SECRET)
+    .update(payload)
+    .digest('base64url');
+  if (sig !== expectedSig) return null;
+  try {
+    const decoded = JSON.parse(
+      Buffer.from(payload, 'base64url').toString('utf-8')
+    ) as UserProfile;
+    if (!decoded || !decoded.id || !decoded.email) return null;
+    return decoded;
+  } catch {
+    return null;
+  }
+}
 
 function hashPassword(password: string, salt: string): string {
   return crypto.scryptSync(password, salt, 64).toString('hex');
@@ -95,6 +150,7 @@ const LEGACY_SEED_IDS = new Set([
 
 class AuraDataStore {
   private db: PersistedDatabase;
+  private revokedTokens = new Set<string>();
 
   constructor() {
     this.db = this.loadFromDisk();
@@ -221,8 +277,8 @@ class AuraDataStore {
     }
   }
 
-  private createSession(user: UserProfile): string {
-    const token = crypto.randomBytes(32).toString('hex');
+  createSession(user: UserProfile): string {
+    const token = signUserProfileToken(user);
     this.db.sessions[token] = {
       token,
       userId: user.id,
@@ -235,20 +291,46 @@ class AuraDataStore {
 
   // --- Authentication & Sessions ---
   getUserByToken(token?: string | null): UserProfile | null {
-    if (!token) return null;
+    if (!token || this.revokedTokens.has(token)) return null;
+
     const session = this.db.sessions[token];
-    if (!session) return null;
-    const record = this.db.users[session.email];
-    if (!record || record.profile.id !== session.userId) {
-      delete this.db.sessions[token];
-      this.saveToDisk();
-      return null;
+    if (session) {
+      const record = this.db.users[session.email];
+      if (record && record.profile.id === session.userId) {
+        return record.profile;
+      }
     }
-    return record.profile;
+
+    // Serverless fallback: verify stateless HMAC-signed session token on cold start
+    const verifiedProfile = verifyUserProfileToken(token);
+    if (verifiedProfile) {
+      const emailKey = verifiedProfile.email.trim().toLowerCase();
+      if (!this.db.users[emailKey]) {
+        const salt = crypto.randomBytes(16).toString('hex');
+        this.db.users[emailKey] = {
+          profile: verifiedProfile,
+          passwordSalt: salt,
+          passwordHash: hashPassword(crypto.randomBytes(24).toString('hex'), salt),
+        };
+      }
+      if (!this.db.usageByUser[verifiedProfile.id]) {
+        this.db.usageByUser[verifiedProfile.id] = createEmptyUsage();
+      }
+      this.db.sessions[token] = {
+        token,
+        userId: verifiedProfile.id,
+        email: emailKey,
+        createdAt: new Date().toISOString(),
+      };
+      return this.db.users[emailKey].profile;
+    }
+
+    return null;
   }
 
   revokeSession(token?: string | null): void {
     if (!token) return;
+    this.revokedTokens.add(token);
     if (this.db.sessions[token]) {
       delete this.db.sessions[token];
       this.saveToDisk();
