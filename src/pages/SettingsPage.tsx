@@ -184,6 +184,9 @@ export const SettingsPage: React.FC = () => {
                 <option value="search">Mode 2 — Recherche Web sourcée</option>
                 <option value="code">Mode 3 — Code & Aperçu Web</option>
                 <option value="create">Mode 4 — Aura Studio (Création & Idéation)</option>
+                <option value="image">Mode 5 — Génération d’Image HD</option>
+                <option value="video">Mode 6 — Génération Vidéo & Motion</option>
+                <option value="slides">Mode 7 — Présentations Slides 16:9</option>
               </select>
             </div>
 
@@ -210,7 +213,10 @@ export const SettingsPage: React.FC = () => {
           </div>
         </form>
 
-        {/* Transparent Functional Matrix & Documentation (Section 14 & 16) */}
+        {/* Supabase PostgreSQL Persistence & Vercel Cloud Sync Panel */}
+        <SupabasePersistencePanel description={persistenceInfo.description} />
+
+        {/* Transparent Functional Matrix & Documentation */}
         <div className="rounded-2xl bg-[#FFFDF8] dark:bg-[#152023] border border-[#E8E6DE] dark:border-[#243337] p-6 space-y-4">
           <h3 className="font-display font-bold text-base text-[#14282D] dark:text-[#F3F2EC]">
             État des fonctionnalités & Architecture Technique
@@ -224,20 +230,19 @@ export const SettingsPage: React.FC = () => {
               </div>
               <ul className="space-y-1.5 text-[#77817F] list-disc pl-4">
                 <li>
-                  <strong>4 Modes IA via Google Gemini 3.8 Flash</strong> côté serveur (Chat,
-                  Recherche Web avec Google Search Grounding et citations réelles, Code avec aperçu
-                  HTML/CSS/JS en direct, Aura Studio).
+                  <strong>5 Modèles Natifs Aura + Multimédia</strong> côté serveur (Chat,
+                  Recherche Web sourcée, Code Web, Image HD, Vidéo Veo/Motion, Slides 16:9).
                 </li>
                 <li>
-                  <strong>Persistance serveur automatique</strong> des conversations, projets,
-                  réponses sauvegardées et fichiers joints ({persistenceInfo.description}).
+                  <strong>Persistance hybride Supabase PostgreSQL + Serveur</strong> des
+                  conversations, projets, réponses sauvegardées et fichiers joints ({persistenceInfo.description}).
                 </li>
                 <li>
                   <strong>Contrôle serveur des quotas</strong> et estimation des tokens consommés.
                 </li>
                 <li>
-                  <strong>Authentification locale sécurisée</strong> avec hachage cryptographique{' '}
-                  <code>scrypt</code> côté serveur.
+                  <strong>Authentification sécurisée</strong> avec hachage cryptographique{' '}
+                  <code>scrypt</code> et jetons signés HMAC compatibles Vercel Serverless.
                 </li>
               </ul>
             </div>
@@ -245,23 +250,22 @@ export const SettingsPage: React.FC = () => {
             <div className="p-4 rounded-xl bg-[#FBFAF5] dark:bg-[#111B1E] border border-[#E8E6DE] dark:border-[#243337] space-y-2">
               <div className="font-semibold text-[#FF790D] flex items-center gap-2">
                 <i className="fa-solid fa-sliders" />
-                <span>Extensions configurables via variables d’environnement</span>
+                <span>Variables d’environnement (Local & Vercel)</span>
               </div>
               <ul className="space-y-1.5 text-[#77817F] list-disc pl-4">
                 <li>
-                  <code>OPENAI_API_KEY</code> : active l’adaptateur serveur OpenAI (GPT-4o) dans le
-                  registre multi-fournisseurs.
+                  <code>SUPABASE_URL</code> & <code>SUPABASE_SERVICE_ROLE_KEY</code> (ou{' '}
+                  <code>SUPABASE_ANON_KEY</code>) : active la synchronisation PostgreSQL Supabase.
                 </li>
                 <li>
-                  <code>ANTHROPIC_API_KEY</code> : active l’adaptateur serveur Anthropic Claude.
+                  <code>OPENAI_API_KEY</code> / <code>OPENROUTER_API_KEY</code> : active GPT-4o mini
+                  et o3-mini en appel direct.
                 </li>
                 <li>
-                  <code>SUPABASE_URL</code> & <code>SUPABASE_ANON_KEY</code> : bascule la
-                  persistance JSON locale vers une base PostgreSQL Supabase externe.
+                  <code>ANTHROPIC_API_KEY</code> : active Claude 3.5 Haiku et Claude 3.7 Sonnet.
                 </li>
                 <li>
-                  <code>AURA_DAILY_QUOTA</code> : définit le plafond quotidien par défaut au
-                  démarrage du serveur.
+                  <code>AURA_DAILY_QUOTA</code> : définit le plafond quotidien par défaut.
                 </li>
               </ul>
             </div>
@@ -271,3 +275,143 @@ export const SettingsPage: React.FC = () => {
     </WorkspaceLayout>
   );
 };
+
+const SUPABASE_SQL_SCHEMA = `-- AURA WORKSPACE — SCHÉMA POSTGRESQL SUPABASE
+CREATE TABLE IF NOT EXISTS public.aura_state_snapshots (
+  id TEXT PRIMARY KEY DEFAULT 'global_workspace_v2',
+  payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.aura_users (
+  id TEXT PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  name TEXT NOT NULL,
+  role TEXT DEFAULT 'Membre Aura',
+  organization TEXT DEFAULT '',
+  location TEXT DEFAULT '',
+  plan TEXT DEFAULT 'free',
+  auth_provider TEXT DEFAULT 'email',
+  onboarding_completed BOOLEAN DEFAULT FALSE,
+  preferences JSONB DEFAULT '{}'::jsonb,
+  password_salt TEXT NOT NULL,
+  password_hash TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.aura_projects (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  description TEXT DEFAULT '',
+  color TEXT DEFAULT '#078348',
+  icon TEXT DEFAULT 'fa-regular fa-folder-open',
+  system_context TEXT DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.aura_conversations (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  project_id TEXT,
+  title TEXT NOT NULL,
+  mode TEXT NOT NULL DEFAULT 'chat',
+  messages JSONB NOT NULL DEFAULT '[]'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);`;
+
+const SupabasePersistencePanel: React.FC<{ description: string }> = ({ description }) => {
+  const [copiedSql, setCopiedSql] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<string | null>(null);
+
+  const handleCopySql = () => {
+    navigator.clipboard.writeText(SUPABASE_SQL_SCHEMA);
+    setCopiedSql(true);
+    setTimeout(() => setCopiedSql(false), 2500);
+  };
+
+  const handleTestSync = async () => {
+    setSyncing(true);
+    setSyncStatus(null);
+    try {
+      const token = localStorage.getItem('aura_session_token_v2');
+      const res = await fetch('/api/supabase/sync', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setSyncStatus('Synchronisation Supabase PostgreSQL réussie.');
+      } else {
+        setSyncStatus(
+          data.health?.message ||
+            data.error ||
+            'Ajoutez SUPABASE_URL et SUPABASE_SERVICE_ROLE_KEY dans vos variables d’environnement.'
+        );
+      }
+    } catch {
+      setSyncStatus('Impossible de contacter le serveur pour le test Supabase.');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  return (
+    <div className="rounded-2xl bg-[#FFFDF8] dark:bg-[#152023] border border-[#E8E6DE] dark:border-[#243337] p-6 space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <span className="w-9 h-9 rounded-xl bg-[#EAF1E8] dark:bg-[#182E24] text-[#078348] dark:text-[#8CCB4A] flex items-center justify-center">
+            <i className="fa-solid fa-database text-sm" />
+          </span>
+          <div>
+            <h3 className="font-display font-bold text-base text-[#14282D] dark:text-[#F3F2EC]">
+              Persistance Cloud Supabase PostgreSQL
+            </h3>
+            <p className="text-xs text-[#77817F]">{description}</p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={handleCopySql}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#FBFAF5] dark:bg-[#1B292D] border border-[#E8E6DE] dark:border-[#243337] hover:border-[#078348] text-xs font-semibold text-[#14282D] dark:text-[#F3F2EC] transition-colors cursor-pointer"
+          >
+            <i
+              className={`fa-solid ${
+                copiedSql ? 'fa-check text-[#078348]' : 'fa-copy text-[#77817F]'
+              }`}
+            />
+            <span>
+              {copiedSql ? 'Script SQL copié !' : 'Copier le script SQL Supabase'}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            disabled={syncing}
+            onClick={handleTestSync}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#EAF1E8] dark:bg-[#182E24] text-[#078348] dark:text-[#8CCB4A] text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50"
+          >
+            <i className={`fa-solid ${syncing ? 'fa-spinner fa-spin' : 'fa-rotate'}`} />
+            <span>Tester & Synchroniser Supabase</span>
+          </button>
+        </div>
+      </div>
+
+      {syncStatus && (
+        <div className="px-3.5 py-2.5 rounded-xl bg-[#FBFAF5] dark:bg-[#111B1E] border border-[#E8E6DE] dark:border-[#243337] text-xs text-[#14282D] dark:text-[#F3F2EC]">
+          {syncStatus}
+        </div>
+      )}
+    </div>
+  );
+};
+

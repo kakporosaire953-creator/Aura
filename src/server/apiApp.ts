@@ -23,13 +23,22 @@ export function createApiApp() {
 
   app.use(express.json({ limit: '15mb' }));
 
+  // Ensure Supabase PostgreSQL state is hydrated on serverless cold starts
+  app.use(async (_req, _res, next) => {
+    try {
+      await dataStore.ensureHydrated();
+    } catch {
+      // non-blocking fallback to local/stateless store
+    }
+    next();
+  });
+
   // --- API: System & Multi-Provider Status ---
-  app.get('/api/status', (req, res) => {
+  app.get('/api/status', async (req, res) => {
     const user = getAuthenticatedUser(req);
     const providers = aiRegistry.getAllStatuses();
-    const supabaseConfigured = Boolean(
-      process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY
-    );
+    const sbHealth = await dataStore.getSupabaseDiagnostics();
+    const supabaseConfigured = sbHealth.configured;
     res.json({
       providers,
       persistence: {
@@ -39,13 +48,34 @@ export function createApiApp() {
           ? 'vercel-serverless-store'
           : 'server-json-store',
         supabaseConfigured,
-        description: supabaseConfigured
-          ? 'Connecté à Supabase PostgreSQL & Auth'
+        supabaseConnected: sbHealth.connected,
+        supabaseTablesReady: sbHealth.tablesReady,
+        description: sbHealth.configured
+          ? sbHealth.message
           : process.env.VERCEL
-          ? 'Fonction Serverless Vercel active avec jetons de session signés HMAC.'
-          : 'Persistance serveur isolée par utilisateur (.data/aura-store.json).',
+          ? 'Fonction Serverless Vercel active (ajoutez SUPABASE_URL & SUPABASE_SERVICE_ROLE_KEY pour la persistance PostgreSQL).'
+          : 'Persistance locale active (.data/aura-store.json). Prêt pour Supabase PostgreSQL.',
       },
       usage: dataStore.getUsage(user?.id),
+    });
+  });
+
+  app.get('/api/supabase/status', async (_req, res) => {
+    const health = await dataStore.getSupabaseDiagnostics();
+    res.json(health);
+  });
+
+  app.post('/api/supabase/sync', async (req, res) => {
+    const user = getAuthenticatedUser(req);
+    if (!user) {
+      res.status(401).json({ error: 'Authentification requise.' });
+      return;
+    }
+    const result = await dataStore.forceSyncToSupabase();
+    const health = await dataStore.getSupabaseDiagnostics();
+    res.json({
+      ...result,
+      health,
     });
   });
 

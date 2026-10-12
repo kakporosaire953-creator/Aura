@@ -217,6 +217,21 @@ function authHeaders(extra: Record<string, string> = {}): Record<string, string>
   return headers;
 }
 
+function dedupeConversations(list: Conversation[]): Conversation[] {
+  const seen = new Map<string, Conversation>();
+  for (const conv of list) {
+    if (!conv || !conv.id) continue;
+    const prev = seen.get(conv.id);
+    if (
+      !prev ||
+      (conv.messages?.length || 0) >= (prev.messages?.length || 0)
+    ) {
+      seen.set(conv.id, conv);
+    }
+  }
+  return Array.from(seen.values());
+}
+
 const AuraContext = createContext<AuraContextValue | undefined>(undefined);
 
 export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -345,7 +360,7 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (convRes.ok) {
         const convData = await convRes.json();
-        setConversations(convData.conversations || []);
+        setConversations(dedupeConversations(convData.conversations || []));
       } else {
         setConversations([]);
       }
@@ -494,10 +509,12 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
         );
 
         const updatedConv: Conversation = result.conversation;
-        setConversations((prev) => {
-          const filtered = prev.filter((c) => c.id !== updatedConv.id);
-          return [updatedConv, ...filtered];
-        });
+        setConversations((prev) =>
+          dedupeConversations([
+            updatedConv,
+            ...prev.filter((c) => c.id !== updatedConv.id),
+          ])
+        );
         if (result.usage) {
           setUsage(result.usage);
         }

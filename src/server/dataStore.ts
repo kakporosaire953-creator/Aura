@@ -12,6 +12,12 @@ import {
   UsageMetrics,
   UserProfile,
 } from '../shared/types.ts';
+import {
+  checkSupabaseHealth,
+  getSupabaseConfig,
+  loadDatabaseFromSupabase,
+  syncDatabaseToSupabase,
+} from './supabaseClient.ts';
 
 interface StoredUserRecord {
   profile: UserProfile;
@@ -154,9 +160,108 @@ const LEGACY_SEED_IDS = new Set([
 class AuraDataStore {
   private db: PersistedDatabase;
   private revokedTokens = new Set<string>();
+  private hydratedFromSupabase = false;
+  private hydrationPromise: Promise<void> | null = null;
 
   constructor() {
     this.db = this.loadFromDisk();
+    if (getSupabaseConfig().configured) {
+      void this.ensureHydrated();
+    }
+  }
+
+  async ensureHydrated(): Promise<void> {
+    if (this.hydratedFromSupabase || !getSupabaseConfig().configured) {
+      return;
+    }
+    if (this.hydrationPromise) {
+      return this.hydrationPromise;
+    }
+    this.hydrationPromise = (async () => {
+      try {
+        const remote = await loadDatabaseFromSupabase();
+        if (remote) {
+          this.mergeRemoteState(remote);
+        }
+        this.hydratedFromSupabase = true;
+      } catch (err) {
+        console.warn('Hydratation Supabase non disponible:', err);
+      } finally {
+        this.hydrationPromise = null;
+      }
+    })();
+    return this.hydrationPromise;
+  }
+
+  private mergeRemoteState(remote: Partial<PersistedDatabase>): void {
+    if (remote.users && typeof remote.users === 'object') {
+      for (const [email, rec] of Object.entries(remote.users)) {
+        const cleanEmail = email.trim().toLowerCase();
+        if (rec && rec.profile && !LEGACY_DEMO_EMAILS.has(cleanEmail)) {
+          this.db.users[cleanEmail] = rec;
+        }
+      }
+    }
+    if (remote.sessions && typeof remote.sessions === 'object') {
+      this.db.sessions = { ...remote.sessions, ...this.db.sessions };
+    }
+    if (Array.isArray(remote.conversations)) {
+      const merged = new Map<string, Conversation>();
+      for (const c of [...remote.conversations, ...this.db.conversations]) {
+        if (!c || !c.id || LEGACY_SEED_IDS.has(c.id)) continue;
+        const prev = merged.get(c.id);
+        if (
+          !prev ||
+          (c.messages?.length || 0) >= (prev.messages?.length || 0)
+        ) {
+          merged.set(c.id, c);
+        }
+      }
+      this.db.conversations = Array.from(merged.values());
+    }
+    if (Array.isArray(remote.projects)) {
+      const merged = new Map<string, AuraProject>();
+      for (const p of [...remote.projects, ...this.db.projects]) {
+        if (p && p.id && !LEGACY_SEED_IDS.has(p.id)) {
+          merged.set(p.id, p);
+        }
+      }
+      this.db.projects = Array.from(merged.values());
+    }
+    if (Array.isArray(remote.missions)) {
+      const merged = new Map<string, AuraMission>();
+      for (const m of [...remote.missions, ...this.db.missions]) {
+        if (m && m.id) {
+          merged.set(m.id, m);
+        }
+      }
+      this.db.missions = Array.from(merged.values());
+    }
+    if (Array.isArray(remote.library)) {
+      const merged = new Map<string, LibraryItem>();
+      for (const l of [...remote.library, ...this.db.library]) {
+        if (l && l.id && !LEGACY_SEED_IDS.has(l.id)) {
+          merged.set(l.id, l);
+        }
+      }
+      this.db.library = Array.from(merged.values());
+    }
+    if (remote.usageByUser && typeof remote.usageByUser === 'object') {
+      this.db.usageByUser = {
+        ...remote.usageByUser,
+        ...this.db.usageByUser,
+      };
+    }
+    this.saveToDisk(this.db, false);
+  }
+
+  async forceSyncToSupabase(): Promise<{ ok: boolean; error?: string }> {
+    await this.ensureHydrated();
+    return syncDatabaseToSupabase(this.db);
+  }
+
+  async getSupabaseDiagnostics() {
+    return checkSupabaseHealth();
   }
 
   private loadFromDisk(): PersistedDatabase {
@@ -202,7 +307,7 @@ class AuraDataStore {
           }
         }
 
-        const cleanConversations = Array.isArray(parsed.conversations)
+        const rawConversations = Array.isArray(parsed.conversations)
           ? parsed.conversations.filter(
               (c) =>
                 c &&
@@ -211,6 +316,18 @@ class AuraDataStore {
                 !LEGACY_SEED_IDS.has(c.id)
             )
           : [];
+
+        const convMap = new Map<string, Conversation>();
+        for (const c of rawConversations) {
+          const existing = convMap.get(c.id);
+          if (
+            !existing ||
+            (c.messages?.length || 0) > (existing.messages?.length || 0)
+          ) {
+            convMap.set(c.id, c);
+          }
+        }
+        const cleanConversations = Array.from(convMap.values());
 
         const cleanProjects = Array.isArray(parsed.projects)
           ? parsed.projects.filter(
@@ -257,7 +374,7 @@ class AuraDataStore {
           usageByUser: cleanUsageByUser,
         };
 
-        this.saveToDisk(sanitized);
+        this.saveToDisk(sanitized, false);
         return sanitized;
       }
     } catch (err) {
@@ -265,11 +382,14 @@ class AuraDataStore {
     }
 
     const clean = createCleanDatabase();
-    this.saveToDisk(clean);
+    this.saveToDisk(clean, false);
     return clean;
   }
 
-  private saveToDisk(data: PersistedDatabase = this.db): void {
+  private saveToDisk(
+    data: PersistedDatabase = this.db,
+    syncRemote = true
+  ): void {
     try {
       if (!fs.existsSync(DATA_DIR)) {
         fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -277,6 +397,10 @@ class AuraDataStore {
       fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8');
     } catch (err) {
       console.error('Erreur lors de la sauvegarde locale Aura:', err);
+    }
+
+    if (syncRemote && getSupabaseConfig().configured) {
+      void syncDatabaseToSupabase(data);
     }
   }
 
@@ -543,11 +667,21 @@ class AuraDataStore {
 
   // --- Conversations (Scoped per userId) ---
   getConversations(userId: string): Conversation[] {
-    return this.db.conversations
-      .filter((c) => c.userId === userId)
-      .sort(
-        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-      );
+    const map = new Map<string, Conversation>();
+    for (const c of this.db.conversations) {
+      if (c.userId !== userId) continue;
+      const existing = map.get(c.id);
+      if (
+        !existing ||
+        (c.messages?.length || 0) > (existing.messages?.length || 0) ||
+        new Date(c.updatedAt).getTime() > new Date(existing.updatedAt).getTime()
+      ) {
+        map.set(c.id, c);
+      }
+    }
+    return Array.from(map.values()).sort(
+      (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    );
   }
 
   getConversationById(userId: string, id: string): Conversation | undefined {
@@ -563,6 +697,12 @@ class AuraDataStore {
       projectId?: string;
     }
   ): Conversation {
+    if (params.id) {
+      const existing = this.getConversationById(userId, params.id);
+      if (existing) {
+        return existing;
+      }
+    }
     const now = new Date().toISOString();
     const conv: Conversation = {
       id:
@@ -576,7 +716,10 @@ class AuraDataStore {
       updatedAt: now,
       messages: [],
     };
-    this.db.conversations.unshift(conv);
+    this.db.conversations = [
+      conv,
+      ...this.db.conversations.filter((c) => c.id !== conv.id),
+    ];
     this.saveToDisk();
     return conv;
   }
@@ -595,11 +738,21 @@ class AuraDataStore {
         mode: messages[0]?.mode || 'chat',
       });
     }
-    conv.messages.push(...messages);
+    const existingMsgIds = new Set(conv.messages.map((m) => m.id));
+    for (const msg of messages) {
+      if (!existingMsgIds.has(msg.id)) {
+        conv.messages.push(msg);
+        existingMsgIds.add(msg.id);
+      }
+    }
     if (newTitle && conv.messages.length <= 2) {
       conv.title = newTitle;
     }
     conv.updatedAt = new Date().toISOString();
+    this.db.conversations = [
+      conv,
+      ...this.db.conversations.filter((c) => c.id !== conv!.id),
+    ];
     this.saveToDisk();
     return conv;
   }
