@@ -493,6 +493,26 @@ export interface OnboardingData {
   completedAt?: string;
 }
 
+export * from './plans.ts';
+import {
+  PlanId,
+  UsageCategory,
+  UsageLedgerEntry,
+} from './plans.ts';
+
+export interface UserConsentRecord {
+  termsVersion: string;
+  privacyVersion: string;
+  consentedAt: string;
+  marketingConsent?: boolean;
+}
+
+export interface UserNotificationPreferences {
+  securityAlerts: boolean;
+  productUpdates: boolean;
+  weeklyDigest: boolean;
+}
+
 export interface UserProfile {
   id: string;
   name: string;
@@ -501,15 +521,20 @@ export interface UserProfile {
   organization?: string;
   location?: string;
   avatarUrl?: string;
-  plan: 'free' | 'pro';
+  plan: PlanId;
   authProvider?: 'email' | 'google' | 'github';
   onboardingCompleted: boolean;
   onboarding?: OnboardingData;
+  createdAt?: string;
+  consents?: UserConsentRecord;
   preferences: {
     language: AuraLanguage;
     theme: AuraTheme;
     defaultMode: AuraMode;
     defaultProvider: string;
+    reducedMotion?: boolean;
+    customInstructions?: string;
+    notifications?: UserNotificationPreferences;
   };
 }
 
@@ -547,6 +572,21 @@ export interface UsageMetrics {
     tokens: number;
     status: 'success' | 'error' | 'quota_exceeded';
   }[];
+  // Enhanced Monthly Quota & Freemium Architecture fields
+  planId: PlanId;
+  monthlyUnitsUsed: number;
+  monthlyUnitsLimit: number;
+  webSearchesUsed: number;
+  webSearchesLimit: number;
+  siteCreationsUsed: number;
+  siteCreationsLimit: number;
+  siteModificationsUsed: number;
+  siteModificationsLimit: number;
+  activeProjectsCount: number;
+  maxProjectsLimit: number;
+  periodRenewalDate: string;
+  byCategory: Record<UsageCategory, number>;
+  recentLedger: UsageLedgerEntry[];
 }
 
 export const SendMessagePayloadSchema = z.object({

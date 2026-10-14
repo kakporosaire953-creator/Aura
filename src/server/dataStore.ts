@@ -13,6 +13,15 @@ import {
   UserProfile,
 } from '../shared/types.ts';
 import {
+  AURA_PLANS,
+  CATEGORY_UNIT_COSTS,
+  PlanDefinition,
+  PlanId,
+  UsageCategory,
+  UsageLedgerEntry,
+  UserSubscriptionState,
+} from '../shared/plans.ts';
+import {
   checkSupabaseHealth,
   getSupabaseConfig,
   loadDatabaseFromSupabase,
@@ -40,6 +49,8 @@ interface PersistedDatabase {
   missions: AuraMission[];
   library: LibraryItem[];
   usageByUser: Record<string, UsageMetrics>;
+  subscriptions: Record<string, UserSubscriptionState>;
+  usageLedger: UsageLedgerEntry[];
 }
 
 function resolveWritableDataDir(): string {
@@ -67,7 +78,6 @@ const DATA_FILE = path.join(DATA_DIR, 'aura-store.json');
 
 const SESSION_SECRET =
   process.env.AURA_SESSION_SECRET ||
-  process.env.GEMINI_API_KEY ||
   'aura-signature-serverless-hmac-key-2026';
 
 function signUserProfileToken(user: UserProfile): string {
@@ -108,12 +118,18 @@ function getTodayDateString(): string {
   return new Date().toISOString().split('T')[0];
 }
 
-function createEmptyUsage(): UsageMetrics {
-  const dailyLimit = Number(process.env.AURA_DAILY_QUOTA) || 50;
+function getRenewalDateString(): string {
+  const d = new Date();
+  const nextMonth = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1, 0, 0, 0));
+  return nextMonth.toISOString();
+}
+
+function createEmptyUsage(planId: PlanId = 'free', activeProjectsCount = 0): UsageMetrics {
+  const plan = AURA_PLANS[planId] || AURA_PLANS.free;
   return {
     date: getTodayDateString(),
     requestsUsed: 0,
-    dailyLimit,
+    dailyLimit: 50,
     estimatedInputTokens: 0,
     estimatedOutputTokens: 0,
     byMode: {
@@ -127,6 +143,27 @@ function createEmptyUsage(): UsageMetrics {
     },
     byModel: {},
     recentLogs: [],
+    planId,
+    monthlyUnitsUsed: 0,
+    monthlyUnitsLimit: plan.limits.monthlyAIUnits,
+    webSearchesUsed: 0,
+    webSearchesLimit: plan.limits.monthlyWebSearches,
+    siteCreationsUsed: 0,
+    siteCreationsLimit: plan.limits.monthlySiteCreations,
+    siteModificationsUsed: 0,
+    siteModificationsLimit: plan.limits.monthlySiteModifications,
+    activeProjectsCount,
+    maxProjectsLimit: plan.limits.maxProjects,
+    periodRenewalDate: getRenewalDateString(),
+    byCategory: {
+      chat: 0,
+      search: 0,
+      studio_creation: 0,
+      studio_modification: 0,
+      slides: 0,
+      media: 0,
+    },
+    recentLedger: [],
   };
 }
 
@@ -139,6 +176,8 @@ function createCleanDatabase(): PersistedDatabase {
     missions: [],
     library: [],
     usageByUser: {},
+    subscriptions: {},
+    usageLedger: [],
   };
 }
 
@@ -162,6 +201,19 @@ class AuraDataStore {
   private revokedTokens = new Set<string>();
   private hydratedFromSupabase = false;
   private hydrationPromise: Promise<void> | null = null;
+  private activeUserGenerations = new Set<string>();
+  private activeReservations = new Map<
+    string,
+    {
+      userId: string;
+      operationId: string;
+      category: UsageCategory;
+      units: number;
+      modelId: string;
+      providerId: string;
+      createdAt: number;
+    }
+  >();
 
   constructor() {
     this.db = this.loadFromDisk();
@@ -372,6 +424,13 @@ class AuraDataStore {
           missions: cleanMissions,
           library: cleanLibrary,
           usageByUser: cleanUsageByUser,
+          subscriptions:
+            parsed.subscriptions && typeof parsed.subscriptions === 'object'
+              ? parsed.subscriptions
+              : {},
+          usageLedger: Array.isArray(parsed.usageLedger)
+            ? parsed.usageLedger
+            : [],
         };
 
         this.saveToDisk(sanitized, false);
@@ -531,7 +590,13 @@ class AuraDataStore {
   registerUser(
     name: string,
     email: string,
-    password: string
+    password: string,
+    consents?: {
+      termsVersion: string;
+      privacyVersion: string;
+      consentedAt: string;
+      marketingConsent?: boolean;
+    }
   ): { user: UserProfile; token: string } {
     const cleanEmail = email.trim().toLowerCase();
     if (this.db.users[cleanEmail]) {
@@ -540,7 +605,8 @@ class AuraDataStore {
 
     const salt = crypto.randomBytes(16).toString('hex');
     const hash = hashPassword(password, salt);
-    const userId = `user-${Date.now()}-${ crypto.randomBytes(4).toString('hex')}`;
+    const userId = `user-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+    const nowIso = new Date().toISOString();
 
     const profile: UserProfile = {
       id: userId,
@@ -552,11 +618,24 @@ class AuraDataStore {
       plan: 'free',
       authProvider: 'email',
       onboardingCompleted: false,
+      createdAt: nowIso,
+      consents: consents || {
+        termsVersion: '2026-v1.0',
+        privacyVersion: '2026-v1.0',
+        consentedAt: nowIso,
+        marketingConsent: false,
+      },
       preferences: {
         language: 'fr',
         theme: 'light',
         defaultMode: 'chat',
         defaultProvider: 'gemini',
+        reducedMotion: false,
+        notifications: {
+          securityAlerts: true,
+          productUpdates: true,
+          weeklyDigest: false,
+        },
       },
     };
 
@@ -941,6 +1020,14 @@ class AuraDataStore {
     userId: string,
     project: Omit<AuraProject, 'id' | 'userId' | 'createdAt' | 'updatedAt'>
   ): AuraProject {
+    const existing = this.getProjects(userId);
+    const plan = this.getUserPlan(userId);
+    if (existing.length >= plan.limits.maxProjects) {
+      throw new Error(
+        `Limite de projets atteinte (${plan.limits.maxProjects} max sur l’offre ${plan.name}). Archivez ou supprimez un projet pour en créer un nouveau.`
+      );
+    }
+
     const now = new Date().toISOString();
     const created: AuraProject = {
       ...project,
@@ -1001,36 +1088,466 @@ class AuraDataStore {
     return this.db.missions.length < before;
   }
 
-  // --- Usage & Quotas (Scoped per userId) ---
+  // --- Subscriptions & Plans (Per user) ---
+  getUserSubscription(userId: string): UserSubscriptionState {
+    if (!this.db.subscriptions) {
+      this.db.subscriptions = {};
+    }
+    if (!this.db.subscriptions[userId]) {
+      const existingUser = Object.values(this.db.users).find(
+        (u) => u.profile.id === userId
+      );
+      const planId: PlanId =
+        existingUser?.profile.plan === 'plus'
+          ? 'plus'
+          : existingUser?.profile.plan === 'pro'
+          ? 'pro'
+          : 'free';
+
+      const now = new Date();
+      const periodStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
+      const periodEnd = getRenewalDateString();
+
+      this.db.subscriptions[userId] = {
+        userId,
+        planId,
+        status: 'active',
+        currentPeriodStart: periodStart,
+        currentPeriodEnd: periodEnd,
+        cancelAtPeriodEnd: false,
+        paymentProvider: 'none',
+        updatedAt: now.toISOString(),
+      };
+      this.saveToDisk();
+    }
+    return this.db.subscriptions[userId];
+  }
+
+  getUserPlan(userId: string): PlanDefinition {
+    const sub = this.getUserSubscription(userId);
+    return AURA_PLANS[sub.planId] || AURA_PLANS.free;
+  }
+
+  updateUserSubscription(
+    userId: string,
+    updates: Partial<UserSubscriptionState>
+  ): UserSubscriptionState {
+    const sub = this.getUserSubscription(userId);
+    const updated: UserSubscriptionState = {
+      ...sub,
+      ...updates,
+      userId,
+      updatedAt: new Date().toISOString(),
+    };
+    this.db.subscriptions[userId] = updated;
+
+    // Keep user profile plan in sync
+    const userRecord = Object.values(this.db.users).find(
+      (u) => u.profile.id === userId
+    );
+    if (userRecord && updates.planId) {
+      userRecord.profile.plan = updates.planId;
+    }
+
+    // Refresh usage metrics limits for the new plan
+    const usage = this.db.usageByUser[userId];
+    if (usage && updates.planId) {
+      const plan = AURA_PLANS[updates.planId];
+      if (plan) {
+        usage.planId = plan.id;
+        usage.monthlyUnitsLimit = plan.limits.monthlyAIUnits;
+        usage.webSearchesLimit = plan.limits.monthlyWebSearches;
+        usage.siteCreationsLimit = plan.limits.monthlySiteCreations;
+        usage.siteModificationsLimit = plan.limits.monthlySiteModifications;
+        usage.maxProjectsLimit = plan.limits.maxProjects;
+      }
+    }
+
+    this.saveToDisk();
+    return updated;
+  }
+
+  // --- Usage, Monthly Quotas & Audit Ledger (Scoped per userId) ---
   getUsage(userId?: string): UsageMetrics {
     if (!userId) {
       return createEmptyUsage();
     }
+    const sub = this.getUserSubscription(userId);
+    const plan = AURA_PLANS[sub.planId] || AURA_PLANS.free;
+    const activeProjectsCount = this.getProjects(userId).length;
+
     if (!this.db.usageByUser[userId]) {
-      this.db.usageByUser[userId] = createEmptyUsage();
+      this.db.usageByUser[userId] = createEmptyUsage(plan.id, activeProjectsCount);
     }
     const usage = this.db.usageByUser[userId];
+
+    // Ensure all new schema fields exist on older records
+    usage.planId = plan.id;
+    usage.monthlyUnitsLimit = plan.limits.monthlyAIUnits;
+    usage.webSearchesLimit = plan.limits.monthlyWebSearches;
+    usage.siteCreationsLimit = plan.limits.monthlySiteCreations;
+    usage.siteModificationsLimit = plan.limits.monthlySiteModifications;
+    usage.maxProjectsLimit = plan.limits.maxProjects;
+    usage.activeProjectsCount = activeProjectsCount;
+    if (!usage.periodRenewalDate) {
+      usage.periodRenewalDate = getRenewalDateString();
+    }
+    if (!usage.byCategory) {
+      usage.byCategory = {
+        chat: 0,
+        search: 0,
+        studio_creation: 0,
+        studio_modification: 0,
+        slides: 0,
+        media: 0,
+      };
+    }
+    if (!Array.isArray(usage.recentLedger)) {
+      usage.recentLedger = [];
+    }
+
+    // Monthly Period Rollover Check
+    const now = new Date();
+    const renewalTime = new Date(usage.periodRenewalDate).getTime();
+    if (now.getTime() >= renewalTime) {
+      // New billing period starts: reset monthly consumption
+      usage.monthlyUnitsUsed = 0;
+      usage.webSearchesUsed = 0;
+      usage.siteCreationsUsed = 0;
+      usage.siteModificationsUsed = 0;
+      usage.requestsUsed = 0;
+      usage.periodRenewalDate = getRenewalDateString();
+      usage.byCategory = {
+        chat: 0,
+        search: 0,
+        studio_creation: 0,
+        studio_modification: 0,
+        slides: 0,
+        media: 0,
+      };
+      this.saveToDisk();
+    }
+
     const today = getTodayDateString();
     if (usage.date !== today) {
       usage.date = today;
       usage.requestsUsed = 0;
       this.saveToDisk();
     }
+
     return usage;
   }
 
-  canMakeRequest(userId: string): {
+  canMakeRequest(
+    userId: string,
+    category: UsageCategory = 'chat'
+  ): {
     allowed: boolean;
-    remaining: number;
-    limit: number;
+    reason?: string;
+    code?:
+      | 'CONCURRENT_REQUEST_LIMIT'
+      | 'MONTHLY_UNITS_EXCEEDED'
+      | 'WEB_SEARCH_LIMIT_EXCEEDED'
+      | 'SITE_CREATIONS_LIMIT_EXCEEDED'
+      | 'SITE_MODIFICATIONS_LIMIT_EXCEEDED'
+      | 'PROJECT_LIMIT_EXCEEDED';
+    cost: number;
+    remainingUnits: number;
+    monthlyLimit: number;
+    renewalDate: string;
   } {
     const usage = this.getUsage(userId);
-    const remaining = Math.max(0, usage.dailyLimit - usage.requestsUsed);
+    const plan = this.getUserPlan(userId);
+    const cost = CATEGORY_UNIT_COSTS[category] || 1;
+    const remainingUnits = Math.max(0, usage.monthlyUnitsLimit - usage.monthlyUnitsUsed);
+
+    // 1. Concurrency Protection
+    if (this.activeUserGenerations.has(userId)) {
+      return {
+        allowed: false,
+        reason:
+          'Une génération IA est déjà en cours d’exécution sur votre compte. Veuillez patienter jusqu’à la réception de la réponse.',
+        code: 'CONCURRENT_REQUEST_LIMIT',
+        cost,
+        remainingUnits,
+        monthlyLimit: usage.monthlyUnitsLimit,
+        renewalDate: usage.periodRenewalDate,
+      };
+    }
+
+    // 2. Monthly AI Units Quota
+    if (usage.monthlyUnitsUsed + cost > usage.monthlyUnitsLimit) {
+      return {
+        allowed: false,
+        reason: `Quota mensuel d’unités IA atteint (${usage.monthlyUnitsUsed}/${usage.monthlyUnitsLimit} unités sur l’offre ${plan.name}). Vos quotas seront renouvelés le ${new Date(
+          usage.periodRenewalDate
+        ).toLocaleDateString('fr-FR', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        })}.`,
+        code: 'MONTHLY_UNITS_EXCEEDED',
+        cost,
+        remainingUnits,
+        monthlyLimit: usage.monthlyUnitsLimit,
+        renewalDate: usage.periodRenewalDate,
+      };
+    }
+
+    // 3. Category-specific sub-quotas
+    if (category === 'search' && usage.webSearchesUsed >= usage.webSearchesLimit) {
+      return {
+        allowed: false,
+        reason: `Quota mensuel de recherches web atteint (${usage.webSearchesUsed}/${usage.webSearchesLimit} sur l’offre ${plan.name}). Vous pouvez continuer avec le chat classique sans recherche web.`,
+        code: 'WEB_SEARCH_LIMIT_EXCEEDED',
+        cost,
+        remainingUnits,
+        monthlyLimit: usage.monthlyUnitsLimit,
+        renewalDate: usage.periodRenewalDate,
+      };
+    }
+
+    if (
+      category === 'studio_creation' &&
+      usage.siteCreationsUsed >= usage.siteCreationsLimit
+    ) {
+      return {
+        allowed: false,
+        reason: `Quota mensuel de créations de sites web atteint (${usage.siteCreationsUsed}/${usage.siteCreationsLimit} sur l’offre ${plan.name}). Vous pouvez continuer à modifier et itérer sur vos projets déjà créés.`,
+        code: 'SITE_CREATIONS_LIMIT_EXCEEDED',
+        cost,
+        remainingUnits,
+        monthlyLimit: usage.monthlyUnitsLimit,
+        renewalDate: usage.periodRenewalDate,
+      };
+    }
+
+    if (
+      category === 'studio_modification' &&
+      usage.siteModificationsUsed >= usage.siteModificationsLimit
+    ) {
+      return {
+        allowed: false,
+        reason: `Quota mensuel de modifications de sites web atteint (${usage.siteModificationsUsed}/${usage.siteModificationsLimit} sur l’offre ${plan.name}).`,
+        code: 'SITE_MODIFICATIONS_LIMIT_EXCEEDED',
+        cost,
+        remainingUnits,
+        monthlyLimit: usage.monthlyUnitsLimit,
+        renewalDate: usage.periodRenewalDate,
+      };
+    }
+
     return {
-      allowed: usage.requestsUsed < usage.dailyLimit,
-      remaining,
-      limit: usage.dailyLimit,
+      allowed: true,
+      cost,
+      remainingUnits,
+      monthlyLimit: usage.monthlyUnitsLimit,
+      renewalDate: usage.periodRenewalDate,
     };
+  }
+
+  reserveUsage(
+    userId: string,
+    params: {
+      operationId: string;
+      category: UsageCategory;
+      modelId: string;
+      providerId: string;
+    }
+  ): {
+    allowed: boolean;
+    reservationId?: string;
+    cost: number;
+    reason?: string;
+    code?: string;
+    renewalDate?: string;
+    isIdempotent?: boolean;
+  } {
+    // Idempotency check: if this operationId was already committed, do not double-debit
+    const existing = this.db.usageLedger?.find(
+      (l) => l.operationId === params.operationId && l.userId === userId
+    );
+    if (existing && existing.status === 'committed') {
+      return {
+        allowed: true,
+        cost: 0,
+        isIdempotent: true,
+      };
+    }
+
+    const check = this.canMakeRequest(userId, params.category);
+    if (!check.allowed) {
+      // Record rejected attempt in audit logs
+      const usage = this.getUsage(userId);
+      usage.recentLogs.unshift({
+        id: `log-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        mode: params.category === 'search' ? 'search' : 'chat',
+        modelId: params.modelId,
+        providerId: params.providerId,
+        tokens: 0,
+        status: 'quota_exceeded',
+      });
+      usage.recentLogs = usage.recentLogs.slice(0, 30);
+      this.saveToDisk();
+
+      return {
+        allowed: false,
+        reason: check.reason,
+        code: check.code,
+        cost: check.cost,
+        renewalDate: check.renewalDate,
+      };
+    }
+
+    const reservationId = `res-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    this.activeReservations.set(reservationId, {
+      userId,
+      operationId: params.operationId,
+      category: params.category,
+      units: check.cost,
+      modelId: params.modelId,
+      providerId: params.providerId,
+      createdAt: Date.now(),
+    });
+
+    // Lock user concurrency
+    this.activeUserGenerations.add(userId);
+
+    return {
+      allowed: true,
+      reservationId,
+      cost: check.cost,
+    };
+  }
+
+  commitUsage(
+    reservationId: string,
+    params: {
+      inputTokens: number;
+      outputTokens: number;
+      mode: AuraMode;
+    }
+  ): UsageMetrics {
+    const reservation = this.activeReservations.get(reservationId);
+    if (!reservation) {
+      // If no reservation found, return existing usage without breaking
+      return this.getUsage();
+    }
+
+    const { userId, category, units, modelId, providerId, operationId } = reservation;
+    this.activeReservations.delete(reservationId);
+    this.activeUserGenerations.delete(userId);
+
+    const usage = this.getUsage(userId);
+    usage.monthlyUnitsUsed = Math.min(
+      usage.monthlyUnitsLimit,
+      usage.monthlyUnitsUsed + units
+    );
+    usage.requestsUsed += 1;
+    usage.estimatedInputTokens += params.inputTokens;
+    usage.estimatedOutputTokens += params.outputTokens;
+    usage.byMode[params.mode] = (usage.byMode[params.mode] || 0) + 1;
+    usage.byModel[modelId] = (usage.byModel[modelId] || 0) + 1;
+    usage.byCategory[category] = (usage.byCategory[category] || 0) + 1;
+
+    // Sub-quotas counters
+    if (category === 'search') {
+      usage.webSearchesUsed += 1;
+    } else if (category === 'studio_creation') {
+      usage.siteCreationsUsed += 1;
+    } else if (category === 'studio_modification') {
+      usage.siteModificationsUsed += 1;
+    }
+
+    const ledgerEntry: UsageLedgerEntry = {
+      id: `ledg-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      userId,
+      operationId,
+      category,
+      unitsDeducted: units,
+      modelId,
+      providerId,
+      inputTokens: params.inputTokens,
+      outputTokens: params.outputTokens,
+      timestamp: new Date().toISOString(),
+      status: 'committed',
+    };
+
+    if (!Array.isArray(this.db.usageLedger)) {
+      this.db.usageLedger = [];
+    }
+    this.db.usageLedger.unshift(ledgerEntry);
+    this.db.usageLedger = this.db.usageLedger.slice(0, 150);
+
+    usage.recentLedger.unshift(ledgerEntry);
+    usage.recentLedger = usage.recentLedger.slice(0, 30);
+
+    usage.recentLogs.unshift({
+      id: `log-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      mode: params.mode,
+      modelId,
+      providerId,
+      tokens: params.inputTokens + params.outputTokens,
+      status: 'success',
+    });
+    usage.recentLogs = usage.recentLogs.slice(0, 30);
+
+    this.saveToDisk();
+    return usage;
+  }
+
+  releaseUsage(reservationId: string, reason?: string): UsageMetrics {
+    const reservation = this.activeReservations.get(reservationId);
+    if (!reservation) {
+      return this.getUsage();
+    }
+
+    const { userId, category, modelId, providerId, operationId } = reservation;
+    this.activeReservations.delete(reservationId);
+    this.activeUserGenerations.delete(userId);
+
+    const usage = this.getUsage(userId);
+
+    // Audit the released units so user is never charged on failure
+    const ledgerEntry: UsageLedgerEntry = {
+      id: `ledg-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      userId,
+      operationId,
+      category,
+      unitsDeducted: 0,
+      modelId,
+      providerId,
+      inputTokens: 0,
+      outputTokens: 0,
+      timestamp: new Date().toISOString(),
+      status: 'released',
+      note: reason || 'Génération échouée ou annulée (aucun débit).',
+    };
+
+    if (!Array.isArray(this.db.usageLedger)) {
+      this.db.usageLedger = [];
+    }
+    this.db.usageLedger.unshift(ledgerEntry);
+    this.db.usageLedger = this.db.usageLedger.slice(0, 150);
+
+    usage.recentLedger.unshift(ledgerEntry);
+    usage.recentLedger = usage.recentLedger.slice(0, 30);
+
+    usage.recentLogs.unshift({
+      id: `log-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      mode: category === 'search' ? 'search' : 'chat',
+      modelId,
+      providerId,
+      tokens: 0,
+      status: 'error',
+    });
+    usage.recentLogs = usage.recentLogs.slice(0, 30);
+
+    this.saveToDisk();
+    return usage;
   }
 
   recordUsage(
@@ -1047,6 +1564,10 @@ class AuraDataStore {
     const usage = this.getUsage(userId);
     if (params.status === 'success') {
       usage.requestsUsed += 1;
+      usage.monthlyUnitsUsed = Math.min(
+        usage.monthlyUnitsLimit,
+        usage.monthlyUnitsUsed + 1
+      );
       usage.estimatedInputTokens += params.inputTokens;
       usage.estimatedOutputTokens += params.outputTokens;
       usage.byMode[params.mode] = (usage.byMode[params.mode] || 0) + 1;
@@ -1071,11 +1592,105 @@ class AuraDataStore {
   resetDailyQuota(userId: string, newLimit?: number): UsageMetrics {
     const usage = this.getUsage(userId);
     usage.requestsUsed = 0;
+    usage.monthlyUnitsUsed = 0;
+    usage.webSearchesUsed = 0;
+    usage.siteCreationsUsed = 0;
+    usage.siteModificationsUsed = 0;
     if (typeof newLimit === 'number' && newLimit >= 1 && newLimit <= 1000) {
-      usage.dailyLimit = newLimit;
+      usage.monthlyUnitsLimit = newLimit;
     }
     this.saveToDisk();
     return usage;
+  }
+
+  exportUserData(userId: string) {
+    const userEntry = Object.values(this.db.users).find((u) => u.profile.id === userId);
+    if (!userEntry) return null;
+
+    const conversations = this.getConversations(userId);
+    const projects = this.getProjects(userId);
+    const missions = this.getMissions(userId);
+    const library = this.getLibrary(userId);
+    const usage = this.getUsage(userId);
+    const subscription = this.getUserSubscription(userId);
+
+    return {
+      metadata: {
+        exportedAt: new Date().toISOString(),
+        formatVersion: 'aura-export-v1',
+        platform: 'Aura Platform',
+        legalNotice: 'Données exportées conformément au droit d’accès et à la portabilité.',
+      },
+      profile: {
+        id: userEntry.profile.id,
+        name: userEntry.profile.name,
+        email: userEntry.profile.email,
+        role: userEntry.profile.role,
+        organization: userEntry.profile.organization,
+        location: userEntry.profile.location,
+        plan: userEntry.profile.plan,
+        authProvider: userEntry.profile.authProvider,
+        createdAt: userEntry.profile.createdAt,
+        consents: userEntry.profile.consents,
+        preferences: userEntry.profile.preferences,
+      },
+      subscription,
+      usageSummary: {
+        monthlyUnitsUsed: usage.monthlyUnitsUsed,
+        monthlyUnitsLimit: usage.monthlyUnitsLimit,
+        webSearchesUsed: usage.webSearchesUsed,
+        siteCreationsUsed: usage.siteCreationsUsed,
+        siteModificationsUsed: usage.siteModificationsUsed,
+        estimatedTokens:
+          (usage.estimatedInputTokens || 0) + (usage.estimatedOutputTokens || 0),
+      },
+      conversations,
+      projects,
+      missions,
+      library,
+    };
+  }
+
+  clearUserHistory(userId: string): { clearedCount: number } {
+    const before = this.db.conversations.filter((c) => c.userId === userId).length;
+    this.db.conversations = this.db.conversations.filter((c) => c.userId !== userId);
+    this.db.library = this.db.library.filter(
+      (item) => !(item.userId === userId && item.type === 'conversation')
+    );
+    this.saveToDisk();
+    return { clearedCount: before };
+  }
+
+  deleteUserAccount(userId: string): boolean {
+    const userEntry = Object.entries(this.db.users).find(
+      ([, rec]) => rec.profile.id === userId
+    );
+    if (!userEntry) return false;
+
+    const [emailKey] = userEntry;
+
+    // 1. Revoke and delete sessions
+    for (const [token, sess] of Object.entries(this.db.sessions)) {
+      if (sess.userId === userId) {
+        this.revokedTokens.add(token);
+        delete this.db.sessions[token];
+      }
+    }
+
+    // 2. Remove all user conversations, projects, missions, library, usage, subscriptions
+    this.db.conversations = this.db.conversations.filter((c) => c.userId !== userId);
+    this.db.projects = this.db.projects.filter((p) => p.userId !== userId);
+    this.db.missions = this.db.missions.filter((m) => m.userId !== userId);
+    this.db.library = this.db.library.filter((l) => l.userId !== userId);
+    delete this.db.usageByUser[userId];
+    delete this.db.subscriptions[userId];
+    this.db.usageLedger = this.db.usageLedger.filter((entry) => entry.userId !== userId);
+
+    // 3. Remove user profile
+    delete this.db.users[emailKey];
+
+    this.saveToDisk();
+    return true;
   }
 }
 

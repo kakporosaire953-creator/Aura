@@ -95,10 +95,65 @@ CREATE TABLE IF NOT EXISTS public.aura_usage (
   date TEXT NOT NULL,
   requests_used INTEGER NOT NULL DEFAULT 0,
   daily_limit INTEGER NOT NULL DEFAULT 50,
+  monthly_units_used INTEGER NOT NULL DEFAULT 0,
+  monthly_units_limit INTEGER NOT NULL DEFAULT 30,
+  web_searches_used INTEGER NOT NULL DEFAULT 0,
+  web_searches_limit INTEGER NOT NULL DEFAULT 10,
+  site_creations_used INTEGER NOT NULL DEFAULT 0,
+  site_creations_limit INTEGER NOT NULL DEFAULT 3,
+  site_modifications_used INTEGER NOT NULL DEFAULT 0,
+  site_modifications_limit INTEGER NOT NULL DEFAULT 10,
   estimated_input_tokens INTEGER NOT NULL DEFAULT 0,
   estimated_output_tokens INTEGER NOT NULL DEFAULT 0,
   by_mode JSONB NOT NULL DEFAULT '{}'::jsonb,
+  by_category JSONB NOT NULL DEFAULT '{}'::jsonb,
   by_model JSONB NOT NULL DEFAULT '{}'::jsonb,
   recent_logs JSONB NOT NULL DEFAULT '[]'::jsonb,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 8. Table des abonnements (Aura Free, Plus, Pro)
+CREATE TABLE IF NOT EXISTS public.aura_subscriptions (
+  user_id TEXT PRIMARY KEY REFERENCES public.aura_users(id) ON DELETE CASCADE,
+  plan_id TEXT NOT NULL DEFAULT 'free',
+  status TEXT NOT NULL DEFAULT 'active',
+  current_period_start TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  current_period_end TIMESTAMPTZ NOT NULL,
+  cancel_at_period_end BOOLEAN NOT NULL DEFAULT FALSE,
+  payment_provider TEXT DEFAULT 'none',
+  external_subscription_id TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_aura_subscriptions_plan ON public.aura_subscriptions(plan_id);
+
+-- 9. Table du registre d'audit de consommation IA (Usage Ledger)
+CREATE TABLE IF NOT EXISTS public.aura_usage_ledger (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES public.aura_users(id) ON DELETE CASCADE,
+  operation_id TEXT NOT NULL,
+  category TEXT NOT NULL,
+  units_deducted INTEGER NOT NULL DEFAULT 0,
+  model_id TEXT NOT NULL,
+  provider_id TEXT NOT NULL,
+  input_tokens INTEGER NOT NULL DEFAULT 0,
+  output_tokens INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'committed',
+  note TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_aura_ledger_user ON public.aura_usage_ledger(user_id);
+CREATE INDEX IF NOT EXISTS idx_aura_ledger_created ON public.aura_usage_ledger(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_aura_ledger_operation ON public.aura_usage_ledger(operation_id);
+
+-- 10. Table des événements de facturation et webhooks idempotents
+CREATE TABLE IF NOT EXISTS public.aura_billing_events (
+  id TEXT PRIMARY KEY,
+  provider TEXT NOT NULL,
+  event_type TEXT NOT NULL,
+  payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+  processed BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

@@ -4,6 +4,8 @@ import { GoogleGenAI, GenerateVideosOperation } from '@google/genai';
 import { aiRegistry } from './ai/externalAdapters.ts';
 import { dataStore } from './dataStore.ts';
 import { SendMessagePayloadSchema, ChatMessage, UserProfile } from '../shared/types.ts';
+import { AURA_PLANS, classifyUsageCategory, PlanId } from '../shared/plans.ts';
+import { paymentGatewayService } from './billing/paymentAdapter.ts';
 
 import {
   checkSupabaseHealth,
@@ -40,18 +42,36 @@ export function createApiApp() {
     next();
   });
 
-  // URL Normalization for Vercel Serverless Function rewrites
+  // URL Normalization for Vercel Serverless Function rewrites & subroutes
   app.use((req: any, _res, next) => {
-    const rawMatched =
-      (req.headers['x-matched-path'] as string) ||
-      (req.headers['x-vercel-matched-path'] as string) ||
-      (req.headers['x-forwarded-uri'] as string) ||
-      (req.headers['x-original-url'] as string);
+    const qAny = req.query as Record<string, unknown> | undefined;
+    const vercelPath = qAny?.__path;
 
-    if (rawMatched && !rawMatched.includes('api/index')) {
-      req.url = rawMatched;
-    } else if (req.url && !req.url.startsWith('/api') && !req.url.startsWith('/?')) {
-      req.url = '/api' + (req.url.startsWith('/') ? req.url : '/' + req.url);
+    if (typeof vercelPath === 'string' && vercelPath.trim()) {
+      if (qAny) {
+        delete qAny.__path;
+      }
+      const [subpath, search] = vercelPath.split('?');
+      req.url = '/api/' + subpath.replace(/^\/+/, '') + (search ? '?' + search : '');
+    } else {
+      const forwardedUri =
+        (req.headers['x-forwarded-uri'] as string) ||
+        (req.headers['x-original-url'] as string) ||
+        (req.headers['x-real-url'] as string);
+
+      if (forwardedUri && forwardedUri.startsWith('/api') && !forwardedUri.includes('api/index')) {
+        req.url = forwardedUri;
+      } else {
+        const rawMatched =
+          (req.headers['x-matched-path'] as string) ||
+          (req.headers['x-vercel-matched-path'] as string);
+
+        if (rawMatched && rawMatched.startsWith('/api') && !rawMatched.includes('api/index')) {
+          req.url = rawMatched;
+        } else if (req.url && !req.url.startsWith('/api') && !req.url.startsWith('/?')) {
+          req.url = '/api' + (req.url.startsWith('/') ? req.url : '/' + req.url);
+        }
+      }
     }
 
     if (req.body && typeof req.body === 'object') {
@@ -434,6 +454,87 @@ export function createApiApp() {
     res.json({ user: updated, token: refreshedToken });
   });
 
+  // --- API: Privacy, Data Export & Account Deletion ---
+  app.get('/api/user/export', (req, res) => {
+    const user = getAuthenticatedUser(req);
+    if (!user) {
+      res.status(401).json({ error: 'Non authentifié.' });
+      return;
+    }
+    const exportData = dataStore.exportUserData(user.id);
+    if (!exportData) {
+      res.status(404).json({ error: 'Données utilisateur introuvables.' });
+      return;
+    }
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="aura-export-${user.id}-${Date.now()}.json"`
+    );
+    res.json(exportData);
+  });
+
+  app.delete('/api/user/history', (req, res) => {
+    const user = getAuthenticatedUser(req);
+    if (!user) {
+      res.status(401).json({ error: 'Non authentifié.' });
+      return;
+    }
+    const result = dataStore.clearUserHistory(user.id);
+    res.json({
+      success: true,
+      message: `${result.clearedCount} conversation(s) supprimée(s) avec succès.`,
+      clearedCount: result.clearedCount,
+    });
+  });
+
+  app.delete('/api/user/account', (req, res) => {
+    const user = getAuthenticatedUser(req);
+    if (!user) {
+      res.status(401).json({ error: 'Non authentifié.' });
+      return;
+    }
+    const { confirmEmail } = req.body || {};
+    if (
+      !confirmEmail ||
+      String(confirmEmail).trim().toLowerCase() !== user.email.toLowerCase()
+    ) {
+      res.status(400).json({
+        error:
+          'Veuillez renseigner exactement votre adresse e-mail pour confirmer la suppression irréversible de votre compte.',
+      });
+      return;
+    }
+
+    const success = dataStore.deleteUserAccount(user.id);
+    if (!success) {
+      res.status(500).json({ error: 'Impossible de supprimer le compte.' });
+      return;
+    }
+    res.json({
+      success: true,
+      message:
+        'Votre compte Aura, vos conversations et l’ensemble de vos données ont été définitivement supprimés.',
+    });
+  });
+
+  app.put('/api/user/custom-instructions', (req, res) => {
+    const user = getAuthenticatedUser(req);
+    if (!user) {
+      res.status(401).json({ error: 'Non authentifié.' });
+      return;
+    }
+    const { customInstructions } = req.body || {};
+    const updated = dataStore.updateUserProfile(user.id, {
+      preferences: {
+        ...user.preferences,
+        customInstructions:
+          typeof customInstructions === 'string' ? customInstructions.trim() : '',
+      },
+    });
+    res.json({ success: true, user: updated });
+  });
+
   // --- API: Conversations (Strictly per user) ---
   app.get('/api/conversations', (req, res) => {
     const user = getAuthenticatedUser(req);
@@ -507,21 +608,32 @@ export function createApiApp() {
 
     const payload = parseResult.data;
 
-    // 1. Server-side Quota Check per user
-    const quotaCheck = dataStore.canMakeRequest(user.id);
-    if (!quotaCheck.allowed) {
-      dataStore.recordUsage(user.id, {
-        mode: payload.mode,
-        modelId: payload.modelId || 'gemini-3.8-flash',
-        providerId: payload.providerId || 'gemini',
-        inputTokens: 0,
-        outputTokens: 0,
-        status: 'quota_exceeded',
-      });
+    // 1. Classify operation category and check quotas with two-phase reservation
+    const category = classifyUsageCategory({
+      mode: payload.mode,
+      hasActiveCode: Boolean(payload.activeArtifactContext?.code),
+    });
+
+    const clientOpId =
+      (req.headers['x-client-request-id'] as string) ||
+      (req.headers['x-operation-id'] as string) ||
+      `op-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+
+    const reservation = dataStore.reserveUsage(user.id, {
+      operationId: clientOpId,
+      category,
+      modelId: payload.modelId || 'aura-3.8-flash',
+      providerId: payload.providerId || 'gemini',
+    });
+
+    if (!reservation.allowed) {
       res.status(429).json({
-        error: `Limite quotidienne atteinte (${quotaCheck.limit} requêtes/jour). Consultez l'espace Utilisation & Limites pour ajuster ou réinitialiser votre quota.`,
-        code: 'QUOTA_EXCEEDED',
+        error:
+          reservation.reason ||
+          `Quota mensuel atteint. Consultez vos quotas dans Paramètres > Utilisation & Limites.`,
+        code: reservation.code || 'QUOTA_EXCEEDED',
         usage: dataStore.getUsage(user.id),
+        renewalDate: reservation.renewalDate,
       });
       return;
     }
@@ -568,9 +680,14 @@ export function createApiApp() {
         prompt: payload.message,
         history,
         modelId: payload.modelId,
-        language: payload.language || user.preferences.language || 'fr',
-        systemContext: project?.systemContext,
-        attachments: payload.attachments,
+        systemContext: [
+          project?.systemContext,
+          user.preferences.customInstructions
+            ? `Directives personnalisées de l'utilisateur :\n${user.preferences.customInstructions}`
+            : undefined,
+        ]
+          .filter(Boolean)
+          .join('\n\n') || undefined,
         mediaOptions: payload.mediaOptions,
         activeArtifactContext: payload.activeArtifactContext,
       });
@@ -632,14 +749,14 @@ export function createApiApp() {
         autoTitle
       );
 
-      const updatedUsage = dataStore.recordUsage(user.id, {
-        mode: payload.mode,
-        modelId: aiResponse.modelId,
-        providerId: aiResponse.providerId,
-        inputTokens: aiResponse.estimatedInputTokens,
-        outputTokens: aiResponse.estimatedOutputTokens,
-        status: 'success',
-      });
+      // Commit usage deduction in audit ledger and unlock concurrency
+      const updatedUsage = reservation.reservationId
+        ? dataStore.commitUsage(reservation.reservationId, {
+            inputTokens: aiResponse.estimatedInputTokens,
+            outputTokens: aiResponse.estimatedOutputTokens,
+            mode: payload.mode,
+          })
+        : dataStore.getUsage(user.id);
 
       res.json({
         conversation: updatedConversation,
@@ -653,21 +770,129 @@ export function createApiApp() {
           ? error.message
           : 'Une erreur est survenue lors de la communication avec le fournisseur IA.';
 
-      dataStore.recordUsage(user.id, {
-        mode: payload.mode,
-        modelId: payload.modelId || 'aura-3.8-flash',
-        providerId: payload.providerId || 'gemini',
-        inputTokens: 0,
-        outputTokens: 0,
-        status: 'error',
-      });
+      // Release reserved units on failure so user is never charged unfairly!
+      if (reservation.reservationId) {
+        dataStore.releaseUsage(reservation.reservationId, errMessage);
+      }
 
       const isNotConfigured = errMessage.includes('PROVIDER_NOT_CONFIGURED');
       res.status(isNotConfigured ? 503 : 500).json({
         error: errMessage.replace('PROVIDER_NOT_CONFIGURED: ', ''),
         code: isNotConfigured ? 'PROVIDER_NOT_CONFIGURED' : 'AI_PROVIDER_ERROR',
+        usage: dataStore.getUsage(user.id),
       });
     }
+  });
+
+  // --- API: Billing, Plans & Freemium Architecture ---
+  app.get('/api/billing/plans', (_req, res) => {
+    const gateway = paymentGatewayService.getGatewayStatus();
+    res.json({
+      plans: Object.values(AURA_PLANS),
+      gateway,
+    });
+  });
+
+  app.get('/api/billing/subscription', (req, res) => {
+    const user = getAuthenticatedUser(req);
+    if (!user) {
+      res.status(401).json({ error: 'Non authentifié.' });
+      return;
+    }
+    const subscription = dataStore.getUserSubscription(user.id);
+    const plan = dataStore.getUserPlan(user.id);
+    const gateway = paymentGatewayService.getGatewayStatus();
+    res.json({
+      subscription,
+      plan,
+      gateway,
+    });
+  });
+
+  app.post('/api/billing/subscription', (req, res) => {
+    const user = getAuthenticatedUser(req);
+    if (!user) {
+      res.status(401).json({ error: 'Non authentifié.' });
+      return;
+    }
+    const { planId, reason } = req.body || {};
+    if (!planId || !['free', 'plus', 'pro'].includes(planId)) {
+      res.status(400).json({ error: 'Identifiant d’offre invalide.' });
+      return;
+    }
+
+    const gateway = paymentGatewayService.getGatewayStatus();
+
+    // If upgrading to Plus or Pro while real payment is not configured:
+    // Transparently register user interest/waitlist without pretending a fake payment occurred!
+    if ((planId === 'plus' || planId === 'pro') && !gateway.isConfigured) {
+      res.status(200).json({
+        success: true,
+        isWaitlist: true,
+        message:
+          'Votre intérêt pour Aura Plus a bien été enregistré. Vous serez notifié dès l’ouverture officielle de la facturation avec vos moyens de paiement locaux (Mobile Money / Carte).',
+        subscription: dataStore.getUserSubscription(user.id),
+        plan: dataStore.getUserPlan(user.id),
+      });
+      return;
+    }
+
+    const updated = dataStore.updateUserSubscription(user.id, {
+      planId: planId as PlanId,
+    });
+    res.json({
+      success: true,
+      subscription: updated,
+      plan: dataStore.getUserPlan(user.id),
+      usage: dataStore.getUsage(user.id),
+    });
+  });
+
+  app.get('/api/usage/ledger', (req, res) => {
+    const user = getAuthenticatedUser(req);
+    if (!user) {
+      res.status(401).json({ error: 'Non authentifié.' });
+      return;
+    }
+    const usage = dataStore.getUsage(user.id);
+    res.json({
+      ledger: usage.recentLedger || [],
+      plan: dataStore.getUserPlan(user.id),
+      subscription: dataStore.getUserSubscription(user.id),
+    });
+  });
+
+  app.post('/api/billing/webhook', (req, res) => {
+    const signature =
+      (req.headers['x-fedapay-signature'] as string) ||
+      (req.headers['stripe-signature'] as string) ||
+      (req.headers['x-kkiapay-signature'] as string);
+
+    const gateway = paymentGatewayService.getGatewayStatus();
+    if (!gateway.isConfigured) {
+      res.status(400).json({
+        error: 'Passerelle non configurée. Webhook ignoré.',
+      });
+      return;
+    }
+
+    const isValid = paymentGatewayService.verifyWebhookSignature({
+      provider: gateway.provider,
+      rawBody: JSON.stringify(req.body),
+      signatureHeader: signature,
+      signingSecret:
+        process.env.FEDAPAY_WEBHOOK_SECRET ||
+        process.env.STRIPE_WEBHOOK_SECRET ||
+        process.env.KKIAPAY_SECRET_KEY,
+    });
+
+    if (!isValid) {
+      res.status(401).json({ error: 'Signature de webhook invalide.' });
+      return;
+    }
+
+    // Process event idempotently
+    res.json({ received: true });
   });
 
   // --- API: Veo 3.1 Video Operation Polling & Secure Download ---

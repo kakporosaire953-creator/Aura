@@ -437,13 +437,12 @@ export const LandingPage: React.FC = () => {
               >
                 Galerie
               </button>
-              <button
-                type="button"
-                onClick={() => setLegalSheet('tarifs')}
+              <Link
+                to="/pricing"
                 className="aura-nav-link hover:text-[#14282D] dark:hover:text-white transition-colors cursor-pointer"
               >
-                Tarifs
-              </button>
+                Tarifs & Quotas
+              </Link>
             </nav>
           </div>
 
@@ -510,16 +509,13 @@ export const LandingPage: React.FC = () => {
               >
                 Galerie
               </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setMobileNavOpen(false);
-                  setLegalSheet('tarifs');
-                }}
+              <Link
+                to="/pricing"
+                onClick={() => setMobileNavOpen(false)}
                 className="py-2 text-left text-[#14282D] dark:text-[#F3F2EC]"
               >
-                Tarifs
-              </button>
+                Tarifs & Quotas
+              </Link>
             </div>
             <div className="pt-2 border-t border-[#E6E2D6] dark:border-[#243337]">
               <Link

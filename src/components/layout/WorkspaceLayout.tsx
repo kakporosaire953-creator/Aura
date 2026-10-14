@@ -601,13 +601,23 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
               <i className="fa-solid fa-triangle-exclamation text-sm shrink-0" />
               <span>{errorBanner}</span>
             </div>
-            <button
-              type="button"
-              onClick={clearError}
-              className="text-xs font-medium underline shrink-0"
-            >
-              Fermer
-            </button>
+            <div className="flex items-center gap-3 shrink-0">
+              {errorBanner.toLowerCase().includes('connecter') && (
+                <Link
+                  to="/login"
+                  className="px-3 py-1 rounded-lg bg-[#991B1B] text-white font-medium hover:bg-[#7F1D1D] transition-colors"
+                >
+                  Se connecter
+                </Link>
+              )}
+              <button
+                type="button"
+                onClick={clearError}
+                className="text-xs font-medium underline"
+              >
+                Fermer
+              </button>
+            </div>
           </div>
         )}
 

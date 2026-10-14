@@ -12,6 +12,10 @@ import {
   ProviderStatus,
   UsageMetrics,
   UserProfile,
+  PlanId,
+  PlanDefinition,
+  UserSubscriptionState,
+  AURA_PLANS,
 } from '../shared/types';
 import { aiService } from '../services/aiService';
 import {
@@ -29,6 +33,8 @@ interface AuraContextValue {
   user: UserProfile;
   authenticatedUser: UserProfile | null;
   isAuthenticated: boolean;
+  subscription: UserSubscriptionState | null;
+  currentPlan: PlanDefinition;
   theme: AuraTheme;
   language: AuraLanguage;
   activeMode: AuraMode;
@@ -118,15 +124,23 @@ interface AuraContextValue {
   register: (
     name: string,
     email: string,
-    password: string
+    password: string,
+    consents?: { termsConsent: boolean; marketingConsent?: boolean }
   ) => Promise<{ ok: boolean; user?: UserProfile; error?: string }>;
   loginWithOAuth: (params: {
     provider: 'google' | 'github';
     email: string;
     name: string;
   }) => Promise<{ ok: boolean; user?: UserProfile; isNewUser?: boolean; error?: string }>;
-  logout: () => Promise<void>;
-  resetQuota: (newLimit?: number) => Promise<void>;
+  exportUserData: () => Promise<unknown>;
+  clearUserHistory: () => Promise<{ ok: boolean; message?: string }>;
+  deleteUserAccount: (confirmEmail: string) => Promise<{ ok: boolean; error?: string }>;
+  updateCustomInstructions: (instructions: string) => Promise<boolean>;
+  reducedMotion: boolean;
+  toggleReducedMotion: () => void;
+  joinWaitlistOrUpgrade: (
+    planId: PlanId
+  ) => Promise<{ ok: boolean; isWaitlist?: boolean; message?: string; error?: string }>;
   refreshAll: () => Promise<void>;
 }
 
@@ -262,6 +276,7 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
     description: 'Persistance serveur active',
   });
   const [usage, setUsage] = useState<UsageMetrics | null>(null);
+  const [subscription, setSubscription] = useState<UserSubscriptionState | null>(null);
   const [isLoadingInitial, setIsLoadingInitial] = useState<boolean>(true);
   const [isSending, setIsSending] = useState<boolean>(false);
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
@@ -299,6 +314,24 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLanguageState(newLang);
   }, []);
 
+  const [reducedMotion, setReducedMotionState] = useState<boolean>(() => {
+    const saved = safeGetItem('aura_reduced_motion');
+    return saved === 'true';
+  });
+
+  const toggleReducedMotion = useCallback(() => {
+    setReducedMotionState((prev) => {
+      const next = !prev;
+      safeSetItem('aura_reduced_motion', String(next));
+      if (next) {
+        document.documentElement.classList.add('aura-reduced-motion');
+      } else {
+        document.documentElement.classList.remove('aura-reduced-motion');
+      }
+      return next;
+    });
+  }, []);
+
   const clearError = useCallback(() => setErrorBanner(null), []);
 
   const clearClientUserData = useCallback(() => {
@@ -309,6 +342,7 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLibraryItems([]);
     setActiveProjectId(undefined);
     setUsage(null);
+    setSubscription(null);
   }, []);
 
   const refreshAll = useCallback(async () => {
@@ -354,12 +388,13 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setActiveMode(meData.user.preferences.defaultMode);
       }
 
-      const [convRes, projRes, missRes, libRes, usageRes] = await Promise.all([
+      const [convRes, projRes, missRes, libRes, usageRes, subRes] = await Promise.all([
         fetchWithTimeout('/api/conversations', { headers: authHeaders() }),
         fetchWithTimeout('/api/projects', { headers: authHeaders() }),
         fetchWithTimeout('/api/missions', { headers: authHeaders() }),
         fetchWithTimeout('/api/library', { headers: authHeaders() }),
         fetchWithTimeout('/api/usage', { headers: authHeaders() }),
+        fetchWithTimeout('/api/billing/subscription', { headers: authHeaders() }),
       ]);
 
       if (convRes.ok) {
@@ -393,6 +428,11 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (usageRes.ok) {
         const uData = await usageRes.json();
         setUsage(uData.usage || null);
+      }
+
+      if (subRes.ok) {
+        const sData = await subRes.json();
+        setSubscription(sData.subscription || null);
       }
     } catch (err) {
       console.error('Erreur lors de la synchronisation Aura:', err);
@@ -951,7 +991,8 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
     async (
       name: string,
       email: string,
-      password: string
+      password: string,
+      consents?: { termsConsent: boolean; marketingConsent?: boolean }
     ): Promise<{ ok: boolean; user?: UserProfile; error?: string }> => {
       setErrorBanner(null);
       const cleanEmail = email.trim().toLowerCase();
@@ -969,6 +1010,12 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 role: 'Membre Aura',
                 plan: 'free',
                 onboardingCompleted: false,
+                consents: {
+                  termsVersion: '2026-v1.0',
+                  privacyVersion: '2026-v1.0',
+                  consentedAt: new Date().toISOString(),
+                  marketingConsent: Boolean(consents?.marketingConsent),
+                },
               },
             },
           });
@@ -1008,7 +1055,13 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const res = await fetchWithTimeout('/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: cleanName, email: cleanEmail, password }),
+          body: JSON.stringify({
+            name: cleanName,
+            email: cleanEmail,
+            password,
+            termsConsent: consents?.termsConsent ?? true,
+            marketingConsent: Boolean(consents?.marketingConsent),
+          }),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
@@ -1126,8 +1179,131 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
+  const joinWaitlistOrUpgrade = useCallback(async (planId: PlanId) => {
+    try {
+      const res = await fetchWithTimeout('/api/billing/subscription', {
+        method: 'POST',
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ planId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        if (data.subscription) setSubscription(data.subscription);
+        if (data.usage) setUsage(data.usage);
+        return {
+          ok: true,
+          isWaitlist: Boolean(data.isWaitlist),
+          message:
+            data.message ||
+            'Votre demande d’accès à Aura Plus a bien été prise en compte.',
+        };
+      }
+      return {
+        ok: false,
+        error: data.error || 'Impossible de mettre à jour l’abonnement.',
+      };
+    } catch {
+      return {
+        ok: false,
+        error: 'Le service de facturation est momentanément indisponible.',
+      };
+    }
+  }, []);
+
+  const exportUserData = useCallback(async () => {
+    try {
+      const res = await fetchWithTimeout('/api/user/export', {
+        headers: authHeaders(),
+      });
+      if (!res.ok) throw new Error('Échec de l’export');
+      const data = await res.json();
+      const blob = new Blob([JSON.stringify(data, null, 2)], {
+        type: 'application/json',
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `aura-export-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      return data;
+    } catch (err) {
+      setErrorBanner('Impossible d’exporter vos données pour le moment.');
+      throw err;
+    }
+  }, []);
+
+  const clearUserHistory = useCallback(async () => {
+    try {
+      const res = await fetchWithTimeout('/api/user/history', {
+        method: 'DELETE',
+        headers: authHeaders(),
+      });
+      if (!res.ok) throw new Error('Échec de la suppression de l’historique');
+      const data = await res.json();
+      setConversations([]);
+      setLibraryItems((prev) =>
+        prev.filter((item) => item.type !== 'conversation')
+      );
+      return { ok: true, message: data.message };
+    } catch {
+      setErrorBanner('Impossible de vider l’historique.');
+      return { ok: false };
+    }
+  }, []);
+
+  const deleteUserAccount = useCallback(async (confirmEmail: string) => {
+    try {
+      const res = await fetchWithTimeout('/api/user/account', {
+        method: 'DELETE',
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ confirmEmail }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        return {
+          ok: false,
+          error: data.error || 'Erreur lors de la suppression du compte.',
+        };
+      }
+      safeRemoveItem(SESSION_TOKEN_KEY);
+      setAuthenticatedUser(null);
+      setConversations([]);
+      setProjects([]);
+      setMissions([]);
+      setLibraryItems([]);
+      return { ok: true };
+    } catch {
+      return { ok: false, error: 'Service momentanément indisponible.' };
+    }
+  }, []);
+
+  const updateCustomInstructions = useCallback(
+    async (instructions: string): Promise<boolean> => {
+      try {
+        const res = await fetchWithTimeout('/api/user/custom-instructions', {
+          method: 'PUT',
+          headers: authHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({ customInstructions: instructions }),
+        });
+        if (!res.ok) return false;
+        const data = await res.json();
+        if (data.user) {
+          setAuthenticatedUser(data.user);
+        }
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    []
+  );
+
   const user = authenticatedUser || emptyGuestPlaceholder;
   const isAuthenticated = Boolean(authenticatedUser && authenticatedUser.id);
+  const currentPlan =
+    AURA_PLANS[subscription?.planId || authenticatedUser?.plan || 'free'] ||
+    AURA_PLANS.free;
 
   return (
     <AuraContext.Provider
@@ -1135,6 +1311,8 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         authenticatedUser,
         isAuthenticated,
+        subscription,
+        currentPlan,
         theme,
         language,
         activeMode,
@@ -1173,6 +1351,13 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loginWithOAuth,
         logout,
         resetQuota,
+        exportUserData,
+        clearUserHistory,
+        deleteUserAccount,
+        updateCustomInstructions,
+        reducedMotion,
+        toggleReducedMotion,
+        joinWaitlistOrUpgrade,
         refreshAll,
       }}
     >

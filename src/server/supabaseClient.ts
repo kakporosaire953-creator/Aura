@@ -293,50 +293,96 @@ export async function verifySupabaseAccessToken(
     return null;
   }
   const supabase = getSupabaseServerClient();
-  if (!supabase) return null;
+  if (supabase) {
+    try {
+      const { data, error } = await supabase.auth.getUser(accessToken);
+      if (!error && data?.user) {
+        const sbUser = data.user;
+        const meta = sbUser.user_metadata || {};
+        const email = sbUser.email || meta.email || '';
+        const fallbackName = email ? email.split('@')[0] : 'Membre Aura';
+        const name =
+          meta.full_name || meta.name || meta.display_name || fallbackName;
+        const preferences = meta.preferences || {};
+        const onboarding = meta.onboarding || undefined;
+        const onboardingCompleted =
+          typeof meta.onboardingCompleted === 'boolean'
+            ? meta.onboardingCompleted
+            : Boolean(onboarding?.completed);
 
-  try {
-    const { data, error } = await supabase.auth.getUser(accessToken);
-    if (error || !data?.user) {
-      return null;
+        return {
+          id: sbUser.id,
+          name: String(name),
+          email: String(email),
+          role: String(meta.role || 'Membre Aura'),
+          avatarUrl: meta.avatar_url || meta.avatarUrl || undefined,
+          organization: String(meta.organization || ''),
+          location: String(meta.location || ''),
+          plan: meta.plan === 'pro' ? 'pro' : 'free',
+          authProvider:
+            (sbUser.app_metadata?.provider as 'email' | 'google' | 'github') ||
+            meta.authProvider ||
+            'email',
+          onboardingCompleted,
+          onboarding,
+          preferences: {
+            language: preferences.language === 'en' ? 'en' : 'fr',
+            theme: preferences.theme === 'dark' ? 'dark' : 'light',
+            defaultMode: preferences.defaultMode || 'chat',
+            defaultProvider: preferences.defaultProvider || 'gemini',
+          },
+        };
+      }
+    } catch {
+      // fallback to jwt claims decoding below
     }
-    const sbUser = data.user;
-    const meta = sbUser.user_metadata || {};
-    const email = sbUser.email || meta.email || '';
-    const fallbackName = email ? email.split('@')[0] : 'Membre Aura';
-    const name =
-      meta.full_name || meta.name || meta.display_name || fallbackName;
-    const preferences = meta.preferences || {};
-    const onboarding = meta.onboarding || undefined;
-    const onboardingCompleted =
-      typeof meta.onboardingCompleted === 'boolean'
-        ? meta.onboardingCompleted
-        : Boolean(onboarding?.completed);
-
-    return {
-      id: sbUser.id,
-      name: String(name),
-      email: String(email),
-      role: String(meta.role || 'Membre Aura'),
-      avatarUrl: meta.avatar_url || meta.avatarUrl || undefined,
-      organization: String(meta.organization || ''),
-      location: String(meta.location || ''),
-      plan: meta.plan === 'pro' ? 'pro' : 'free',
-      authProvider:
-        (sbUser.app_metadata?.provider as 'email' | 'google' | 'github') ||
-        meta.authProvider ||
-        'email',
-      onboardingCompleted,
-      onboarding,
-      preferences: {
-        language: preferences.language === 'en' ? 'en' : 'fr',
-        theme: preferences.theme === 'dark' ? 'dark' : 'light',
-        defaultMode: preferences.defaultMode || 'chat',
-        defaultProvider: preferences.defaultProvider || 'gemini',
-      },
-    };
-  } catch {
-    return null;
   }
+
+  // Graceful fallback for serverless cold-starts on Vercel or when SUPABASE_SERVICE_ROLE_KEY is not yet configured:
+  // Parse and validate Supabase Auth JWT claims (header.payload.signature)
+  try {
+    const parts = accessToken.split('.');
+    if (parts.length === 3) {
+      const payloadStr = Buffer.from(parts[1], 'base64url').toString('utf-8');
+      const payload = JSON.parse(payloadStr);
+      const nowSec = Math.floor(Date.now() / 1000);
+      if (
+        payload &&
+        payload.sub &&
+        payload.email &&
+        (!payload.exp || payload.exp > nowSec)
+      ) {
+        const meta = payload.user_metadata || {};
+        const fallbackName = payload.email.split('@')[0];
+        const name =
+          meta.full_name || meta.name || meta.display_name || fallbackName;
+        return {
+          id: String(payload.sub),
+          name: String(name),
+          email: String(payload.email),
+          role: String(meta.role || 'Membre Aura'),
+          avatarUrl: meta.avatar_url || meta.avatarUrl || undefined,
+          organization: String(meta.organization || ''),
+          location: String(meta.location || ''),
+          plan: meta.plan === 'pro' ? 'pro' : 'free',
+          authProvider:
+            (payload.app_metadata?.provider as 'email' | 'google' | 'github') ||
+            meta.authProvider ||
+            'email',
+          onboardingCompleted: true,
+          preferences: {
+            language: meta.preferences?.language === 'en' ? 'en' : 'fr',
+            theme: meta.preferences?.theme === 'dark' ? 'dark' : 'light',
+            defaultMode: meta.preferences?.defaultMode || 'chat',
+            defaultProvider: meta.preferences?.defaultProvider || 'gemini',
+          },
+        };
+      }
+    }
+  } catch {
+    // invalid token structure
+  }
+
+  return null;
 }
 

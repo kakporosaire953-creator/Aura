@@ -13,6 +13,7 @@ import { SettingsPage } from './pages/SettingsPage';
 import { MissionsPage } from './pages/MissionsPage';
 import { AuthPage } from './pages/AuthPage';
 import { OnboardingPage } from './pages/OnboardingPage';
+import { PricingPage } from './pages/PricingPage';
 
 const SessionCheckFallback: React.FC = () => (
   <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#FBFAF5] dark:bg-[#0E1618] text-[#14282D] dark:text-[#F3F2EC]">
@@ -149,11 +150,31 @@ export default function App() {
               </RequireAuth>
             }
           />
+          {/* Page Publique des Offres & Quotas */}
+          <Route path="/pricing" element={<PricingPage />} />
+
+          {/* Redirections Paramètres & Facturation */}
           <Route
-            path="/app/settings"
+            path="/settings/usage"
             element={
               <RequireAuth>
-                <SettingsPage />
+                <UsagePage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/settings/billing"
+            element={
+              <RequireAuth>
+                <UsagePage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/app/billing"
+            element={
+              <RequireAuth>
+                <UsagePage />
               </RequireAuth>
             }
           />
