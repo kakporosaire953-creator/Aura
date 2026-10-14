@@ -24,24 +24,7 @@ export const AuraGenesisLoader: React.FC<AuraGenesisLoaderProps> = ({
   onComplete,
 }) => {
   const [shouldRender, setShouldRender] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    try {
-      if (
-        window.matchMedia &&
-        window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      ) {
-        return false;
-      }
-    } catch {
-      // ignore matchMedia errors
-    }
-    if (forceReplay) return true;
-    if (genesisSeenInMemory) return false;
-    try {
-      return sessionStorage.getItem(GENESIS_SESSION_KEY) !== 'true';
-    } catch {
-      return false;
-    }
+    return Boolean(forceReplay);
   });
 
   const [isFadingOut, setIsFadingOut] = useState(false);

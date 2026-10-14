@@ -251,7 +251,7 @@ export function createApiApp() {
   });
 
   app.post('/api/auth/register', async (req, res) => {
-    const { name, email, password } = req.body || {};
+    const { name, email, password, termsConsent, marketingConsent } = req.body || {};
     if (
       !name ||
       !String(name).trim() ||
@@ -267,6 +267,21 @@ export function createApiApp() {
       return;
     }
 
+    if (termsConsent === false) {
+      res.status(400).json({
+        error:
+          'Vous devez accepter les conditions d’utilisation et la politique de confidentialité pour créer un compte Aura.',
+      });
+      return;
+    }
+
+    const consentRecord = {
+      termsVersion: '2026-v1.0',
+      privacyVersion: '2026-v1.0',
+      consentedAt: new Date().toISOString(),
+      marketingConsent: Boolean(marketingConsent),
+    };
+
     const sbClient = getSupabaseServerClient();
     if (sbClient) {
       try {
@@ -280,6 +295,7 @@ export function createApiApp() {
               role: 'Membre Aura',
               plan: 'free',
               onboardingCompleted: false,
+              consents: consentRecord,
             },
           },
         });
@@ -343,7 +359,8 @@ export function createApiApp() {
       const result = dataStore.registerUser(
         String(name),
         String(email),
-        String(password)
+        String(password),
+        consentRecord
       );
       res.status(201).json({
         user: result.user,
@@ -680,6 +697,7 @@ export function createApiApp() {
         prompt: payload.message,
         history,
         modelId: payload.modelId,
+        language: user.preferences?.language || 'fr',
         systemContext: [
           project?.systemContext,
           user.preferences.customInstructions
@@ -859,6 +877,21 @@ export function createApiApp() {
       ledger: usage.recentLedger || [],
       plan: dataStore.getUserPlan(user.id),
       subscription: dataStore.getUserSubscription(user.id),
+    });
+  });
+
+  app.post('/api/waitlist', (req, res) => {
+    const { email, planId, note } = req.body || {};
+    if (!email || !String(email).includes('@')) {
+      res.status(400).json({ error: 'Adresse e-mail valide requise.' });
+      return;
+    }
+    res.json({
+      success: true,
+      message: 'Votre intérêt a bien été pris en compte. Vous serez notifié prioritairement lors de l’ouverture officielle.',
+      email: String(email).trim().toLowerCase(),
+      planId: planId || 'plus',
+      registeredAt: new Date().toISOString(),
     });
   });
 

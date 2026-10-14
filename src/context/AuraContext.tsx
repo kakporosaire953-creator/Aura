@@ -141,6 +141,8 @@ interface AuraContextValue {
   joinWaitlistOrUpgrade: (
     planId: PlanId
   ) => Promise<{ ok: boolean; isWaitlist?: boolean; message?: string; error?: string }>;
+  logout: () => Promise<void>;
+  resetQuota: (newLimit?: number) => Promise<void>;
   refreshAll: () => Promise<void>;
 }
 
@@ -183,8 +185,8 @@ function safeRemoveItem(key: string): void {
 async function fetchWithTimeout(
   url: string,
   options: RequestInit = {},
-  timeoutMs = 10000,
-  retries = 2
+  timeoutMs = 3500,
+  retries = 0
 ): Promise<Response> {
   let lastError: unknown;
   for (let attempt = 0; attempt <= retries; attempt++) {
@@ -198,7 +200,7 @@ async function fetchWithTimeout(
       window.clearTimeout(id);
       lastError = err;
       if (attempt < retries) {
-        await new Promise((r) => window.setTimeout(r, 450 * (attempt + 1)));
+        await new Promise((r) => window.setTimeout(r, 200 * (attempt + 1)));
       }
     }
   }
@@ -347,21 +349,35 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshAll = useCallback(async () => {
     const token = getStoredToken();
+
+    // If not authenticated, unblock initial loading immediately
+    if (!token) {
+      clearClientUserData();
+      setIsLoadingInitial(false);
+      // Fetch status in background without blocking rendering
+      fetchWithTimeout('/api/status', {}, 2500, 0)
+        .then(async (res) => {
+          if (res.ok) {
+            const statusData = await res.json();
+            if (statusData.providers) setProviders(statusData.providers);
+            if (statusData.persistence) setPersistenceInfo(statusData.persistence);
+            if (statusData.usage) setUsage(statusData.usage);
+          }
+        })
+        .catch(() => {});
+      return;
+    }
+
     try {
       const statusRes = await fetchWithTimeout('/api/status', {
         headers: authHeaders(),
-      });
-      if (statusRes.ok) {
+      }).catch(() => null);
+
+      if (statusRes && statusRes.ok) {
         const statusData = await statusRes.json();
         setProviders(statusData.providers || []);
         if (statusData.persistence) setPersistenceInfo(statusData.persistence);
         if (statusData.usage) setUsage(statusData.usage);
-      }
-
-      if (!token) {
-        clearClientUserData();
-        setIsLoadingInitial(false);
-        return;
       }
 
       const meRes = await fetchWithTimeout('/api/auth/me', {
@@ -442,7 +458,16 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [clearClientUserData]);
 
   useEffect(() => {
-    refreshAll();
+    const safetyTimer = window.setTimeout(() => {
+      setIsLoadingInitial(false);
+    }, 1500);
+
+    refreshAll().finally(() => {
+      window.clearTimeout(safetyTimer);
+      setIsLoadingInitial(false);
+    });
+
+    return () => window.clearTimeout(safetyTimer);
   }, [refreshAll]);
 
   // Synchronize and subscribe to active Supabase Auth sessions

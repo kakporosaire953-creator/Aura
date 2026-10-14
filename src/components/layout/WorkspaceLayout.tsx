@@ -301,8 +301,21 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
             </div>
           )}
 
-          {/* Settings Link */}
-          <div className="pt-1">
+          {/* Help Center & Settings Links */}
+          <div className="pt-1 space-y-0.5">
+            <Link
+              to="/help"
+              className={`flex items-center ${
+                collapsed ? 'justify-center px-2' : 'gap-3 px-3'
+              } py-2 rounded-xl text-[13px] transition-colors text-[#3D4A47] dark:text-[#94A09E] hover:text-[#14282D] dark:hover:text-[#F3F2EC] hover:bg-[#EFECE2]/70 dark:hover:bg-[#1B292D]/60 font-medium`}
+              title={language === 'en' ? 'Help Center' : 'Centre d’aide'}
+            >
+              <i className="fa-regular fa-circle-question text-[14px] w-5 text-center text-[#5A6562] dark:text-[#94A09E]" />
+              {!collapsed && (
+                <span>{language === 'en' ? 'Help Center' : 'Centre d’aide'}</span>
+              )}
+            </Link>
+
             <Link
               to="/app/settings"
               className={`flex items-center ${

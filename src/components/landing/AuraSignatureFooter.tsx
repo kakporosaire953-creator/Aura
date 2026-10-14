@@ -219,12 +219,12 @@ export const AuraSignatureFooter: React.FC = () => {
                   </a>
                 </li>
                 <li>
-                  <a
-                    href="#tarifs"
+                  <Link
+                    to="/pricing"
                     className="hover:text-[#078348] dark:hover:text-[#8CCB4A] transition-colors"
                   >
-                    Tarifs
-                  </a>
+                    Tarifs &amp; Quotas
+                  </Link>
                 </li>
                 <li>
                   <Link

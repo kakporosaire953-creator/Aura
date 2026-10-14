@@ -1,7 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuraProvider, useAura } from './context/AuraContext';
-import { AuraGenesisLoader } from './components/brand/AuraGenesisLoader';
 import { AuraIntelligenceCore } from './components/brand/AuraIntelligenceCore';
 import { LandingPage } from './pages/LandingPage';
 import { WorkspacePage } from './pages/WorkspacePage';
@@ -14,6 +13,16 @@ import { MissionsPage } from './pages/MissionsPage';
 import { AuthPage } from './pages/AuthPage';
 import { OnboardingPage } from './pages/OnboardingPage';
 import { PricingPage } from './pages/PricingPage';
+import { HelpPage } from './pages/HelpPage';
+import { TermsPage } from './pages/legal/TermsPage';
+import { PrivacyPage } from './pages/legal/PrivacyPage';
+import { AcceptableUsePage } from './pages/legal/AcceptableUsePage';
+import { CookiesPage } from './pages/legal/CookiesPage';
+import { AiTransparencyPage } from './pages/legal/AiTransparencyPage';
+import { BillingTermsPage } from './pages/legal/BillingTermsPage';
+import { IpPolicyPage } from './pages/legal/IpPolicyPage';
+import { LegalNoticePage } from './pages/legal/LegalNoticePage';
+import { LegalContactPage } from './pages/legal/LegalContactPage';
 
 const SessionCheckFallback: React.FC = () => (
   <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#FBFAF5] dark:bg-[#0E1618] text-[#14282D] dark:text-[#F3F2EC]">
@@ -58,7 +67,6 @@ const RequireAuthForOnboarding: React.FC<{ children: React.ReactNode }> = ({ chi
 export default function App() {
   return (
     <AuraProvider>
-      <AuraGenesisLoader />
       <BrowserRouter>
         <Routes>
           {/* Landing Page Publique */}
@@ -152,6 +160,27 @@ export default function App() {
           />
           {/* Page Publique des Offres & Quotas */}
           <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/tarifs" element={<PricingPage />} />
+          <Route path="/tarif" element={<PricingPage />} />
+          <Route path="/prices" element={<PricingPage />} />
+
+          {/* Paramètres & Préférences (Strictement protégés) */}
+          <Route
+            path="/settings"
+            element={
+              <RequireAuth>
+                <SettingsPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/app/settings"
+            element={
+              <RequireAuth>
+                <SettingsPage />
+              </RequireAuth>
+            }
+          />
 
           {/* Redirections Paramètres & Facturation */}
           <Route
@@ -178,6 +207,23 @@ export default function App() {
               </RequireAuth>
             }
           />
+
+          {/* Centre d'Aide Public */}
+          <Route path="/help" element={<HelpPage />} />
+
+          {/* Pages Juridiques Publiques */}
+          <Route path="/legal/terms" element={<TermsPage />} />
+          <Route path="/legal/privacy" element={<PrivacyPage />} />
+          <Route path="/legal/acceptable-use" element={<AcceptableUsePage />} />
+          <Route path="/legal/cookies" element={<CookiesPage />} />
+          <Route path="/legal/ai-transparency" element={<AiTransparencyPage />} />
+          <Route path="/legal/billing-terms" element={<BillingTermsPage />} />
+          <Route path="/legal/billing" element={<BillingTermsPage />} />
+          <Route path="/legal/ip-policy" element={<IpPolicyPage />} />
+          <Route path="/legal/intellectual-property" element={<IpPolicyPage />} />
+          <Route path="/legal/notice" element={<LegalNoticePage />} />
+          <Route path="/legal/mentions-legales" element={<LegalNoticePage />} />
+          <Route path="/legal/contact" element={<LegalContactPage />} />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -32,6 +32,8 @@ export const AuthPage: React.FC = () => {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [legalModal, setLegalModal] = useState<'terms' | 'privacy' | null>(null);
+  const [termsConsent, setTermsConsent] = useState(true);
+  const [marketingConsent, setMarketingConsent] = useState(false);
 
   // OAuth Modal State (Google / GitHub real user account input, zero demo prefill)
   const [oauthProvider, setOauthProvider] = useState<'google' | 'github' | null>(null);
@@ -150,7 +152,14 @@ export const AuthPage: React.FC = () => {
           setLocalError(result.error);
         }
       } else if (mode === 'register') {
-        const result = await register(trimmedName, trimmedEmail, trimmedPassword);
+        if (!termsConsent) {
+          setLocalError('Vous devez accepter les conditions d’utilisation et la politique de confidentialité pour créer un compte.');
+          return;
+        }
+        const result = await register(trimmedName, trimmedEmail, trimmedPassword, {
+          termsConsent,
+          marketingConsent,
+        });
         if (result.ok && result.user) {
           navigate('/onboarding', { replace: true });
         } else if (result.error) {
@@ -525,6 +534,52 @@ export const AuthPage: React.FC = () => {
                     />
                   </button>
                 </div>
+              </div>
+            )}
+
+            {/* Explicit Consents on Registration */}
+            {mode === 'register' && (
+              <div className="space-y-2.5 pt-1 text-xs">
+                <label className="flex items-start gap-2.5 cursor-pointer text-[#5A6562] dark:text-[#94A09E] select-none">
+                  <input
+                    type="checkbox"
+                    checked={termsConsent}
+                    onChange={(e) => setTermsConsent(e.target.checked)}
+                    className="mt-0.5 rounded border-[#D8D3C5] dark:border-[#243337] text-[#078348] focus:ring-[#078348] shrink-0"
+                    required
+                  />
+                  <span className="leading-tight">
+                    J’accepte les{' '}
+                    <Link
+                      to="/legal/terms"
+                      target="_blank"
+                      className="font-semibold text-[#078348] dark:text-[#8CCB4A] underline hover:text-[#14282D]"
+                    >
+                      Conditions d’utilisation
+                    </Link>{' '}
+                    et la{' '}
+                    <Link
+                      to="/legal/privacy"
+                      target="_blank"
+                      className="font-semibold text-[#078348] dark:text-[#8CCB4A] underline hover:text-[#14282D]"
+                    >
+                      Politique de confidentialité
+                    </Link>{' '}
+                    d’Aura (obligatoire).
+                  </span>
+                </label>
+
+                <label className="flex items-start gap-2.5 cursor-pointer text-[#77817F] dark:text-[#7A8885] select-none">
+                  <input
+                    type="checkbox"
+                    checked={marketingConsent}
+                    onChange={(e) => setMarketingConsent(e.target.checked)}
+                    className="mt-0.5 rounded border-[#D8D3C5] dark:border-[#243337] text-[#078348] focus:ring-[#078348] shrink-0"
+                  />
+                  <span className="leading-tight">
+                    J’accepte de recevoir des communications relatives aux mises à jour et nouveautés d’Aura (facultatif).
+                  </span>
+                </label>
               </div>
             )}
 

@@ -2026,7 +2026,7 @@ export const LandingPage: React.FC = () => {
                 <AuraLogo size="sm" withWordmark />
               </Link>
               <span className="hidden lg:inline text-[11px] text-[#8B9390]">
-                © 2025 Aura. Tous droits réservés.
+                © 2026 Aura. Tous droits réservés.
               </span>
             </div>
 
@@ -2053,45 +2053,46 @@ export const LandingPage: React.FC = () => {
               >
                 Galerie
               </button>
-              <button
-                type="button"
-                onClick={() => setLegalSheet('tarifs')}
-                className="aura-nav-link hover:text-[#14282D] dark:hover:text-white transition-colors cursor-pointer"
+              <Link
+                to="/pricing"
+                className="aura-nav-link hover:text-[#14282D] dark:hover:text-white transition-colors"
               >
-                Tarifs
-              </button>
-              <button
-                type="button"
-                onClick={() => setLegalSheet('apropos')}
-                className="aura-nav-link hover:text-[#14282D] dark:hover:text-white transition-colors cursor-pointer"
+                Tarifs &amp; Quotas
+              </Link>
+              <Link
+                to="/help"
+                className="aura-nav-link hover:text-[#14282D] dark:hover:text-white transition-colors"
               >
-                À propos
-              </button>
+                Centre d’aide
+              </Link>
             </div>
 
             {/* Right Legal Links + Theme Toggle */}
-            <div className="flex flex-wrap items-center justify-center gap-5">
-              <button
-                type="button"
-                onClick={() => setLegalSheet('conditions')}
-                className="aura-nav-link hover:text-[#14282D] dark:hover:text-white transition-colors cursor-pointer"
+            <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-5">
+              <Link
+                to="/legal/terms"
+                className="aura-nav-link hover:text-[#14282D] dark:hover:text-white transition-colors"
               >
-                Conditions d’utilisation
-              </button>
-              <button
-                type="button"
-                onClick={() => setLegalSheet('confidentialite')}
-                className="aura-nav-link hover:text-[#14282D] dark:hover:text-white transition-colors cursor-pointer"
+                Conditions
+              </Link>
+              <Link
+                to="/legal/privacy"
+                className="aura-nav-link hover:text-[#14282D] dark:hover:text-white transition-colors"
               >
                 Confidentialité
-              </button>
-              <button
-                type="button"
-                onClick={() => setLegalSheet('support')}
-                className="aura-nav-link hidden sm:inline hover:text-[#14282D] dark:hover:text-white transition-colors cursor-pointer"
+              </Link>
+              <Link
+                to="/legal/notice"
+                className="aura-nav-link hidden sm:inline hover:text-[#14282D] dark:hover:text-white transition-colors"
               >
-                Support
-              </button>
+                Mentions légales
+              </Link>
+              <Link
+                to="/legal/contact"
+                className="aura-nav-link hover:text-[#14282D] dark:hover:text-white transition-colors"
+              >
+                Contact
+              </Link>
 
               <button
                 type="button"
@@ -2109,7 +2110,7 @@ export const LandingPage: React.FC = () => {
 
             {/* Mobile Copyright */}
             <div className="lg:hidden text-[11px] text-[#8B9390]">
-              © 2025 Aura. Tous droits réservés.
+              © 2026 Aura. Tous droits réservés.
             </div>
           </div>
         </footer>
