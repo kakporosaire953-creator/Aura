@@ -464,6 +464,70 @@ class AuraDataStore {
     }
   }
 
+  upsertSupabaseAuthUser(
+    sbProfile: UserProfile,
+    accessToken?: string | null
+  ): { user: UserProfile; token: string } {
+    const cleanEmail = sbProfile.email.trim().toLowerCase();
+    const existing = this.db.users[cleanEmail];
+    const salt = existing?.passwordSalt || crypto.randomBytes(16).toString('hex');
+    const hash =
+      existing?.passwordHash ||
+      hashPassword(crypto.randomBytes(24).toString('hex'), salt);
+
+    const mergedProfile: UserProfile = existing
+      ? {
+          ...existing.profile,
+          id: sbProfile.id || existing.profile.id,
+          email: cleanEmail,
+          name: sbProfile.name || existing.profile.name,
+          role: sbProfile.role || existing.profile.role || 'Membre Aura',
+          organization:
+            sbProfile.organization || existing.profile.organization || '',
+          location: sbProfile.location || existing.profile.location || '',
+          avatarUrl: sbProfile.avatarUrl || existing.profile.avatarUrl,
+          onboardingCompleted:
+            Boolean(sbProfile.onboardingCompleted) ||
+            Boolean(existing.profile.onboardingCompleted),
+          onboarding: sbProfile.onboarding || existing.profile.onboarding,
+          preferences: {
+            ...existing.profile.preferences,
+            ...sbProfile.preferences,
+          },
+        }
+      : {
+          ...sbProfile,
+          email: cleanEmail,
+        };
+
+    this.db.users[cleanEmail] = {
+      profile: mergedProfile,
+      passwordSalt: salt,
+      passwordHash: hash,
+    };
+
+    if (!this.db.usageByUser[mergedProfile.id]) {
+      this.db.usageByUser[mergedProfile.id] = createEmptyUsage();
+    }
+
+    const signedToken = this.createSession(mergedProfile);
+    if (accessToken) {
+      this.revokedTokens.delete(accessToken);
+      this.db.sessions[accessToken] = {
+        token: accessToken,
+        userId: mergedProfile.id,
+        email: cleanEmail,
+        createdAt: new Date().toISOString(),
+      };
+    }
+
+    this.saveToDisk();
+    return {
+      user: mergedProfile,
+      token: accessToken || signedToken,
+    };
+  }
+
   registerUser(
     name: string,
     email: string,

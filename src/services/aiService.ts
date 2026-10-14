@@ -351,9 +351,19 @@ export async function sendAIRequest(
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const error = new Error(
-      data.error || 'Une erreur est survenue lors de la génération IA.'
-    ) as Error & { usage?: UsageMetrics };
+    let errMessage = data.error;
+    if (!errMessage) {
+      if (response.status === 404) {
+        errMessage =
+          'Route API introuvable (404 sur Vercel). Vérifiez que les fonctions Serverless Vercel sont activées.';
+      } else if (response.status === 503) {
+        errMessage =
+          'Service IA non configuré (503). La variable GEMINI_API_KEY est manquante dans votre projet Vercel.';
+      } else {
+        errMessage = `Erreur de communication avec le serveur (${response.status}). Vérifiez vos variables Vercel.`;
+      }
+    }
+    const error = new Error(errMessage) as Error & { usage?: UsageMetrics };
     if (data.usage) {
       error.usage = data.usage;
     }

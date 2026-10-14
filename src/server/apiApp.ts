@@ -5,6 +5,13 @@ import { aiRegistry } from './ai/externalAdapters.ts';
 import { dataStore } from './dataStore.ts';
 import { SendMessagePayloadSchema, ChatMessage, UserProfile } from '../shared/types.ts';
 
+import {
+  checkSupabaseHealth,
+  getPublicSupabaseConfig,
+  getSupabaseServerClient,
+  verifySupabaseAccessToken,
+} from './supabaseClient.ts';
+
 function extractBearerToken(req: Request): string | null {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -21,7 +28,40 @@ function getAuthenticatedUser(req: Request): UserProfile | null {
 export function createApiApp() {
   const app = express();
 
+  // Basic CORS & Options preflight
+  app.use((req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    if (req.method === 'OPTIONS') {
+      res.status(204).end();
+      return;
+    }
+    next();
+  });
+
+  // URL Normalization for Vercel Serverless Function rewrites
+  app.use((req: any, _res, next) => {
+    const rawMatched =
+      (req.headers['x-matched-path'] as string) ||
+      (req.headers['x-vercel-matched-path'] as string) ||
+      (req.headers['x-forwarded-uri'] as string) ||
+      (req.headers['x-original-url'] as string);
+
+    if (rawMatched && !rawMatched.includes('api/index')) {
+      req.url = rawMatched;
+    } else if (req.url && !req.url.startsWith('/api') && !req.url.startsWith('/?')) {
+      req.url = '/api' + (req.url.startsWith('/') ? req.url : '/' + req.url);
+    }
+
+    if (req.body && typeof req.body === 'object') {
+      req._body = true;
+    }
+    next();
+  });
+
   app.use(express.json({ limit: '15mb' }));
+
 
   // Ensure Supabase PostgreSQL state is hydrated on serverless cold starts
   app.use(async (_req, _res, next) => {
@@ -31,6 +71,46 @@ export function createApiApp() {
       // non-blocking fallback to local/stateless store
     }
     next();
+  });
+
+  // Hydrate Supabase JWT tokens if presented in Bearer headers
+  app.use(async (req, _res, next) => {
+    const token = extractBearerToken(req);
+    if (token && !dataStore.getUserByToken(token) && !token.startsWith('aura1.')) {
+      try {
+        const sbProfile = await verifySupabaseAccessToken(token);
+        if (sbProfile) {
+          dataStore.upsertSupabaseAuthUser(sbProfile, token);
+        }
+      } catch {
+        // ignore unverified token
+      }
+    }
+    next();
+  });
+
+  // --- API: Supabase Public Config & Diagnostics ---
+  app.get('/api/supabase/public-config', (_req, res) => {
+    res.json(getPublicSupabaseConfig());
+  });
+
+  app.get('/api/supabase/status', async (_req, res) => {
+    const health = await dataStore.getSupabaseDiagnostics();
+    res.json(health);
+  });
+
+  app.post('/api/supabase/sync', async (req, res) => {
+    const user = getAuthenticatedUser(req);
+    if (!user) {
+      res.status(401).json({ error: 'Authentification requise.' });
+      return;
+    }
+    const result = await dataStore.forceSyncToSupabase();
+    const health = await dataStore.getSupabaseDiagnostics();
+    res.json({
+      ...result,
+      health,
+    });
   });
 
   // --- API: System & Multi-Provider Status ---
@@ -60,26 +140,32 @@ export function createApiApp() {
     });
   });
 
-  app.get('/api/supabase/status', async (_req, res) => {
-    const health = await dataStore.getSupabaseDiagnostics();
-    res.json(health);
-  });
-
-  app.post('/api/supabase/sync', async (req, res) => {
-    const user = getAuthenticatedUser(req);
-    if (!user) {
-      res.status(401).json({ error: 'Authentification requise.' });
+  // --- API: User & Authentication (Supabase Auth + fallback) ---
+  app.post('/api/auth/supabase-session', async (req, res) => {
+    const { accessToken, user: clientProfile } = req.body || {};
+    if (!accessToken) {
+      res.status(400).json({ error: 'Jeton de session Supabase requis.' });
       return;
     }
-    const result = await dataStore.forceSyncToSupabase();
-    const health = await dataStore.getSupabaseDiagnostics();
+
+    let profile = await verifySupabaseAccessToken(accessToken);
+    if (!profile && clientProfile && clientProfile.email) {
+      profile = clientProfile;
+    }
+
+    if (!profile) {
+      res.status(401).json({ error: 'Session Supabase invalide ou expirée.' });
+      return;
+    }
+
+    const synced = dataStore.upsertSupabaseAuthUser(profile, accessToken);
     res.json({
-      ...result,
-      health,
+      user: synced.user,
+      token: synced.token,
+      message: 'Session Supabase synchronisée.',
     });
   });
 
-  // --- API: User & Authentication ---
   app.get('/api/auth/me', (req, res) => {
     const user = getAuthenticatedUser(req);
     if (!user) {
@@ -89,7 +175,7 @@ export function createApiApp() {
     res.json({ user });
   });
 
-  app.post('/api/auth/login', (req, res) => {
+  app.post('/api/auth/login', async (req, res) => {
     const { email, password } = req.body || {};
     if (!email || !password) {
       res.status(400).json({
@@ -97,6 +183,38 @@ export function createApiApp() {
       });
       return;
     }
+
+    const sbClient = getSupabaseServerClient();
+    if (sbClient) {
+      try {
+        const { data: sbData, error: sbError } =
+          await sbClient.auth.signInWithPassword({
+            email: String(email),
+            password: String(password),
+          });
+
+        if (!sbError && sbData?.user && sbData.session) {
+          const profile = await verifySupabaseAccessToken(
+            sbData.session.access_token
+          );
+          if (profile) {
+            const synced = dataStore.upsertSupabaseAuthUser(
+              profile,
+              sbData.session.access_token
+            );
+            res.json({
+              user: synced.user,
+              token: sbData.session.access_token,
+              message: 'Connexion réussie via Supabase Auth.',
+            });
+            return;
+          }
+        }
+      } catch {
+        // Fallback to local store if Supabase Auth is unreachable
+      }
+    }
+
     const authResult = dataStore.authenticateUser(String(email), String(password));
     if (!authResult) {
       res.status(401).json({
@@ -112,7 +230,7 @@ export function createApiApp() {
     });
   });
 
-  app.post('/api/auth/register', (req, res) => {
+  app.post('/api/auth/register', async (req, res) => {
     const { name, email, password } = req.body || {};
     if (
       !name ||
@@ -127,6 +245,78 @@ export function createApiApp() {
           'Veuillez renseigner votre nom, une adresse e-mail valide et un mot de passe d’au moins 8 caractères.',
       });
       return;
+    }
+
+    const sbClient = getSupabaseServerClient();
+    if (sbClient) {
+      try {
+        const { data: sbData, error: sbError } = await sbClient.auth.signUp({
+          email: String(email),
+          password: String(password),
+          options: {
+            data: {
+              name: String(name).trim(),
+              full_name: String(name).trim(),
+              role: 'Membre Aura',
+              plan: 'free',
+              onboardingCompleted: false,
+            },
+          },
+        });
+
+        if (!sbError && sbData?.user) {
+          const dummyProfile: UserProfile = {
+            id: sbData.user.id,
+            name: String(name).trim(),
+            email: String(email).trim().toLowerCase(),
+            role: 'Membre Aura',
+            organization: '',
+            location: '',
+            plan: 'free',
+            authProvider: 'email',
+            onboardingCompleted: false,
+            preferences: {
+              language: 'fr',
+              theme: 'light',
+              defaultMode: 'chat',
+              defaultProvider: 'gemini',
+            },
+          };
+
+          const token =
+            sbData.session?.access_token ||
+            dataStore.createSession(dummyProfile);
+
+          const synced = dataStore.upsertSupabaseAuthUser(
+            dummyProfile,
+            sbData.session?.access_token
+          );
+
+          res.status(201).json({
+            user: synced.user,
+            token,
+            requiresEmailConfirmation: !sbData.session,
+            message: sbData.session
+              ? 'Compte Aura créé avec succès dans Supabase Auth.'
+              : 'Compte créé dans Supabase Auth. Veuillez vérifier votre boîte mail si la confirmation est requise.',
+          });
+          return;
+        } else if (sbError) {
+          // If Supabase gave an explicit error like user already registered
+          if (
+            sbError.message.includes('already registered') ||
+            sbError.message.includes('User already exists')
+          ) {
+            res.status(409).json({
+              error:
+                'Un compte existe déjà avec cette adresse e-mail. Veuillez vous connecter.',
+            });
+            return;
+          }
+        }
+      } catch {
+        // Fallback to local store
+      }
     }
 
     try {
@@ -210,15 +400,26 @@ export function createApiApp() {
     res.json({ user: updated, token: refreshedToken });
   });
 
-  app.post('/api/auth/forgot-password', (req, res) => {
+  app.post('/api/auth/forgot-password', async (req, res) => {
     const { email } = req.body || {};
     if (!email || !String(email).includes('@')) {
       res.status(400).json({ error: 'Veuillez entrer une adresse e-mail valide.' });
       return;
     }
+
+    const cleanEmail = String(email).trim().toLowerCase();
+    const sbClient = getSupabaseServerClient();
+    if (sbClient) {
+      try {
+        await sbClient.auth.resetPasswordForEmail(cleanEmail);
+      } catch {
+        // ignore error to prevent email enumeration
+      }
+    }
+
     res.json({
       success: true,
-      message: `Si un compte est associé à ${email}, les instructions de réinitialisation ont été envoyées.`,
+      message: `Si un compte est associé à ${cleanEmail}, les instructions de réinitialisation ont été envoyées.`,
     });
   });
 

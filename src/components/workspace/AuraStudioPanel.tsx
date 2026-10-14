@@ -13,6 +13,10 @@ import {
   VirtualStudioFile,
 } from '../../shared/types';
 import { useAura } from '../../context/AuraContext';
+import {
+  createStudioZipBlob,
+  printSlideDeckToPdf,
+} from '../../utils/exportStudioUtils';
 
 export interface AuraStudioItem {
   messageId?: string;
@@ -436,6 +440,36 @@ export const AuraStudioPanel: React.FC<AuraStudioPanelProps> = ({
     URL.revokeObjectURL(url);
   };
 
+  const handleExportZip = () => {
+    const readmeContent = `# ${
+      item?.title || conversation?.title || 'Projet Aura Studio'
+    }\n\nGénéré avec **Aura Studio** (${
+      item?.modelId || 'aura-3.8-flash'
+    }).\n\n## Fichiers inclus\n${virtualFiles
+      .map((f) => `- \`${f.path}\` (${f.language})`)
+      .join('\n')}\n`;
+
+    const filesForZip = [
+      ...virtualFiles.map((f) => ({ path: f.path, content: f.content })),
+      ...(virtualFiles.some((f) => f.path.toLowerCase() === 'readme.md')
+        ? []
+        : [{ path: 'README.md', content: readmeContent }]),
+    ];
+
+    const zipBlob = createStudioZipBlob(filesForZip);
+    const url = URL.createObjectURL(zipBlob);
+    const a = document.createElement('a');
+    const safeSlug = (item?.title || conversation?.title || 'aura-studio-project')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+      .slice(0, 42);
+    a.href = url;
+    a.download = `${safeSlug || 'aura-studio-project'}.zip`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handlePersistStudioChanges = async () => {
     const convId = item?.conversationId || conversation?.id;
     const msgId = item?.messageId;
@@ -697,6 +731,20 @@ export const AuraStudioPanel: React.FC<AuraStudioPanelProps> = ({
             aria-label="Télécharger le livrable"
           >
             <i className="fa-solid fa-download text-xs" />
+          </button>
+
+          <button
+            type="button"
+            onClick={handleExportZip}
+            className="px-2.5 h-8 rounded-lg border border-[#E8E6DE] dark:border-[#243337] flex items-center justify-center gap-1 text-[11px] font-mono font-semibold text-[#078348] dark:text-[#8CCB4A] hover:bg-[#EAF2E2]/70 dark:hover:bg-[#182E24] transition-colors cursor-pointer"
+            title={
+              language === 'en'
+                ? 'Download complete multi-file .ZIP archive'
+                : 'Télécharger l’archive complète du projet (.ZIP)'
+            }
+          >
+            <i className="fa-solid fa-file-zipper text-xs" />
+            <span className="hidden sm:inline">.ZIP</span>
           </button>
 
           <button
@@ -1036,19 +1084,31 @@ export const AuraStudioPanel: React.FC<AuraStudioPanelProps> = ({
                     </div>
                   </div>
 
-                  <div className="pt-3 mt-4 border-t border-[#E8E6DE]/70 dark:border-[#243337] flex items-center justify-between text-[11px] text-[#77817F]">
-                    <span className="truncate max-w-[240px]">
+                  <div className="pt-3 mt-4 border-t border-[#E8E6DE]/70 dark:border-[#243337] flex flex-wrap items-center justify-between gap-2 text-[11px] text-[#77817F]">
+                    <span className="truncate max-w-[200px]">
                       {item.slideArtifact.subtitle}
                     </span>
-                    <button
-                      type="button"
-                      onClick={handleDownload}
-                      className="text-[#078348] dark:text-[#8CCB4A] font-semibold hover:underline cursor-pointer"
-                    >
-                      {language === 'en'
-                        ? 'Export HTML Deck ↓'
-                        : 'Exporter le deck HTML ↓'}
-                    </button>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => printSlideDeckToPdf(item.slideArtifact!)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#EAF2E2] dark:bg-[#182E24] text-[#078348] dark:text-[#8CCB4A] font-semibold hover:opacity-90 cursor-pointer"
+                      >
+                        <i className="fa-solid fa-file-pdf text-[10px]" />
+                        <span>
+                          {language === 'en' ? 'Export PDF 16:9' : 'Exporter PDF 16:9'}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleDownload}
+                        className="text-[#078348] dark:text-[#8CCB4A] font-semibold hover:underline cursor-pointer"
+                      >
+                        {language === 'en'
+                          ? 'Export HTML Deck ↓'
+                          : 'Exporter HTML ↓'}
+                      </button>
+                    </div>
                   </div>
                 </div>
 

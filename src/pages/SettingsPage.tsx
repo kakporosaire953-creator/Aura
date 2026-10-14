@@ -323,10 +323,36 @@ CREATE TABLE IF NOT EXISTS public.aura_conversations (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );`;
 
+interface SupabaseHealthState {
+  configured: boolean;
+  connected: boolean;
+  tablesReady: boolean;
+  usingServiceRole: boolean;
+  message: string;
+}
+
 const SupabasePersistencePanel: React.FC<{ description: string }> = ({ description }) => {
   const [copiedSql, setCopiedSql] = useState(false);
+  const [showSqlPreview, setShowSqlPreview] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
+  const [health, setHealth] = useState<SupabaseHealthState | null>(null);
+
+  const fetchHealth = async () => {
+    try {
+      const res = await fetch('/api/supabase/status');
+      if (res.ok) {
+        const data = await res.json();
+        setHealth(data);
+      }
+    } catch {
+      // ignore network error
+    }
+  };
+
+  React.useEffect(() => {
+    fetchHealth();
+  }, []);
 
   const handleCopySql = () => {
     navigator.clipboard.writeText(SUPABASE_SQL_SCHEMA);
@@ -347,13 +373,18 @@ const SupabasePersistencePanel: React.FC<{ description: string }> = ({ descripti
         },
       });
       const data = await res.json();
+      if (data.health) {
+        setHealth(data.health);
+      } else {
+        await fetchHealth();
+      }
       if (data.ok) {
-        setSyncStatus('Synchronisation Supabase PostgreSQL réussie.');
+        setSyncStatus('Synchronisation Supabase PostgreSQL réussie : toutes vos données sont sauvegardées dans le cloud.');
       } else {
         setSyncStatus(
           data.health?.message ||
             data.error ||
-            'Ajoutez SUPABASE_URL et SUPABASE_SERVICE_ROLE_KEY dans vos variables d’environnement.'
+            'Ajoutez SUPABASE_URL et SUPABASE_SERVICE_ROLE_KEY (ou SUPABASE_ANON_KEY) dans vos variables d’environnement.'
         );
       }
     } catch {
@@ -364,7 +395,7 @@ const SupabasePersistencePanel: React.FC<{ description: string }> = ({ descripti
   };
 
   return (
-    <div className="rounded-2xl bg-[#FFFDF8] dark:bg-[#152023] border border-[#E8E6DE] dark:border-[#243337] p-6 space-y-4">
+    <div className="rounded-2xl bg-[#FFFDF8] dark:bg-[#152023] border border-[#E8E6DE] dark:border-[#243337] p-6 space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <span className="w-9 h-9 rounded-xl bg-[#EAF1E8] dark:bg-[#182E24] text-[#078348] dark:text-[#8CCB4A] flex items-center justify-center">
@@ -374,11 +405,22 @@ const SupabasePersistencePanel: React.FC<{ description: string }> = ({ descripti
             <h3 className="font-display font-bold text-base text-[#14282D] dark:text-[#F3F2EC]">
               Persistance Cloud Supabase PostgreSQL
             </h3>
-            <p className="text-xs text-[#77817F]">{description}</p>
+            <p className="text-xs text-[#77817F]">
+              {health?.message || description}
+            </p>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowSqlPreview((v) => !v)}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#FBFAF5] dark:bg-[#1B292D] border border-[#E8E6DE] dark:border-[#243337] hover:border-[#078348] text-xs font-semibold text-[#14282D] dark:text-[#F3F2EC] transition-colors cursor-pointer"
+          >
+            <i className="fa-solid fa-code text-[#77817F]" />
+            <span>{showSqlPreview ? 'Masquer le SQL' : 'Voir le schéma SQL'}</span>
+          </button>
+
           <button
             type="button"
             onClick={handleCopySql}
@@ -390,7 +432,7 @@ const SupabasePersistencePanel: React.FC<{ description: string }> = ({ descripti
               }`}
             />
             <span>
-              {copiedSql ? 'Script SQL copié !' : 'Copier le script SQL Supabase'}
+              {copiedSql ? 'Script SQL copié !' : 'Copier le script SQL'}
             </span>
           </button>
 
@@ -406,12 +448,79 @@ const SupabasePersistencePanel: React.FC<{ description: string }> = ({ descripti
         </div>
       </div>
 
+      {/* Diagnostic Checklist Étape 1 & Étape 2 */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+        <div className="p-3.5 rounded-xl bg-[#FBFAF5] dark:bg-[#111B1E] border border-[#E8E6DE] dark:border-[#243337] space-y-1">
+          <div className="flex items-center justify-between font-semibold text-[#14282D] dark:text-[#F3F2EC]">
+            <span>Étape 1 · Schéma SQL</span>
+            <span
+              className={
+                health?.tablesReady
+                  ? 'text-[#078348] dark:text-[#8CCB4A]'
+                  : 'text-[#FF790D]'
+              }
+            >
+              {health?.tablesReady ? 'Prêt ✓' : 'Script prêt'}
+            </span>
+          </div>
+          <p className="text-[11px] text-[#77817F]">
+            Tables <code>aura_state_snapshots</code>, <code>aura_users</code>,{' '}
+            <code>aura_conversations</code> et <code>aura_projects</code> dans Supabase SQL Editor.
+          </p>
+        </div>
+
+        <div className="p-3.5 rounded-xl bg-[#FBFAF5] dark:bg-[#111B1E] border border-[#E8E6DE] dark:border-[#243337] space-y-1">
+          <div className="flex items-center justify-between font-semibold text-[#14282D] dark:text-[#F3F2EC]">
+            <span>Étape 2 · Clés d’API</span>
+            <span
+              className={
+                health?.configured
+                  ? 'text-[#078348] dark:text-[#8CCB4A]'
+                  : 'text-[#FF790D]'
+              }
+            >
+              {health?.configured ? 'Configurées ✓' : 'En attente'}
+            </span>
+          </div>
+          <p className="text-[11px] text-[#77817F]">
+            Dans Supabase <strong>Project Settings → API</strong>, copiez{' '}
+            <code>SUPABASE_URL</code> et <code>SUPABASE_SERVICE_ROLE_KEY</code> (ou{' '}
+            <code>SUPABASE_ANON_KEY</code>).
+          </p>
+        </div>
+
+        <div className="p-3.5 rounded-xl bg-[#FBFAF5] dark:bg-[#111B1E] border border-[#E8E6DE] dark:border-[#243337] space-y-1">
+          <div className="flex items-center justify-between font-semibold text-[#14282D] dark:text-[#F3F2EC]">
+            <span>Étape 3 · Synchronisation</span>
+            <span
+              className={
+                health?.connected && health?.tablesReady
+                  ? 'text-[#078348] dark:text-[#8CCB4A]'
+                  : 'text-[#77817F]'
+              }
+            >
+              {health?.connected && health?.tablesReady ? 'Active ✓' : 'Hybride local'}
+            </span>
+          </div>
+          <p className="text-[11px] text-[#77817F]">
+            Synchronisation automatique à chaque nouveau message, projet ou livrable Aura Studio.
+          </p>
+        </div>
+      </div>
+
+      {showSqlPreview && (
+        <pre className="p-4 rounded-xl bg-[#101B1E] text-[#E6ECEA] font-mono text-[11px] overflow-x-auto max-h-56 border border-[#223236]">
+          <code>{SUPABASE_SQL_SCHEMA}</code>
+        </pre>
+      )}
+
       {syncStatus && (
-        <div className="px-3.5 py-2.5 rounded-xl bg-[#FBFAF5] dark:bg-[#111B1E] border border-[#E8E6DE] dark:border-[#243337] text-xs text-[#14282D] dark:text-[#F3F2EC]">
+        <div className="px-3.5 py-2.5 rounded-xl bg-[#FBFAF5] dark:bg-[#111B1E] border border-[#E8E6DE] dark:border-[#243337] text-xs font-medium text-[#14282D] dark:text-[#F3F2EC]">
           {syncStatus}
         </div>
       )}
     </div>
   );
 };
+
 

@@ -14,6 +14,10 @@ import {
   UserProfile,
 } from '../shared/types';
 import { aiService } from '../services/aiService';
+import {
+  getBrowserSupabaseClient,
+  mapSupabaseUserToProfile,
+} from '../services/supabaseAuthClient';
 
 interface PersistenceInfo {
   engine: string;
@@ -401,6 +405,75 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
     refreshAll();
   }, [refreshAll]);
 
+  // Synchronize and subscribe to active Supabase Auth sessions
+  useEffect(() => {
+    let isMounted = true;
+    let authSubscription: { unsubscribe: () => void } | null = null;
+
+    (async () => {
+      const supabase = await getBrowserSupabaseClient();
+      if (!supabase || !isMounted) return;
+
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const activeSession = sessionData?.session;
+        if (activeSession?.user && activeSession.access_token) {
+          safeSetItem(SESSION_TOKEN_KEY, activeSession.access_token);
+          const profile = mapSupabaseUserToProfile(activeSession.user);
+          setAuthenticatedUser((prev) => prev || profile);
+
+          fetch('/api/auth/supabase-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              accessToken: activeSession.access_token,
+              user: profile,
+            }),
+          }).catch(() => {});
+        }
+
+        const { data: subData } = supabase.auth.onAuthStateChange(
+          async (event, session) => {
+            if (!isMounted) return;
+            if (
+              event === 'SIGNED_IN' ||
+              event === 'TOKEN_REFRESHED' ||
+              event === 'USER_UPDATED'
+            ) {
+              if (session?.user && session.access_token) {
+                safeSetItem(SESSION_TOKEN_KEY, session.access_token);
+                const profile = mapSupabaseUserToProfile(session.user);
+                setAuthenticatedUser(profile);
+
+                fetch('/api/auth/supabase-session', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    accessToken: session.access_token,
+                    user: profile,
+                  }),
+                }).catch(() => {});
+
+                await refreshAll();
+              }
+            } else if (event === 'SIGNED_OUT') {
+              safeRemoveItem(SESSION_TOKEN_KEY);
+              clearClientUserData();
+            }
+          }
+        );
+        authSubscription = subData.subscription;
+      } catch (err) {
+        console.warn('Supabase Auth init ignoré:', err);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+      authSubscription?.unsubscribe();
+    };
+  }, [clearClientUserData, refreshAll]);
+
   const sendMessage = useCallback(
     async (params: {
       conversationId?: string;
@@ -729,6 +802,21 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateProfile = useCallback(async (updates: Partial<UserProfile>) => {
     try {
+      const supabase = await getBrowserSupabaseClient();
+      if (supabase) {
+        await supabase.auth
+          .updateUser({
+            data: {
+              ...(updates.name ? { name: updates.name, full_name: updates.name } : {}),
+              ...(updates.role ? { role: updates.role } : {}),
+              ...(updates.organization !== undefined ? { organization: updates.organization } : {}),
+              ...(updates.location !== undefined ? { location: updates.location } : {}),
+              ...(updates.preferences ? { preferences: updates.preferences } : {}),
+            },
+          })
+          .catch(() => {});
+      }
+
       const res = await fetchWithTimeout('/api/auth/profile', {
         method: 'PUT',
         headers: authHeaders({ 'Content-Type': 'application/json' }),
@@ -751,6 +839,18 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const completeOnboarding = useCallback(
     async (data: Omit<OnboardingData, 'completed'>): Promise<boolean> => {
       try {
+        const supabase = await getBrowserSupabaseClient();
+        if (supabase) {
+          await supabase.auth
+            .updateUser({
+              data: {
+                onboardingCompleted: true,
+                onboarding: { ...data, completed: true },
+              },
+            })
+            .catch(() => {});
+        }
+
         const res = await fetchWithTimeout('/api/auth/onboarding', {
           method: 'POST',
           headers: authHeaders({ 'Content-Type': 'application/json' }),
@@ -785,11 +885,46 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
       password: string
     ): Promise<{ ok: boolean; user?: UserProfile; error?: string }> => {
       setErrorBanner(null);
+      const cleanEmail = email.trim().toLowerCase();
       try {
+        const supabase = await getBrowserSupabaseClient();
+        if (supabase) {
+          const { data: sbData, error: sbError } =
+            await supabase.auth.signInWithPassword({
+              email: cleanEmail,
+              password,
+            });
+
+          if (!sbError && sbData?.user && sbData.session) {
+            const profile = mapSupabaseUserToProfile(sbData.user);
+            safeSetItem(SESSION_TOKEN_KEY, sbData.session.access_token);
+            setAuthenticatedUser(profile);
+
+            await fetch('/api/auth/supabase-session', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                accessToken: sbData.session.access_token,
+                user: profile,
+              }),
+            }).catch(() => {});
+
+            await refreshAll();
+            return { ok: true, user: profile };
+          } else if (sbError) {
+            const errMsg =
+              sbError.message === 'Invalid login credentials'
+                ? 'Identifiants incorrects ou compte inexistant.'
+                : sbError.message;
+            setErrorBanner(errMsg);
+            return { ok: false, error: errMsg };
+          }
+        }
+
         const res = await fetchWithTimeout('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password }),
+          body: JSON.stringify({ email: cleanEmail, password }),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
@@ -804,7 +939,7 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { ok: true, user: data.user };
       } catch {
         const errMsg =
-          'Le serveur Aura est momentanément injoignable. Veuillez réessayer dans quelques secondes.';
+          'Le service d’authentification est momentanément indisponible.';
         setErrorBanner(errMsg);
         return { ok: false, error: errMsg };
       }
@@ -819,11 +954,61 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
       password: string
     ): Promise<{ ok: boolean; user?: UserProfile; error?: string }> => {
       setErrorBanner(null);
+      const cleanEmail = email.trim().toLowerCase();
+      const cleanName = name.trim();
       try {
+        const supabase = await getBrowserSupabaseClient();
+        if (supabase) {
+          const { data: sbData, error: sbError } = await supabase.auth.signUp({
+            email: cleanEmail,
+            password,
+            options: {
+              data: {
+                name: cleanName,
+                full_name: cleanName,
+                role: 'Membre Aura',
+                plan: 'free',
+                onboardingCompleted: false,
+              },
+            },
+          });
+
+          if (!sbError && sbData?.user) {
+            const profile = mapSupabaseUserToProfile(sbData.user);
+            const token = sbData.session?.access_token;
+            if (token) {
+              safeSetItem(SESSION_TOKEN_KEY, token);
+              await fetch('/api/auth/supabase-session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  accessToken: token,
+                  user: profile,
+                }),
+              }).catch(() => {});
+            }
+            setAuthenticatedUser(profile);
+            setConversations([]);
+            setProjects([]);
+            setMissions([]);
+            setLibraryItems([]);
+            setActiveProjectId(undefined);
+            return { ok: true, user: profile };
+          } else if (sbError) {
+            const errMsg =
+              sbError.message.includes('already registered') ||
+              sbError.message.includes('User already exists')
+                ? 'Un compte existe déjà avec cette adresse e-mail. Veuillez vous connecter.'
+                : sbError.message;
+            setErrorBanner(errMsg);
+            return { ok: false, error: errMsg };
+          }
+        }
+
         const res = await fetchWithTimeout('/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, email, password }),
+          body: JSON.stringify({ name: cleanName, email: cleanEmail, password }),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
@@ -832,7 +1017,6 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return { ok: false, error: errMsg };
         }
 
-        // Start with a completely fresh session for this newly registered user
         safeSetItem(SESSION_TOKEN_KEY, data.token);
         setAuthenticatedUser(data.user);
         setConversations([]);
@@ -843,7 +1027,7 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { ok: true, user: data.user };
       } catch {
         const errMsg =
-          'Le serveur Aura est momentanément injoignable. Veuillez réessayer dans quelques secondes.';
+          'Le service d’authentification est momentanément indisponible.';
         setErrorBanner(errMsg);
         return { ok: false, error: errMsg };
       }
@@ -859,6 +1043,23 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }): Promise<{ ok: boolean; user?: UserProfile; isNewUser?: boolean; error?: string }> => {
       setErrorBanner(null);
       try {
+        const supabase = await getBrowserSupabaseClient();
+        if (supabase) {
+          // Check if OAuth URL redirection can be initiated
+          const isIframe = window.self !== window.top;
+          if (!isIframe) {
+            const { error: oauthErr } = await supabase.auth.signInWithOAuth({
+              provider: params.provider,
+              options: {
+                redirectTo: `${window.location.origin}/auth`,
+              },
+            });
+            if (!oauthErr) {
+              return { ok: true };
+            }
+          }
+        }
+
         const res = await fetchWithTimeout('/api/auth/oauth', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -891,10 +1092,14 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = useCallback(async () => {
     try {
+      const supabase = await getBrowserSupabaseClient();
+      if (supabase) {
+        await supabase.auth.signOut().catch(() => {});
+      }
       await fetchWithTimeout('/api/auth/logout', {
         method: 'POST',
         headers: authHeaders(),
-      });
+      }).catch(() => {});
     } catch {
       // ignore network error on logout
     }

@@ -934,7 +934,7 @@ Chaque diapositive doit avoir un titre fort, un sous-titre explicatif, un court 
   async generateCompletion(request: AIRequest): Promise<AIResponse> {
     if (!this.isConfigured()) {
       throw new Error(
-        'PROVIDER_NOT_CONFIGURED: La clé GEMINI_API_KEY n’est pas configurée sur le serveur.'
+        'PROVIDER_NOT_CONFIGURED: La clé GEMINI_API_KEY est manquante sur votre déploiement. Ajoutez GEMINI_API_KEY dans votre projet Vercel (Settings > Environment Variables) puis relancez le déploiement.'
       );
     }
 
