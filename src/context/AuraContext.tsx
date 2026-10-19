@@ -954,35 +954,32 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const supabase = await getBrowserSupabaseClient();
         if (supabase) {
-          const { data: sbData, error: sbError } =
-            await supabase.auth.signInWithPassword({
-              email: cleanEmail,
-              password,
-            });
+          try {
+            const { data: sbData, error: sbError } =
+              await supabase.auth.signInWithPassword({
+                email: cleanEmail,
+                password,
+              });
 
-          if (!sbError && sbData?.user && sbData.session) {
-            const profile = mapSupabaseUserToProfile(sbData.user);
-            safeSetItem(SESSION_TOKEN_KEY, sbData.session.access_token);
-            setAuthenticatedUser(profile);
+            if (!sbError && sbData?.user && sbData.session) {
+              const profile = mapSupabaseUserToProfile(sbData.user);
+              safeSetItem(SESSION_TOKEN_KEY, sbData.session.access_token);
+              setAuthenticatedUser(profile);
 
-            await fetch('/api/auth/supabase-session', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                accessToken: sbData.session.access_token,
-                user: profile,
-              }),
-            }).catch(() => {});
+              await fetch('/api/auth/supabase-session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  accessToken: sbData.session.access_token,
+                  user: profile,
+                }),
+              }).catch(() => {});
 
-            await refreshAll();
-            return { ok: true, user: profile };
-          } else if (sbError) {
-            const errMsg =
-              sbError.message === 'Invalid login credentials'
-                ? 'Identifiants incorrects ou compte inexistant.'
-                : sbError.message;
-            setErrorBanner(errMsg);
-            return { ok: false, error: errMsg };
+              await refreshAll();
+              return { ok: true, user: profile };
+            }
+          } catch {
+            // Supabase network / auth issue, proceed to server endpoint
           }
         }
 
@@ -993,7 +990,9 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-          const errMsg = data.error || 'Identifiants invalides.';
+          const errMsg =
+            data.error ||
+            'Identifiants incorrects ou compte inexistant. Avez-vous déjà créé votre compte ?';
           setErrorBanner(errMsg);
           return { ok: false, error: errMsg };
         }
@@ -1025,55 +1024,61 @@ export const AuraProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const supabase = await getBrowserSupabaseClient();
         if (supabase) {
-          const { data: sbData, error: sbError } = await supabase.auth.signUp({
-            email: cleanEmail,
-            password,
-            options: {
-              data: {
-                name: cleanName,
-                full_name: cleanName,
-                role: 'Membre Aura',
-                plan: 'free',
-                onboardingCompleted: false,
-                consents: {
-                  termsVersion: '2026-v1.0',
-                  privacyVersion: '2026-v1.0',
-                  consentedAt: new Date().toISOString(),
-                  marketingConsent: Boolean(consents?.marketingConsent),
+          try {
+            const { data: sbData, error: sbError } = await supabase.auth.signUp({
+              email: cleanEmail,
+              password,
+              options: {
+                data: {
+                  name: cleanName,
+                  full_name: cleanName,
+                  role: 'Membre Aura',
+                  plan: 'free',
+                  onboardingCompleted: false,
+                  consents: {
+                    termsVersion: '2026-v1.0',
+                    privacyVersion: '2026-v1.0',
+                    consentedAt: new Date().toISOString(),
+                    marketingConsent: Boolean(consents?.marketingConsent),
+                  },
                 },
               },
-            },
-          });
+            });
 
-          if (!sbError && sbData?.user) {
-            const profile = mapSupabaseUserToProfile(sbData.user);
-            const token = sbData.session?.access_token;
-            if (token) {
-              safeSetItem(SESSION_TOKEN_KEY, token);
-              await fetch('/api/auth/supabase-session', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  accessToken: token,
-                  user: profile,
-                }),
-              }).catch(() => {});
+            if (!sbError && sbData?.user) {
+              const profile = mapSupabaseUserToProfile(sbData.user);
+              const token = sbData.session?.access_token;
+              if (token) {
+                safeSetItem(SESSION_TOKEN_KEY, token);
+                await fetch('/api/auth/supabase-session', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    accessToken: token,
+                    user: profile,
+                  }),
+                }).catch(() => {});
+                setAuthenticatedUser(profile);
+                setConversations([]);
+                setProjects([]);
+                setMissions([]);
+                setLibraryItems([]);
+                setActiveProjectId(undefined);
+                return { ok: true, user: profile };
+              }
+            } else if (sbError) {
+              if (
+                sbError.message.includes('already registered') ||
+                sbError.message.includes('User already exists')
+              ) {
+                const errMsg =
+                  'Un compte existe déjà avec cette adresse e-mail. Veuillez vous connecter.';
+                setErrorBanner(errMsg);
+                return { ok: false, error: errMsg };
+              }
             }
-            setAuthenticatedUser(profile);
-            setConversations([]);
-            setProjects([]);
-            setMissions([]);
-            setLibraryItems([]);
-            setActiveProjectId(undefined);
-            return { ok: true, user: profile };
-          } else if (sbError) {
-            const errMsg =
-              sbError.message.includes('already registered') ||
-              sbError.message.includes('User already exists')
-                ? 'Un compte existe déjà avec cette adresse e-mail. Veuillez vous connecter.'
-                : sbError.message;
-            setErrorBanner(errMsg);
-            return { ok: false, error: errMsg };
+          } catch {
+            // Ignore error and fall through to server registration
           }
         }
 

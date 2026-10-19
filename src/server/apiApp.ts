@@ -220,7 +220,8 @@ export function createApiApp() {
           if (profile) {
             const synced = dataStore.upsertSupabaseAuthUser(
               profile,
-              sbData.session.access_token
+              sbData.session.access_token,
+              String(password)
             );
             res.json({
               user: synced.user,
@@ -228,6 +229,40 @@ export function createApiApp() {
               message: 'Connexion réussie via Supabase Auth.',
             });
             return;
+          }
+        } else if (sbError && sbError.message.includes('Email not confirmed')) {
+          try {
+            const { data: usersData } = await sbClient.auth.admin.listUsers();
+            const u = usersData?.users?.find(
+              (x) => x.email?.toLowerCase() === String(email).trim().toLowerCase()
+            );
+            if (u) {
+              await sbClient.auth.admin.updateUserById(u.id, { email_confirm: true });
+              const retry = await sbClient.auth.signInWithPassword({
+                email: String(email),
+                password: String(password),
+              });
+              if (!retry.error && retry.data?.user && retry.data.session) {
+                const profile = await verifySupabaseAccessToken(
+                  retry.data.session.access_token
+                );
+                if (profile) {
+                  const synced = dataStore.upsertSupabaseAuthUser(
+                    profile,
+                    retry.data.session.access_token,
+                    String(password)
+                  );
+                  res.json({
+                    user: synced.user,
+                    token: retry.data.session.access_token,
+                    message: 'Connexion réussie via Supabase Auth.',
+                  });
+                  return;
+                }
+              }
+            }
+          } catch {
+            // continue to local fallback
           }
         }
       } catch {
@@ -301,6 +336,24 @@ export function createApiApp() {
         });
 
         if (!sbError && sbData?.user) {
+          let accessToken = sbData.session?.access_token;
+          if (!accessToken) {
+            try {
+              await sbClient.auth.admin.updateUserById(sbData.user.id, {
+                email_confirm: true,
+              });
+              const loginResult = await sbClient.auth.signInWithPassword({
+                email: String(email),
+                password: String(password),
+              });
+              if (loginResult.data?.session?.access_token) {
+                accessToken = loginResult.data.session.access_token;
+              }
+            } catch {
+              // ignore admin confirm
+            }
+          }
+
           const dummyProfile: UserProfile = {
             id: sbData.user.id,
             name: String(name).trim(),
@@ -320,21 +373,20 @@ export function createApiApp() {
           };
 
           const token =
-            sbData.session?.access_token ||
+            accessToken ||
             dataStore.createSession(dummyProfile);
 
           const synced = dataStore.upsertSupabaseAuthUser(
             dummyProfile,
-            sbData.session?.access_token
+            accessToken,
+            String(password)
           );
 
           res.status(201).json({
             user: synced.user,
             token,
-            requiresEmailConfirmation: !sbData.session,
-            message: sbData.session
-              ? 'Compte Aura créé avec succès dans Supabase Auth.'
-              : 'Compte créé dans Supabase Auth. Veuillez vérifier votre boîte mail si la confirmation est requise.',
+            requiresEmailConfirmation: false,
+            message: 'Compte Aura créé avec succès.',
           });
           return;
         } else if (sbError) {

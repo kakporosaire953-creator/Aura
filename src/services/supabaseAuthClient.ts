@@ -42,6 +42,13 @@ const safeBrowserStorage = {
 let browserSupabaseClient: SupabaseClient | null = null;
 let initPromise: Promise<SupabaseClient | null> | null = null;
 
+export function normalizeSupabaseUrl(raw: string): string {
+  if (!raw) return '';
+  let url = raw.trim().replace(/\/+$/, '');
+  url = url.replace(/\/(rest(\/v1)?|auth(\/v1)?)$/i, '');
+  return url.replace(/\/+$/, '');
+}
+
 /**
  * Resolves the Supabase client in the browser using VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY
  * or by querying `/api/supabase/public-config` if the user configured SUPABASE_URL / SUPABASE_ANON_KEY on the server.
@@ -51,7 +58,8 @@ export async function getBrowserSupabaseClient(): Promise<SupabaseClient | null>
     return browserSupabaseClient;
   }
 
-  const envUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim();
+  const rawEnvUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim();
+  const envUrl = normalizeSupabaseUrl(rawEnvUrl);
   const envAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
 
   if (envUrl && envAnonKey) {
@@ -72,8 +80,9 @@ export async function getBrowserSupabaseClient(): Promise<SupabaseClient | null>
         const res = await fetch('/api/supabase/public-config');
         if (!res.ok) return null;
         const data = await res.json();
-        if (data?.configured && data.url && data.anonKey) {
-          browserSupabaseClient = createClient(data.url, data.anonKey, {
+        const cleanUrl = normalizeSupabaseUrl(data?.url || '');
+        if (data?.configured && cleanUrl && data.anonKey) {
+          browserSupabaseClient = createClient(cleanUrl, data.anonKey, {
             auth: {
               persistSession: true,
               autoRefreshToken: true,

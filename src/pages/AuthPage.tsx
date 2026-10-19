@@ -382,6 +382,34 @@ export const AuthPage: React.FC = () => {
             </p>
           </div>
 
+          {/* Mode Tabs (Se connecter vs Créer un compte) */}
+          {mode !== 'forgot' && (
+            <div className="flex p-1 mb-5 rounded-full bg-[#EFECE1] dark:bg-[#1A2629] border border-[#E0DBCF] dark:border-[#25363B]">
+              <button
+                type="button"
+                onClick={() => switchMode('login')}
+                className={`flex-1 py-2 text-xs font-bold rounded-full transition-all cursor-pointer ${
+                  mode === 'login'
+                    ? 'bg-[#FFFDF9] dark:bg-[#0E1618] text-[#14282D] dark:text-[#F3F2EC] shadow-xs'
+                    : 'text-[#64706D] dark:text-[#94A09E] hover:text-[#14282D]'
+                }`}
+              >
+                Se connecter
+              </button>
+              <button
+                type="button"
+                onClick={() => switchMode('register')}
+                className={`flex-1 py-2 text-xs font-bold rounded-full transition-all cursor-pointer ${
+                  mode === 'register'
+                    ? 'bg-[#FFFDF9] dark:bg-[#0E1618] text-[#14282D] dark:text-[#F3F2EC] shadow-xs'
+                    : 'text-[#64706D] dark:text-[#94A09E] hover:text-[#14282D]'
+                }`}
+              >
+                Créer un compte
+              </button>
+            </div>
+          )}
+
           {/* OAuth Buttons (Google & GitHub) */}
           {mode !== 'forgot' && (
             <>
@@ -391,6 +419,8 @@ export const AuthPage: React.FC = () => {
                   onClick={() => {
                     clearError();
                     setLocalError(null);
+                    setOauthEmail(email || '');
+                    setOauthName(name || '');
                     setOauthProvider('google');
                   }}
                   className="w-full rounded-full bg-[#FFFDF9] dark:bg-[#152023] hover:bg-[#F4F1E8] dark:hover:bg-[#1B292D] border border-[#E6E2D6] dark:border-[#243337] px-5 py-3 shadow-[0_2px_10px_rgba(20,40,45,0.03)] flex items-center justify-between transition-all cursor-pointer"
@@ -426,6 +456,8 @@ export const AuthPage: React.FC = () => {
                   onClick={() => {
                     clearError();
                     setLocalError(null);
+                    setOauthEmail(email || '');
+                    setOauthName(name || '');
                     setOauthProvider('github');
                   }}
                   className="w-full rounded-full bg-[#FFFDF9] dark:bg-[#152023] hover:bg-[#F4F1E8] dark:hover:bg-[#1B292D] border border-[#E6E2D6] dark:border-[#243337] px-5 py-3 shadow-[0_2px_10px_rgba(20,40,45,0.03)] flex items-center justify-between transition-all cursor-pointer"
@@ -451,11 +483,45 @@ export const AuthPage: React.FC = () => {
             </>
           )}
 
-          {/* Error / Status Banners */}
+          {/* Error / Status Banners with Instant Help */}
           {activeError && (
-            <div className="mb-4 p-3 rounded-xl bg-[#FEF2F2] border border-[#FECACA] text-xs text-[#991B1B] flex items-start gap-2">
-              <i className="fa-solid fa-circle-exclamation mt-0.5 shrink-0" />
-              <span>{activeError}</span>
+            <div className="mb-4 p-3.5 rounded-2xl bg-[#FEF2F2] border border-[#FECACA] text-xs text-[#991B1B] space-y-2">
+              <div className="flex items-start gap-2">
+                <i className="fa-solid fa-circle-exclamation mt-0.5 shrink-0" />
+                <span className="leading-relaxed font-medium">{activeError}</span>
+              </div>
+              {mode === 'login' &&
+                (activeError.toLowerCase().includes('inexistant') ||
+                  activeError.toLowerCase().includes('créer') ||
+                  activeError.toLowerCase().includes('incorrect')) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      clearError();
+                      setLocalError(null);
+                      setMode('register');
+                    }}
+                    className="w-full py-2 px-3 rounded-xl bg-[#991B1B]/10 hover:bg-[#991B1B]/15 text-[#991B1B] font-bold text-xs inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <span>Nouveau sur Aura ? Créer ce compte maintenant</span>
+                    <i className="fa-solid fa-arrow-right text-[10px]" />
+                  </button>
+                )}
+              {mode === 'register' &&
+                activeError.toLowerCase().includes('existe déjà') && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      clearError();
+                      setLocalError(null);
+                      setMode('login');
+                    }}
+                    className="w-full py-2 px-3 rounded-xl bg-[#991B1B]/10 hover:bg-[#991B1B]/15 text-[#991B1B] font-bold text-xs inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <span>Compte déjà existant ? Se connecter directement</span>
+                    <i className="fa-solid fa-arrow-right text-[10px]" />
+                  </button>
+                )}
             </div>
           )}
 

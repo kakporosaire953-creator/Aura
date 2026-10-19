@@ -33,13 +33,21 @@ export interface PersistedDatabase {
 
 let cachedClient: SupabaseClient | null = null;
 
+export function normalizeSupabaseUrl(raw: string): string {
+  if (!raw) return '';
+  let url = raw.trim().replace(/\/+$/, '');
+  url = url.replace(/\/(rest(\/v1)?|auth(\/v1)?)$/i, '');
+  return url.replace(/\/+$/, '');
+}
+
 export function getSupabaseConfig(): {
   url: string;
   key: string;
   configured: boolean;
   usingServiceRole: boolean;
 } {
-  const url = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '').trim();
+  const rawUrl = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '').trim();
+  const url = normalizeSupabaseUrl(rawUrl);
   const serviceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
   const anonKey = (
     process.env.SUPABASE_ANON_KEY ||
@@ -268,7 +276,8 @@ export function getPublicSupabaseConfig(): {
   anonKey: string;
   configured: boolean;
 } {
-  const url = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '').trim();
+  const rawUrl = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '').trim();
+  const url = normalizeSupabaseUrl(rawUrl);
   const anonKey = (
     process.env.SUPABASE_ANON_KEY ||
     process.env.VITE_SUPABASE_ANON_KEY ||

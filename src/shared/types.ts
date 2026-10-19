@@ -494,7 +494,7 @@ export interface OnboardingData {
 }
 
 export * from './plans.ts';
-import {
+import type {
   PlanId,
   UsageCategory,
   UsageLedgerEntry,

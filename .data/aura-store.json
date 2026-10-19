@@ -1,9 +1,171 @@
 {
-  "users": {},
-  "sessions": {},
+  "users": {
+    "kakporosaire953@gmail.com": {
+      "profile": {
+        "id": "8720b739-46d6-4107-9cb7-c17c9e22ce9b",
+        "name": "Kakpo Rosaire",
+        "plan": "free",
+        "role": "Membre Aura",
+        "email": "kakporosaire953@gmail.com",
+        "location": "",
+        "preferences": {
+          "theme": "light",
+          "language": "fr",
+          "defaultMode": "chat",
+          "defaultProvider": "gemini"
+        },
+        "authProvider": "email",
+        "organization": "",
+        "onboardingCompleted": false
+      },
+      "passwordHash": "c5a5a6bfa5b8239c4b0a9dd2cb4407da97aec63f5622bc4bcf8e28ecab0d66f600eb1e65951840773041b02bf61f5bb161f5d86de54247c3bb650c4f8dd257af",
+      "passwordSalt": "ca6e914e8868118adb75cd2c5b945bfb"
+    },
+    "amina.test@example.com": {
+      "profile": {
+        "id": "user-1792376749131-05c02204",
+        "name": "Amina Test",
+        "email": "amina.test@example.com",
+        "role": "Membre Aura",
+        "organization": "",
+        "location": "",
+        "plan": "free",
+        "authProvider": "email",
+        "onboardingCompleted": false,
+        "createdAt": "2026-10-19T02:25:49.131Z",
+        "consents": {
+          "termsVersion": "2026-v1.0",
+          "privacyVersion": "2026-v1.0",
+          "consentedAt": "2026-10-19T02:25:48.899Z",
+          "marketingConsent": false
+        },
+        "preferences": {
+          "language": "fr",
+          "theme": "light",
+          "defaultMode": "chat",
+          "defaultProvider": "gemini",
+          "reducedMotion": false,
+          "notifications": {
+            "securityAlerts": true,
+            "productUpdates": true,
+            "weeklyDigest": false
+          }
+        }
+      },
+      "passwordSalt": "77d78708c10a96f845a798d10022e04a",
+      "passwordHash": "82afcdd4180c33a63c54dcabe2d9c1ff9769951149f1c697ca90e6bd5fdb91fd6569b02f7909c44fcf9443dfb2ab3a7dd7565a4a95c1dd2a11324ba2162b2c46"
+    }
+  },
+  "sessions": {
+    "aura1.eyJpZCI6Ijg3MjBiNzM5LTQ2ZDYtNDEwNy05Y2I3LWMxN2M5ZTIyY2U5YiIsIm5hbWUiOiJLYWtwbyBSb3NhaXJlIiwiZW1haWwiOiJrYWtwb3Jvc2FpcmU5NTNAZ21haWwuY29tIiwicm9sZSI6Ik1lbWJyZSBBdXJhIiwib3JnYW5pemF0aW9uIjoiIiwibG9jYXRpb24iOiIiLCJwbGFuIjoiZnJlZSIsImF1dGhQcm92aWRlciI6ImVtYWlsIiwib25ib2FyZGluZ0NvbXBsZXRlZCI6ZmFsc2UsInByZWZlcmVuY2VzIjp7Imxhbmd1YWdlIjoiZnIiLCJ0aGVtZSI6ImxpZ2h0IiwiZGVmYXVsdE1vZGUiOiJjaGF0IiwiZGVmYXVsdFByb3ZpZGVyIjoiZ2VtaW5pIn19.g2P7b-FlkVpspfbYIgjc05RsT6BEXRBsa2pyc1Y0fGI": {
+      "token": "aura1.eyJpZCI6Ijg3MjBiNzM5LTQ2ZDYtNDEwNy05Y2I3LWMxN2M5ZTIyY2U5YiIsIm5hbWUiOiJLYWtwbyBSb3NhaXJlIiwiZW1haWwiOiJrYWtwb3Jvc2FpcmU5NTNAZ21haWwuY29tIiwicm9sZSI6Ik1lbWJyZSBBdXJhIiwib3JnYW5pemF0aW9uIjoiIiwibG9jYXRpb24iOiIiLCJwbGFuIjoiZnJlZSIsImF1dGhQcm92aWRlciI6ImVtYWlsIiwib25ib2FyZGluZ0NvbXBsZXRlZCI6ZmFsc2UsInByZWZlcmVuY2VzIjp7Imxhbmd1YWdlIjoiZnIiLCJ0aGVtZSI6ImxpZ2h0IiwiZGVmYXVsdE1vZGUiOiJjaGF0IiwiZGVmYXVsdFByb3ZpZGVyIjoiZ2VtaW5pIn19.g2P7b-FlkVpspfbYIgjc05RsT6BEXRBsa2pyc1Y0fGI",
+      "userId": "8720b739-46d6-4107-9cb7-c17c9e22ce9b",
+      "email": "kakporosaire953@gmail.com",
+      "createdAt": "2026-10-19T02:24:39.177Z"
+    },
+    "eyJhbGciOiJFUzI1NiIsImtpZCI6IjYzNzEzYWEzLTA0YjgtNDJmMC1iZGFkLTY2NjYzOWZkYzEzZCIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2lhYmhubmNkZ2J1cnlyaGVkZm95LnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiI4NzIwYjczOS00NmQ2LTQxMDctOWNiNy1jMTdjOWUyMmNlOWIiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzkyMzgwMjc5LCJpYXQiOjE3OTIzNzY2NzksImVtYWlsIjoia2FrcG9yb3NhaXJlOTUzQGdtYWlsLmNvbSIsInBob25lIjoiIiwiYXBwX21ldGFkYXRhIjp7InByb3ZpZGVyIjoiZW1haWwiLCJwcm92aWRlcnMiOlsiZW1haWwiXX0sInVzZXJfbWV0YWRhdGEiOnsiY29uc2VudHMiOnsiY29uc2VudGVkQXQiOiIyMDI2LTEwLTE5VDAyOjIxOjU1LjczM1oiLCJtYXJrZXRpbmdDb25zZW50IjpmYWxzZSwicHJpdmFjeVZlcnNpb24iOiIyMDI2LXYxLjAiLCJ0ZXJtc1ZlcnNpb24iOiIyMDI2LXYxLjAifSwiZW1haWwiOiJrYWtwb3Jvc2FpcmU5NTNAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZ1bGxfbmFtZSI6Iktha3BvIFJvc2FpcmUiLCJuYW1lIjoiS2FrcG8gUm9zYWlyZSIsIm9uYm9hcmRpbmdDb21wbGV0ZWQiOmZhbHNlLCJwaG9uZV92ZXJpZmllZCI6ZmFsc2UsInBsYW4iOiJmcmVlIiwicm9sZSI6Ik1lbWJyZSBBdXJhIiwic3ViIjoiODcyMGI3MzktNDZkNi00MTA3LTljYjctYzE3YzllMjJjZTliIn0sInJvbGUiOiJhdXRoZW50aWNhdGVkIiwiYWFsIjoiYWFsMSIsImFtciI6W3sibWV0aG9kIjoicGFzc3dvcmQiLCJ0aW1lc3RhbXAiOjE3OTIzNzY2Nzl9XSwic2Vzc2lvbl9pZCI6ImE2ZjlkY2QwLThiM2QtNGQ0Mi1hOTQ2LTc3MjI0NjYzZGViNiIsImlzX2Fub255bW91cyI6ZmFsc2V9.BgNxrm8gTAu91T8ZOen34Wlk2qtytHAASw_0415VAMonlL0afS5e_cHUlCQ3hcTEkeO9nOCeFiar5aEXTK1cEg": {
+      "token": "eyJhbGciOiJFUzI1NiIsImtpZCI6IjYzNzEzYWEzLTA0YjgtNDJmMC1iZGFkLTY2NjYzOWZkYzEzZCIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2lhYmhubmNkZ2J1cnlyaGVkZm95LnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiI4NzIwYjczOS00NmQ2LTQxMDctOWNiNy1jMTdjOWUyMmNlOWIiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzkyMzgwMjc5LCJpYXQiOjE3OTIzNzY2NzksImVtYWlsIjoia2FrcG9yb3NhaXJlOTUzQGdtYWlsLmNvbSIsInBob25lIjoiIiwiYXBwX21ldGFkYXRhIjp7InByb3ZpZGVyIjoiZW1haWwiLCJwcm92aWRlcnMiOlsiZW1haWwiXX0sInVzZXJfbWV0YWRhdGEiOnsiY29uc2VudHMiOnsiY29uc2VudGVkQXQiOiIyMDI2LTEwLTE5VDAyOjIxOjU1LjczM1oiLCJtYXJrZXRpbmdDb25zZW50IjpmYWxzZSwicHJpdmFjeVZlcnNpb24iOiIyMDI2LXYxLjAiLCJ0ZXJtc1ZlcnNpb24iOiIyMDI2LXYxLjAifSwiZW1haWwiOiJrYWtwb3Jvc2FpcmU5NTNAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZ1bGxfbmFtZSI6Iktha3BvIFJvc2FpcmUiLCJuYW1lIjoiS2FrcG8gUm9zYWlyZSIsIm9uYm9hcmRpbmdDb21wbGV0ZWQiOmZhbHNlLCJwaG9uZV92ZXJpZmllZCI6ZmFsc2UsInBsYW4iOiJmcmVlIiwicm9sZSI6Ik1lbWJyZSBBdXJhIiwic3ViIjoiODcyMGI3MzktNDZkNi00MTA3LTljYjctYzE3YzllMjJjZTliIn0sInJvbGUiOiJhdXRoZW50aWNhdGVkIiwiYWFsIjoiYWFsMSIsImFtciI6W3sibWV0aG9kIjoicGFzc3dvcmQiLCJ0aW1lc3RhbXAiOjE3OTIzNzY2Nzl9XSwic2Vzc2lvbl9pZCI6ImE2ZjlkY2QwLThiM2QtNGQ0Mi1hOTQ2LTc3MjI0NjYzZGViNiIsImlzX2Fub255bW91cyI6ZmFsc2V9.BgNxrm8gTAu91T8ZOen34Wlk2qtytHAASw_0415VAMonlL0afS5e_cHUlCQ3hcTEkeO9nOCeFiar5aEXTK1cEg",
+      "userId": "8720b739-46d6-4107-9cb7-c17c9e22ce9b",
+      "email": "kakporosaire953@gmail.com",
+      "createdAt": "2026-10-19T02:24:39.178Z"
+    },
+    "aura1.eyJpZCI6InVzZXItMTc5MjM3Njc0OTEzMS0wNWMwMjIwNCIsIm5hbWUiOiJBbWluYSBUZXN0IiwiZW1haWwiOiJhbWluYS50ZXN0QGV4YW1wbGUuY29tIiwicm9sZSI6Ik1lbWJyZSBBdXJhIiwib3JnYW5pemF0aW9uIjoiIiwibG9jYXRpb24iOiIiLCJwbGFuIjoiZnJlZSIsImF1dGhQcm92aWRlciI6ImVtYWlsIiwib25ib2FyZGluZ0NvbXBsZXRlZCI6ZmFsc2UsImNyZWF0ZWRBdCI6IjIwMjYtMTAtMTlUMDI6MjU6NDkuMTMxWiIsImNvbnNlbnRzIjp7InRlcm1zVmVyc2lvbiI6IjIwMjYtdjEuMCIsInByaXZhY3lWZXJzaW9uIjoiMjAyNi12MS4wIiwiY29uc2VudGVkQXQiOiIyMDI2LTEwLTE5VDAyOjI1OjQ4Ljg5OVoiLCJtYXJrZXRpbmdDb25zZW50IjpmYWxzZX0sInByZWZlcmVuY2VzIjp7Imxhbmd1YWdlIjoiZnIiLCJ0aGVtZSI6ImxpZ2h0IiwiZGVmYXVsdE1vZGUiOiJjaGF0IiwiZGVmYXVsdFByb3ZpZGVyIjoiZ2VtaW5pIiwicmVkdWNlZE1vdGlvbiI6ZmFsc2UsIm5vdGlmaWNhdGlvbnMiOnsic2VjdXJpdHlBbGVydHMiOnRydWUsInByb2R1Y3RVcGRhdGVzIjp0cnVlLCJ3ZWVrbHlEaWdlc3QiOmZhbHNlfX19.uYKj_QqLFMhpaq2SzFk0Qy6EaL5oY9FNNIHcg0xoKx0": {
+      "token": "aura1.eyJpZCI6InVzZXItMTc5MjM3Njc0OTEzMS0wNWMwMjIwNCIsIm5hbWUiOiJBbWluYSBUZXN0IiwiZW1haWwiOiJhbWluYS50ZXN0QGV4YW1wbGUuY29tIiwicm9sZSI6Ik1lbWJyZSBBdXJhIiwib3JnYW5pemF0aW9uIjoiIiwibG9jYXRpb24iOiIiLCJwbGFuIjoiZnJlZSIsImF1dGhQcm92aWRlciI6ImVtYWlsIiwib25ib2FyZGluZ0NvbXBsZXRlZCI6ZmFsc2UsImNyZWF0ZWRBdCI6IjIwMjYtMTAtMTlUMDI6MjU6NDkuMTMxWiIsImNvbnNlbnRzIjp7InRlcm1zVmVyc2lvbiI6IjIwMjYtdjEuMCIsInByaXZhY3lWZXJzaW9uIjoiMjAyNi12MS4wIiwiY29uc2VudGVkQXQiOiIyMDI2LTEwLTE5VDAyOjI1OjQ4Ljg5OVoiLCJtYXJrZXRpbmdDb25zZW50IjpmYWxzZX0sInByZWZlcmVuY2VzIjp7Imxhbmd1YWdlIjoiZnIiLCJ0aGVtZSI6ImxpZ2h0IiwiZGVmYXVsdE1vZGUiOiJjaGF0IiwiZGVmYXVsdFByb3ZpZGVyIjoiZ2VtaW5pIiwicmVkdWNlZE1vdGlvbiI6ZmFsc2UsIm5vdGlmaWNhdGlvbnMiOnsic2VjdXJpdHlBbGVydHMiOnRydWUsInByb2R1Y3RVcGRhdGVzIjp0cnVlLCJ3ZWVrbHlEaWdlc3QiOmZhbHNlfX19.uYKj_QqLFMhpaq2SzFk0Qy6EaL5oY9FNNIHcg0xoKx0",
+      "userId": "user-1792376749131-05c02204",
+      "email": "amina.test@example.com",
+      "createdAt": "2026-10-19T02:25:53.275Z"
+    },
+    "aura1.eyJpZCI6Ijg3MjBiNzM5LTQ2ZDYtNDEwNy05Y2I3LWMxN2M5ZTIyY2U5YiIsIm5hbWUiOiJLYWtwbyBSb3NhaXJlIiwicGxhbiI6ImZyZWUiLCJyb2xlIjoiTWVtYnJlIEF1cmEiLCJlbWFpbCI6Imtha3Bvcm9zYWlyZTk1M0BnbWFpbC5jb20iLCJsb2NhdGlvbiI6IiIsInByZWZlcmVuY2VzIjp7InRoZW1lIjoibGlnaHQiLCJsYW5ndWFnZSI6ImZyIiwiZGVmYXVsdE1vZGUiOiJjaGF0IiwiZGVmYXVsdFByb3ZpZGVyIjoiZ2VtaW5pIn0sImF1dGhQcm92aWRlciI6ImVtYWlsIiwib3JnYW5pemF0aW9uIjoiIiwib25ib2FyZGluZ0NvbXBsZXRlZCI6ZmFsc2V9.n4HLo0SbkO4mzL_ixZUfwqmRC6jvxH_obtcOJzPhJUA": {
+      "token": "aura1.eyJpZCI6Ijg3MjBiNzM5LTQ2ZDYtNDEwNy05Y2I3LWMxN2M5ZTIyY2U5YiIsIm5hbWUiOiJLYWtwbyBSb3NhaXJlIiwicGxhbiI6ImZyZWUiLCJyb2xlIjoiTWVtYnJlIEF1cmEiLCJlbWFpbCI6Imtha3Bvcm9zYWlyZTk1M0BnbWFpbC5jb20iLCJsb2NhdGlvbiI6IiIsInByZWZlcmVuY2VzIjp7InRoZW1lIjoibGlnaHQiLCJsYW5ndWFnZSI6ImZyIiwiZGVmYXVsdE1vZGUiOiJjaGF0IiwiZGVmYXVsdFByb3ZpZGVyIjoiZ2VtaW5pIn0sImF1dGhQcm92aWRlciI6ImVtYWlsIiwib3JnYW5pemF0aW9uIjoiIiwib25ib2FyZGluZ0NvbXBsZXRlZCI6ZmFsc2V9.n4HLo0SbkO4mzL_ixZUfwqmRC6jvxH_obtcOJzPhJUA",
+      "userId": "8720b739-46d6-4107-9cb7-c17c9e22ce9b",
+      "email": "kakporosaire953@gmail.com",
+      "createdAt": "2026-10-19T02:25:58.675Z"
+    }
+  },
   "conversations": [],
   "projects": [],
   "missions": [],
   "library": [],
-  "usageByUser": {}
+  "usageByUser": {
+    "8720b739-46d6-4107-9cb7-c17c9e22ce9b": {
+      "date": "2026-10-19",
+      "requestsUsed": 0,
+      "dailyLimit": 50,
+      "estimatedInputTokens": 0,
+      "estimatedOutputTokens": 0,
+      "byMode": {
+        "chat": 0,
+        "search": 0,
+        "code": 0,
+        "create": 0,
+        "image": 0,
+        "video": 0,
+        "slides": 0
+      },
+      "byModel": {},
+      "recentLogs": [],
+      "planId": "free",
+      "monthlyUnitsUsed": 0,
+      "monthlyUnitsLimit": 30,
+      "webSearchesUsed": 0,
+      "webSearchesLimit": 10,
+      "siteCreationsUsed": 0,
+      "siteCreationsLimit": 3,
+      "siteModificationsUsed": 0,
+      "siteModificationsLimit": 10,
+      "activeProjectsCount": 0,
+      "maxProjectsLimit": 3,
+      "periodRenewalDate": "2026-11-01T00:00:00.000Z",
+      "byCategory": {
+        "chat": 0,
+        "search": 0,
+        "studio_creation": 0,
+        "studio_modification": 0,
+        "slides": 0,
+        "media": 0
+      },
+      "recentLedger": []
+    },
+    "user-1792376749131-05c02204": {
+      "date": "2026-10-19",
+      "requestsUsed": 0,
+      "dailyLimit": 50,
+      "estimatedInputTokens": 0,
+      "estimatedOutputTokens": 0,
+      "byMode": {
+        "chat": 0,
+        "search": 0,
+        "code": 0,
+        "create": 0,
+        "image": 0,
+        "video": 0,
+        "slides": 0
+      },
+      "byModel": {},
+      "recentLogs": [],
+      "planId": "free",
+      "monthlyUnitsUsed": 0,
+      "monthlyUnitsLimit": 30,
+      "webSearchesUsed": 0,
+      "webSearchesLimit": 10,
+      "siteCreationsUsed": 0,
+      "siteCreationsLimit": 3,
+      "siteModificationsUsed": 0,
+      "siteModificationsLimit": 10,
+      "activeProjectsCount": 0,
+      "maxProjectsLimit": 3,
+      "periodRenewalDate": "2026-11-01T00:00:00.000Z",
+      "byCategory": {
+        "chat": 0,
+        "search": 0,
+        "studio_creation": 0,
+        "studio_modification": 0,
+        "slides": 0,
+        "media": 0
+      },
+      "recentLedger": []
+    }
+  },
+  "subscriptions": {},
+  "usageLedger": []
 }

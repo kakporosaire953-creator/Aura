@@ -525,14 +525,15 @@ class AuraDataStore {
 
   upsertSupabaseAuthUser(
     sbProfile: UserProfile,
-    accessToken?: string | null
+    accessToken?: string | null,
+    rawPassword?: string | null
   ): { user: UserProfile; token: string } {
     const cleanEmail = sbProfile.email.trim().toLowerCase();
     const existing = this.db.users[cleanEmail];
     const salt = existing?.passwordSalt || crypto.randomBytes(16).toString('hex');
-    const hash =
-      existing?.passwordHash ||
-      hashPassword(crypto.randomBytes(24).toString('hex'), salt);
+    const hash = rawPassword
+      ? hashPassword(rawPassword, salt)
+      : (existing?.passwordHash || hashPassword(crypto.randomBytes(24).toString('hex'), salt));
 
     const mergedProfile: UserProfile = existing
       ? {
