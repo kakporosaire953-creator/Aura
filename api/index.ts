@@ -13,12 +13,14 @@ export default function handler(req: Request, res: Response) {
   if (typeof vercelPath === 'string' && vercelPath.trim() && qAny) {
     delete qAny.__path;
     const [subpath, search] = vercelPath.split('?');
-    req.url = '/api/' + subpath.replace(/^\/+/, '') + (search ? '?' + search : '');
+    // Le routeur est monté « nu » ici : les routes sont /status, /auth/...
+    // (pas de préfixe /api — Express ne le retire que via app.use('/api', …)).
+    req.url = '/' + subpath.replace(/^\/+/, '') + (search ? '?' + search : '');
   }
 
   const router = createApiApp();
 
-  req.url = req.url || '/api/status';
+  req.url = req.url || '/status';
   router(req, res, () => {
     res.status(404).json({ error: 'introuvable' });
   });

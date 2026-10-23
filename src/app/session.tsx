@@ -1,4 +1,13 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import {
+  simulationActivee,
+  compteCourantSimule,
+  inscrireSimule,
+  connecterSimule,
+  deconnecterSimule,
+  onboardingSimule,
+  type ResultatSimule,
+} from './simulation';
 
 /**
  * Session du compte Aura — un seul état partagé, synchronisé
@@ -33,6 +42,12 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [etat, setEtat] = useState<EtatSession>({ statut: 'chargement', compte: null });
 
   const rafraichir = useCallback(async () => {
+    // Mode simulation : état local du navigateur, jamais présenté comme réel.
+    if (simulationActivee()) {
+      const c = compteCourantSimule();
+      setEtat(c ? { statut: 'connecte', compte: c } : { statut: 'anonyme', compte: null });
+      return;
+    }
     try {
       const r = await fetch('/api/me', { credentials: 'same-origin' });
       if (r.ok) {
@@ -47,6 +62,11 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, []);
 
   const deconnecter = useCallback(async () => {
+    if (simulationActivee()) {
+      deconnecterSimule();
+      setEtat({ statut: 'anonyme', compte: null });
+      return;
+    }
     try {
       await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
     } finally {
@@ -81,6 +101,21 @@ export async function appelerAuth(
   code?: string;
   detail?: Record<string, string>;
 }> {
+  // Mode simulation : même contrat de réponse, stockage local.
+  if (simulationActivee()) {
+    let res: ResultatSimule;
+    if (route === '/auth/register') {
+      const c = corps as { email?: string; password?: string; nom?: string };
+      res = inscrireSimule(c.email ?? '', c.password ?? '', c.nom ?? '');
+    } else if (route === '/auth/login') {
+      const c = corps as { email?: string; password?: string };
+      res = connecterSimule(c.email ?? '', c.password ?? '');
+    } else {
+      const c = corps as { fait?: boolean; objectif?: string };
+      res = onboardingSimule(c.fait === true, c.objectif ?? '');
+    }
+    return res;
+  }
   try {
     const r = await fetch(`/api${route}`, {
       method: methode,

@@ -3,6 +3,23 @@ import { Link, useLocation } from 'react-router-dom';
 import { AuraLogo } from '../brand/AuraLogo';
 import { usePrefs } from '../../app/prefs';
 import { useSession } from '../../app/session';
+import { simulationActivee, definirSimulation } from '../../app/simulation';
+
+/** Bannière permanente du mode simulation — jamais de contenu simulé sans étiquette. */
+export const BandeauSimulation: React.FC = () => {
+  const { t } = usePrefs();
+  const [active] = React.useState(() => simulationActivee());
+  if (!active) return null;
+  return (
+    <div className="bandeau-sim" role="status">
+      <i className="fa-solid fa-flask" aria-hidden />
+      <span>{t.simulation.banniere}</span>
+      <button type="button" onClick={() => definirSimulation(false)}>
+        {t.simulation.quitter}
+      </button>
+    </div>
+  );
+};
 
 /** Navigation légère partagée — jamais surchargée. */
 export const SiteNav: React.FC = () => {
@@ -10,6 +27,7 @@ export const SiteNav: React.FC = () => {
   const { pathname } = useLocation();
   const { t, theme, toggleTheme, lang, setLang } = usePrefs();
   const { statut } = useSession();
+  const sim = React.useState(() => simulationActivee())[0];
 
   React.useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 32);
@@ -22,6 +40,7 @@ export const SiteNav: React.FC = () => {
 
   return (
     <nav className={`nav${scrolled ? ' scrolled' : ''}`} aria-label={t.nav.documentation}>
+      <BandeauSimulation />
       <div className="wrap nav-interieur">
         <Link to="/" aria-label="AURA — accueil">
           <AuraLogo taille="sm" />
@@ -67,6 +86,15 @@ export const SiteNav: React.FC = () => {
               aria-label={theme === 'dark' ? t.nav.themeClair : t.nav.themeSombre}
             >
               <i className={`fa-solid ${theme === 'dark' ? 'fa-sun' : 'fa-moon'}`} aria-hidden />
+            </button>
+            <button
+              type="button"
+              className={`bascule-sim${sim ? ' actif' : ''}`}
+              onClick={() => definirSimulation(!sim)}
+              aria-pressed={sim}
+              title={sim ? t.simulation.quitter : t.simulation.reprendre}
+            >
+              <i className="fa-solid fa-flask" aria-hidden />
             </button>
           </div>
           {statut === 'connecte' ? (
