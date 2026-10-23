@@ -2453,3 +2453,215 @@ button {
 .etape-visuel:has(.etape-anime):hover .etape-motif {
   opacity: 0.7;
 }
+
+/* ─────────────────────────────────────────────
+   Verre de soie — liquid glass à l'Aura
+   (nav, CTA, cartes de galerie, volets Studio,
+   scène hero) — teinte encre/ivoire, liseré
+   dégradé lime→or→feu, reflet directionnel.
+   Jamais sous la copie de lecture.
+   ───────────────────────────────────────────── */
+:root {
+  --verre-tint: rgba(251, 250, 245, 0.55);
+  --verre-tint-plein: rgba(251, 250, 245, 0.72);
+  --verre-trait: rgba(18, 33, 27, 0.1);
+  --verre-lisere: linear-gradient(
+    135deg,
+    rgba(165, 232, 56, 0.6),
+    rgba(234, 203, 55, 0.42) 45%,
+    rgba(255, 121, 13, 0.55)
+  );
+  --verre-lisere-vif: linear-gradient(
+    135deg,
+    rgba(165, 232, 56, 0.95),
+    rgba(234, 203, 55, 0.7) 45%,
+    rgba(255, 121, 13, 0.9)
+  );
+  --verre-flou: blur(18px) saturate(1.55);
+  --verre-flou-doux: blur(11px) saturate(1.4);
+  --verre-reflet: linear-gradient(
+    118deg,
+    rgba(255, 255, 255, 0.2),
+    rgba(255, 255, 255, 0.04) 34%,
+    transparent 62%,
+    rgba(255, 255, 255, 0.1)
+  );
+}
+
+[data-theme='dark'] {
+  --verre-tint: rgba(19, 33, 26, 0.5);
+  --verre-tint-plein: rgba(19, 33, 26, 0.68);
+  --verre-trait: rgba(255, 253, 248, 0.12);
+  --verre-lisere: linear-gradient(
+    135deg,
+    rgba(165, 232, 56, 0.42),
+    rgba(234, 203, 55, 0.3) 45%,
+    rgba(255, 121, 13, 0.45)
+  );
+  --verre-reflet: linear-gradient(
+    118deg,
+    rgba(255, 255, 255, 0.09),
+    transparent 42%,
+    rgba(234, 203, 55, 0.08)
+  );
+}
+
+/* — Nav flottante — */
+.nav {
+  background: rgba(251, 250, 245, 0.22);
+  -webkit-backdrop-filter: blur(10px) saturate(1.3);
+  backdrop-filter: blur(10px) saturate(1.3);
+}
+
+.nav::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1.5px;
+  background: var(--verre-lisere);
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+.nav.scrolled {
+  background: var(--verre-tint-plein);
+  -webkit-backdrop-filter: var(--verre-flou);
+  backdrop-filter: var(--verre-flou);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 18px 50px -30px rgba(18, 33, 27, 0.4);
+}
+
+.nav.scrolled::after {
+  opacity: 1;
+}
+
+[data-theme='dark'] .nav {
+  background: rgba(13, 23, 18, 0.26);
+}
+
+[data-theme='dark'] .nav.scrolled {
+  background: var(--verre-tint-plein);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 18px 50px -30px rgba(0, 0, 0, 0.55);
+}
+
+/* — Panneau CTA — */
+.cta-panneau {
+  border: 1px solid transparent;
+  background:
+    var(--verre-reflet) padding-box,
+    linear-gradient(var(--verre-tint-plein), var(--verre-tint-plein)) padding-box,
+    var(--verre-lisere) border-box;
+  -webkit-backdrop-filter: var(--verre-flou);
+  backdrop-filter: var(--verre-flou);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    var(--ombre-flottante),
+    0 40px 110px -55px rgba(165, 232, 56, 0.35);
+}
+
+/* — Cartes de galerie : verre en couche interne
+      (backdrop-filter aplatirait la perspective du .tilt) — */
+.tilt-verre {
+  display: none;
+}
+
+.galerie-carte .tilt-verre {
+  display: block;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  border: 1px solid transparent;
+  background:
+    var(--verre-reflet) padding-box,
+    linear-gradient(var(--verre-tint), var(--verre-tint)) padding-box,
+    var(--verre-lisere) border-box;
+  -webkit-backdrop-filter: var(--verre-flou);
+  backdrop-filter: var(--verre-flou);
+  pointer-events: none;
+  transition: background 0.5s ease;
+}
+
+.galerie-carte:hover .tilt-verre,
+.galerie-carte:focus-visible .tilt-verre,
+.galerie-carte.carte-active .tilt-verre {
+  background:
+    var(--verre-reflet) padding-box,
+    linear-gradient(var(--verre-tint-plein), var(--verre-tint-plein)) padding-box,
+    var(--verre-lisere-vif) border-box;
+}
+
+/* — Volets Studio superposés (panneaux de verre) — */
+.apercu-volet {
+  border: 1px solid transparent;
+  background:
+    var(--verre-reflet) padding-box,
+    linear-gradient(var(--verre-tint), var(--verre-tint)) padding-box,
+    var(--verre-lisere) border-box;
+  -webkit-backdrop-filter: var(--verre-flou-doux);
+  backdrop-filter: var(--verre-flou-doux);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 18px 44px -26px rgba(18, 33, 27, 0.45);
+}
+
+/* — Chrome de l'aperçu (barre supérieure) — */
+.apercu-barre {
+  background: var(--verre-tint-plein);
+  -webkit-backdrop-filter: var(--verre-flou-doux);
+  backdrop-filter: var(--verre-flou-doux);
+  border-bottom: 1px solid var(--verre-trait);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+/* — Scène hero : cadre à liseré ruban (le logo reste intact) — */
+.scene-cadre {
+  border: 2px solid transparent;
+  background:
+    linear-gradient(var(--papier), var(--papier)) padding-box,
+    var(--verre-lisere) border-box;
+  box-shadow:
+    var(--ombre-flottante),
+    0 36px 90px -48px rgba(165, 232, 56, 0.4),
+    0 36px 90px -48px rgba(255, 121, 13, 0.22);
+}
+
+/* — Légende de la scène : pastille de verre — */
+.scene-legende {
+  border: 1px solid transparent;
+  background:
+    var(--verre-reflet) padding-box,
+    linear-gradient(var(--verre-tint-plein), var(--verre-tint-plein)) padding-box,
+    var(--verre-lisere) border-box;
+  -webkit-backdrop-filter: var(--verre-flou);
+  backdrop-filter: var(--verre-flou);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    var(--ombre-douce);
+}
+
+/* — Repli honnête sans backdrop-filter : teintes pleines — */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root {
+    --verre-tint: rgba(251, 250, 245, 0.92);
+    --verre-tint-plein: rgba(251, 250, 245, 0.97);
+  }
+
+  [data-theme='dark'] {
+    --verre-tint: rgba(19, 33, 26, 0.92);
+    --verre-tint-plein: rgba(19, 33, 26, 0.97);
+  }
+
+  .nav {
+    background: rgba(251, 250, 245, 0.92);
+  }
+
+  [data-theme='dark'] .nav {
+    background: rgba(13, 23, 18, 0.92);
+  }
+}
