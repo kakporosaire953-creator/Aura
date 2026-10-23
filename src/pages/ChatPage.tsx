@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { SiteNav, SiteFooter } from '../components/layout/SiteChrome';
+import { WorkspaceNav } from '../components/layout/WorkspaceNav';
 import { useSession } from '../app/session';
 import { useT, usePrefs } from '../app/prefs';
+import { simulationActivee, reponseSimulee } from '../app/simulation';
 
 type MessageChat = { role: 'user' | 'assistant'; content: string };
 
@@ -24,6 +26,10 @@ export const ChatPage: React.FC = () => {
 
   // État réel du service de chat (clé serveur présente ou non).
   useEffect(() => {
+    if (simulationActivee()) {
+      setConfig('ok');
+      return;
+    }
     fetch('/api/status')
       .then((r) => r.json())
       .then((d: { features?: { chat?: string } }) => {
@@ -44,6 +50,14 @@ export const ChatPage: React.FC = () => {
     const suite: MessageChat[] = [...messages, { role: 'user', content: contenu }];
     setMessages(suite);
     setEtat('envoi');
+
+    // Mode simulation : réponse de démonstration, étiquetée comme telle.
+    if (simulationActivee()) {
+      await new Promise((r) => setTimeout(r, 700));
+      setMessages((m) => [...m, { role: 'assistant', content: reponseSimulee(m.length, lang) }]);
+      setEtat('idle');
+      return;
+    }
 
     try {
       const r = await fetch('/api/chat', {
@@ -76,6 +90,7 @@ export const ChatPage: React.FC = () => {
   return (
     <div className="chat-page">
       <SiteNav />
+      <WorkspaceNav />
 
       <main className="chat">
         <header className="chat-entete">
@@ -118,7 +133,12 @@ export const ChatPage: React.FC = () => {
 
               {messages.map((m, i) => (
                 <div className={`chat-message ${m.role}`} key={i}>
-                  <span className="chat-bulle">{m.content}</span>
+                  <div>
+                    {m.role === 'assistant' && simulationActivee() && (
+                      <span className="badge-sim">{t.simulation.badge}</span>
+                    )}
+                    <span className="chat-bulle">{m.content}</span>
+                  </div>
                 </div>
               ))}
 

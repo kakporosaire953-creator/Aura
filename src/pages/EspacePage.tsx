@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { SiteNav, SiteFooter } from '../components/layout/SiteChrome';
+import { WorkspaceNav } from '../components/layout/WorkspaceNav';
 import { useSession, appelerAuth } from '../app/session';
 import { useT } from '../app/prefs';
+import { simulationActivee } from '../app/simulation';
 
 /**
  * Espace personnel — accessible uniquement avec une session réelle.
@@ -69,6 +71,7 @@ export const EspacePage: React.FC = () => {
   return (
     <div className="espace">
       <SiteNav />
+      <WorkspaceNav />
 
       <header className="section espace-entete">
         <div className="wrap">
@@ -158,11 +161,51 @@ export const EspacePage: React.FC = () => {
             )}
           </section>
 
-          {/* ── État honnête des modules ── */}
+          {/* ── Les modules de l'espace de travail ── */}
           <section className="espace-carte espace-modules" aria-labelledby="espace-modules">
             <h2 id="espace-modules" className="display-md">
               {t.espace.modulesTitre}
             </h2>
+            <div className="modules-grille">
+              {t.modulesCartes.map((m, i) => {
+                const idModule = ['chat', 'explore', 'studio', 'missions'][i];
+                const href = ['/chat', '/explore', '/studio', '/missions'][i];
+                const etatModule = simulationActivee() ? 'demo' : (modules[idModule] ?? 'rebuilding');
+                const ouvrable = etatModule === 'demo' || etatModule === 'live';
+                return (
+                  <Link
+                    to={ouvrable ? href : '#'}
+                    className={`module-carte${ouvrable ? '' : ' inactif'}`}
+                    key={m.nom}
+                    aria-disabled={!ouvrable}
+                  >
+                    <i className={`fa-solid ${m.icone}`} aria-hidden />
+                    <span className="module-carte-nom">{m.nom}</span>
+                    <span className="module-carte-sous">{m.sous}</span>
+                    <span className="module-carte-etat">
+                      {etatModule === 'demo' ? (
+                        <>
+                          <i className="fa-solid fa-flask" aria-hidden /> {t.simulation.badge}
+                        </>
+                      ) : etatModule === 'live' ? (
+                        <>
+                          <i className="fa-solid fa-circle-check" aria-hidden /> {t.espace.dispo}
+                        </>
+                      ) : etatModule === 'setup-required' ? (
+                        <>
+                          <i className="fa-solid fa-screwdriver-wrench" aria-hidden />{' '}
+                          {t.espace.aConfigurer}
+                        </>
+                      ) : (
+                        <>
+                          <i className="fa-solid fa-hammer" aria-hidden /> {t.espace.attente}
+                        </>
+                      )}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
             <ul className="espace-modules-liste">
               <li>
                 <span className="etat-live">
@@ -176,32 +219,6 @@ export const EspacePage: React.FC = () => {
                 </span>
                 <Link to="/">{t.espace.sitePublic}</Link>
               </li>
-              {['chat', 'explore', 'studio', 'missions'].map((m) => {
-                const etatModule = modules[m] ?? 'rebuilding';
-                return (
-                  <li key={m}>
-                    {etatModule === 'live' ? (
-                      <span className="etat-live">
-                        <i className="fa-solid fa-circle-check" aria-hidden /> {t.espace.dispo}
-                      </span>
-                    ) : etatModule === 'setup-required' ? (
-                      <span className="etat-attente">
-                        <i className="fa-solid fa-screwdriver-wrench" aria-hidden />{' '}
-                        {t.espace.aConfigurer}
-                      </span>
-                    ) : (
-                      <span className="etat-attente">
-                        <i className="fa-solid fa-hammer" aria-hidden /> {t.espace.attente}
-                      </span>
-                    )}
-                    {etatModule === 'live' && m === 'chat' ? (
-                      <Link to="/chat">Chat</Link>
-                    ) : (
-                      <span style={{ textTransform: 'capitalize' }}>{m}</span>
-                    )}
-                  </li>
-                );
-              })}
             </ul>
           </section>
         </div>

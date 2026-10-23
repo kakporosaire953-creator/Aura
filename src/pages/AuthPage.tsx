@@ -4,6 +4,7 @@ import gsap from 'gsap';
 import { AuraLogo } from '../components/brand/AuraLogo';
 import { useT } from '../app/prefs';
 import { useSession, appelerAuth } from '../app/session';
+import { simulationActivee, ouvrirDemo } from '../app/simulation';
 
 /** Traduction des codes d'erreur de l'API en messages locaux (fr/en). */
 function messageErreur(
@@ -233,6 +234,21 @@ export const AuthPage: React.FC = () => {
           <p className="form-note" role="status">
             {t.auth.note}
           </p>
+
+          {simulationActivee() && (
+            <button
+              type="button"
+              className="btn btn-ligne auth-demo"
+              onClick={() => {
+                ouvrirDemo();
+                void rafraichir();
+                navigate('/app', { replace: true });
+              }}
+            >
+              <i className="fa-solid fa-flask" aria-hidden />
+              <span>{t.simulation.demoBtn}</span>
+            </button>
+          )}
 
           <p className="auth-bascule">
             {inscription ? t.auth.basculeLogin : t.auth.basculeRegister}{' '}
