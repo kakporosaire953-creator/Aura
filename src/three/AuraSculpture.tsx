@@ -2,9 +2,10 @@ import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 
 /**
- * La sculpture vivante d'Aura — trois rubans tissés en flamme,
- * écho direct du logo officiel (vert, or, feu), avec poussière
- * de lumière. Sans WebGL, la scène s'efface silencieusement.
+ * La sculpture vivante d'Aura — trois rubans tissés en flamme (écho du
+ * logo officiel), un ruban de lumière qui raconte le cheminement d'une
+ * idée, et des connexions organiques entre particules. Un seul renderer,
+ * pause hors écran, repli sans WebGL, budget réduit sur mobile.
  */
 export const AuraSculpture: React.FC = () => {
   const hote = useRef<HTMLDivElement | null>(null);
@@ -21,10 +22,11 @@ export const AuraSculpture: React.FC = () => {
     }
 
     const reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const mobile = window.innerWidth < 768;
     const largeur = host.clientWidth || 520;
     const hauteur = host.clientHeight || 520;
 
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, mobile ? 1.5 : 2));
     renderer.setSize(largeur, hauteur);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     host.appendChild(renderer.domElement);
@@ -36,16 +38,18 @@ export const AuraSculpture: React.FC = () => {
     const groupe = new THREE.Group();
     scene.add(groupe);
 
-    // --- Trois rubans en spirale flamme (vert, or, feu) ---
+    const geometries: THREE.BufferGeometry[] = [];
+    const materiaux: THREE.Material[] = [];
+
+    /* ---------- Les trois rubans-flamme (vert, or, feu) ---------- */
     const palettes: [THREE.Color, THREE.Color][] = [
       [new THREE.Color('#A5E838'), new THREE.Color('#2F9420')],
       [new THREE.Color('#F4E07A'), new THREE.Color('#EACB37')],
       [new THREE.Color('#FF9A3D'), new THREE.Color('#E85D00')],
     ];
 
-    const geometries: THREE.BufferGeometry[] = [];
-    const materiaux: THREE.Material[] = [];
     const rubans: THREE.Mesh[] = [];
+    const segTube = mobile ? 140 : 220;
 
     for (let k = 0; k < 3; k++) {
       const phase = (k * Math.PI * 2) / 3;
@@ -56,25 +60,18 @@ export const AuraSculpture: React.FC = () => {
         const y = -2.35 + 4.7 * t;
         const rayon = 1.62 * Math.pow(Math.sin(Math.PI * t), 0.82);
         const theta = phase + t * Math.PI * 2.15;
-        pts.push(
-          new THREE.Vector3(
-            Math.cos(theta) * rayon,
-            y,
-            Math.sin(theta) * rayon * 0.82,
-          ),
-        );
+        pts.push(new THREE.Vector3(Math.cos(theta) * rayon, y, Math.sin(theta) * rayon * 0.82));
       }
       const courbe = new THREE.CatmullRomCurve3(pts);
-      const geo = new THREE.TubeGeometry(courbe, 220, 0.185, 14, false);
+      const geo = new THREE.TubeGeometry(courbe, segTube, 0.185, 12, false);
 
-      // Couleurs en dégradé le long du ruban
       const nbVerts = geo.attributes.position.count;
       const couleurs = new Float32Array(nbVerts * 3);
       const [c1, c2] = palettes[k];
       const tmp = new THREE.Color();
-      const radial = 15; // (radialSegments + 1)
+      const radial = 13;
       for (let i = 0; i < nbVerts; i++) {
-        const t = Math.floor(i / radial) / 220;
+        const t = Math.floor(i / radial) / segTube;
         tmp.copy(c1).lerp(c2, Math.min(1, Math.max(0, t)));
         couleurs[i * 3] = tmp.r;
         couleurs[i * 3 + 1] = tmp.g;
@@ -86,7 +83,7 @@ export const AuraSculpture: React.FC = () => {
         vertexColors: true,
         roughness: 0.36,
         metalness: 0.06,
-        clearcoat: 0.65,
+        clearcoat: mobile ? 0 : 0.65,
         clearcoatRoughness: 0.3,
         transparent: true,
         opacity: 0.94,
@@ -101,8 +98,50 @@ export const AuraSculpture: React.FC = () => {
       groupe.add(mesh);
     }
 
-    // --- Poussière de lumière ---
-    const NB = 240;
+    /* ---------- Le ruban de lumière : le cheminement d'une idée ---------- */
+    const ptsLumiere: THREE.Vector3[] = [];
+    const NL = 36;
+    for (let i = 0; i <= NL; i++) {
+      const t = i / NL;
+      ptsLumiere.push(
+        new THREE.Vector3(
+          -4.6 + 9.2 * t,
+          -1.7 + 3.5 * Math.sin(t * Math.PI * 1.35) + 0.5 * Math.sin(t * 9.5),
+          -1.2 + 2.1 * Math.sin(t * Math.PI * 2.1 + 0.7),
+        ),
+      );
+    }
+    const courbeLumiere = new THREE.CatmullRomCurve3(ptsLumiere);
+    const geoLumiere = new THREE.TubeGeometry(courbeLumiere, mobile ? 90 : 150, 0.052, 8, false);
+    const nbL = geoLumiere.attributes.position.count;
+    const couleursL = new Float32Array(nbL * 3);
+    const suite: THREE.Color[] = [new THREE.Color('#A5E838'), new THREE.Color('#EACB37'), new THREE.Color('#FF790D')];
+    const tmpL = new THREE.Color();
+    const radialL = 9;
+    for (let i = 0; i < nbL; i++) {
+      const t = Math.floor(i / radialL) / (mobile ? 90 : 150);
+      const s = t * 2;
+      if (s < 1) tmpL.copy(suite[0]).lerp(suite[1], s);
+      else tmpL.copy(suite[1]).lerp(suite[2], s - 1);
+      couleursL[i * 3] = tmpL.r;
+      couleursL[i * 3 + 1] = tmpL.g;
+      couleursL[i * 3 + 2] = tmpL.b;
+    }
+    geoLumiere.setAttribute('color', new THREE.BufferAttribute(couleursL, 3));
+    const matLumiere = new THREE.MeshBasicMaterial({
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.62,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    const rubanLumiere = new THREE.Mesh(geoLumiere, matLumiere);
+    geometries.push(geoLumiere);
+    materiaux.push(matLumiere);
+    scene.add(rubanLumiere);
+
+    /* ---------- Poussière de lumière ---------- */
+    const NB = mobile ? 120 : 240;
     const positions = new Float32Array(NB * 3);
     const couleursP = new Float32Array(NB * 3);
     const paletteP = [new THREE.Color('#A5E838'), new THREE.Color('#EACB37'), new THREE.Color('#FF790D')];
@@ -134,7 +173,54 @@ export const AuraSculpture: React.FC = () => {
     materiaux.push(matP);
     scene.add(points);
 
-    // --- Lumière ---
+    /* ---------- Connexions organiques entre particules proches ----------
+       Constellation vivante — uniquement les voisines, jamais le
+       « cerveau IA » générique. Statique dans le champ, vit avec lui. */
+    if (!mobile) {
+      const seuil = 1.15;
+      const sommets: number[] = [];
+      const couleursC: number[] = [];
+      const limite = Math.min(NB, 110);
+      for (let i = 0; i < limite; i++) {
+        for (let j = i + 1; j < limite; j++) {
+          const dx = positions[i * 3] - positions[j * 3];
+          const dy = positions[i * 3 + 1] - positions[j * 3 + 1];
+          const dz = positions[i * 3 + 2] - positions[j * 3 + 2];
+          const d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+          if (d < seuil) {
+            sommets.push(
+              positions[i * 3],
+              positions[i * 3 + 1],
+              positions[i * 3 + 2],
+              positions[j * 3],
+              positions[j * 3 + 1],
+              positions[j * 3 + 2],
+            );
+            const ci = paletteP[i % 3];
+            const cj = paletteP[j % 3];
+            couleursC.push(ci.r, ci.g, ci.b, cj.r, cj.g, cj.b);
+          }
+        }
+      }
+      if (sommets.length) {
+        const geoC = new THREE.BufferGeometry();
+        geoC.setAttribute('position', new THREE.Float32BufferAttribute(sommets, 3));
+        geoC.setAttribute('color', new THREE.Float32BufferAttribute(couleursC, 3));
+        const matC = new THREE.LineBasicMaterial({
+          vertexColors: true,
+          transparent: true,
+          opacity: 0.17,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+        });
+        const connexions = new THREE.LineSegments(geoC, matC);
+        geometries.push(geoC);
+        materiaux.push(matC);
+        points.add(connexions);
+      }
+    }
+
+    /* ---------- Lumière ---------- */
     scene.add(new THREE.AmbientLight(0xfff6e0, 1.05));
     const lumChaud = new THREE.PointLight(0xffb347, 90, 30);
     lumChaud.position.set(4, 3, 5);
@@ -143,7 +229,7 @@ export const AuraSculpture: React.FC = () => {
     lumVert.position.set(-5, -1.5, 4);
     scene.add(lumVert);
 
-    // --- Interaction / boucle ---
+    /* ---------- Interaction / boucle ---------- */
     const souris = { x: 0, y: 0 };
     const onPointer = (e: PointerEvent) => {
       souris.x = (e.clientX / window.innerWidth - 0.5) * 2;
@@ -168,9 +254,12 @@ export const AuraSculpture: React.FC = () => {
         rubans.forEach((m, i) => {
           m.rotation.y = i * 0.22 + Math.sin(brut * 0.5 + i * 1.7) * 0.16;
         });
+        // Le ruban de lumière respire et dérive en sens inverse
+        rubanLumiere.rotation.y = -brut * 0.07 + souris.x * 0.12;
+        rubanLumiere.position.y = Math.sin(brut * 0.42) * 0.16;
+        matLumiere.opacity = 0.5 + Math.sin(brut * 1.1) * 0.14;
       }
       renderer.render(scene, camera);
-      if (!reduit) brut = brut; // conserve le temps
     };
 
     if (reduit) {

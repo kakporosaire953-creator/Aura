@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { SiteNav, SiteFooter } from '../components/layout/SiteChrome';
 import { useRevealAll } from '../components/motion/useReveal';
+import { Tilt } from '../components/motion/Tilt';
 import { useT } from '../app/prefs';
 
 export const DocumentationPage: React.FC = () => {
@@ -31,7 +32,7 @@ export const DocumentationPage: React.FC = () => {
           <div className="wrap">
             <div className="docs-grille" ref={reveal}>
               {t.docs.items.map((d) => (
-                <article className="doc-carte" key={d.num} data-reveal>
+                <Tilt className="doc-carte" key={d.num} data-reveal="">
                   <div className="doc-carte-haut">
                     <span className="doc-icone" aria-hidden>
                       <i className={`fa-solid ${d.icone}`} />
@@ -41,7 +42,7 @@ export const DocumentationPage: React.FC = () => {
                   <h3>{d.titre}</h3>
                   <p>{d.texte}</p>
                   <span className="doc-statut">{d.label}</span>
-                </article>
+                </Tilt>
               ))}
             </div>
 

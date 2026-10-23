@@ -17,6 +17,7 @@ import {
 } from 'simple-icons';
 import { AuraSculptureCanvas } from '../three/AuraSculptureCanvas';
 import { useRevealAll } from '../components/motion/useReveal';
+import { Tilt } from '../components/motion/Tilt';
 import { SiteNav, SiteFooter } from '../components/layout/SiteChrome';
 import { useT } from '../app/prefs';
 
@@ -38,7 +39,6 @@ const COULEURS_MOTIF: [string, string][] = [
   ['#43BC2C', '#FF790D'],
 ];
 
-/* ===== Logos de l'écosystème IA mondial (marques officielles) ===== */
 type LogoIA = { nom: string; couleur: string; svg?: string; fa?: string };
 
 const LOGOS_IA: LogoIA[] = [
@@ -85,44 +85,32 @@ export const LandingPage: React.FC = () => {
   const filRef = useRef<HTMLDivElement | null>(null);
   const declRef = useRef<HTMLDivElement | null>(null);
   const galerieRef = useRef<HTMLDivElement | null>(null);
+  const stGalerie = useRef<ScrollTrigger | null>(null);
   const tarifsReveal = useRevealAll<HTMLDivElement>();
 
   useGSAP(
     () => {
       const reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-      /* ===== HERO : révélation hypnotique des textes ===== */
+      /* ===== HERO : révélation des mots dans des masques fixes
+             (pas de blur sur les textes en dégradé — bug de rendu) ===== */
       if (!reduit) {
         const tl = gsap.timeline({ defaults: { ease: 'power4.out' } });
-        tl.to('.ligne-masquee > span', { y: 0, duration: 1.25, stagger: 0.13 }, 0.1)
-          .from(
-            '.hero-mot',
-            {
-              yPercent: 118,
-              rotate: 4,
-              opacity: 0,
-              filter: 'blur(8px)',
-              duration: 1.15,
-              stagger: 0.09,
-            },
-            0.18,
-          )
-          .from('[data-hero]', { opacity: 0, y: 32, duration: 1.05, stagger: 0.12 }, 0.55)
+        tl.from('.hero-mot', { yPercent: 115, opacity: 0, duration: 1.15, stagger: 0.09 }, 0.12)
+          .from('[data-hero]', { opacity: 0, y: 32, duration: 1.05, stagger: 0.12 }, 0.5)
           .from('.hero-lueur', { scale: 0.6, opacity: 0, duration: 1.7, ease: 'power2.out' }, 0);
       } else {
-        gsap.set('.ligne-masquee > span', { y: 0 });
         gsap.set('.hero-mot, [data-hero]', { opacity: 1, y: 0 });
         gsap.set('.declaration-texte .mot', { opacity: 1 });
       }
 
-      /* ===== HERO : chorégraphies par viewport (gsap.matchMedia) ===== */
+      /* ===== HERO : parallaxe par LIGNE masquée (aucun rognage) ===== */
       const mm = gsap.matchMedia();
 
       mm.add('(min-width: 1024px) and (prefers-reduced-motion: no-preference)', () => {
-        gsap.utils.toArray<HTMLElement>('.hero-mot').forEach((mot, i) => {
-          gsap.to(mot, {
-            yPercent: i % 2 ? -22 : -40,
-            rotate: i % 2 ? -1.6 : 1.2,
+        gsap.utils.toArray<HTMLElement>('.ligne-masquee').forEach((ligne, i) => {
+          gsap.to(ligne, {
+            yPercent: i % 2 ? -8 : -15,
             ease: 'none',
             scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true },
           });
@@ -144,9 +132,9 @@ export const LandingPage: React.FC = () => {
       });
 
       mm.add('(max-width: 1023px) and (prefers-reduced-motion: no-preference)', () => {
-        gsap.utils.toArray<HTMLElement>('.hero-mot').forEach((mot, i) => {
-          gsap.to(mot, {
-            yPercent: i % 2 ? -7 : -13,
+        gsap.utils.toArray<HTMLElement>('.ligne-masquee').forEach((ligne, i) => {
+          gsap.to(ligne, {
+            yPercent: i % 2 ? -4 : -7,
             ease: 'none',
             scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true },
           });
@@ -159,39 +147,84 @@ export const LandingPage: React.FC = () => {
         gsap.to(ruban, { xPercent: -50, duration: 22, ease: 'none', repeat: -1 });
       }
 
-      /* ===== LE FIL : ruban dessiné + étapes glissantes ===== */
+      /* ===== LE FIL : ruban dessiné, goutte de lumière, nœuds qui s'allument ===== */
       const chemins = filRef.current?.querySelectorAll<SVGPathElement>('[data-fil-chemin]');
-      chemins?.forEach((chemin) => {
-        const longueur = chemin.getTotalLength();
-        gsap.set(chemin, { strokeDasharray: longueur, strokeDashoffset: longueur });
-        gsap.to(chemin, {
-          strokeDashoffset: 0,
-          ease: 'none',
-          scrollTrigger: {
+      const listeChemins = chemins ? Array.from(chemins) : [];
+      const refChemin = listeChemins[0] ?? null;
+      const noeuds = filRef.current?.querySelectorAll<SVGGElement>('[data-fil-noeud]');
+      const goutte = filRef.current?.querySelector<SVGCircleElement>('[data-fil-goutte]');
+      const noyau = filRef.current?.querySelector<SVGCircleElement>('[data-fil-goutte-noyau]');
+
+      if (refChemin && noeuds?.length) {
+        const longueur = refChemin.getTotalLength();
+
+        // Place les nœuds sur le tracé (quartiles du ruban)
+        const seuils: number[] = [];
+        noeuds.forEach((noeud, i) => {
+          const s = (i + 0.5) / noeuds.length;
+          seuils.push(s - 0.06);
+          const p = refChemin.getPointAtLength(s * longueur);
+          noeud.setAttribute('transform', `translate(${p.x}, ${p.y})`);
+        });
+
+        const placerGoutte = (prog: number) => {
+          const p = refChemin.getPointAtLength(prog * longueur);
+          goutte?.setAttribute('transform', `translate(${p.x}, ${p.y})`);
+          noyau?.setAttribute('transform', `translate(${p.x}, ${p.y})`);
+          noeuds.forEach((noeud, i) => {
+            noeud.classList.toggle('actif', prog >= seuils[i]);
+          });
+        };
+
+        if (reduit) {
+          listeChemins.forEach((c) => gsap.set(c, { strokeDashoffset: 0, strokeDasharray: 'none' }));
+          placerGoutte(1);
+        } else {
+          listeChemins.forEach((chemin) => {
+            const l = chemin.getTotalLength();
+            gsap.set(chemin, { strokeDasharray: l, strokeDashoffset: l });
+            gsap.to(chemin, {
+              strokeDashoffset: 0,
+              ease: 'none',
+              scrollTrigger: {
+                trigger: filRef.current,
+                start: 'top 70%',
+                end: 'bottom 74%',
+                scrub: 0.8,
+              },
+            });
+          });
+
+          ScrollTrigger.create({
             trigger: filRef.current,
             start: 'top 70%',
             end: 'bottom 74%',
             scrub: 0.8,
-          },
-        });
-      });
-      gsap.utils.toArray<HTMLElement>('.etape').forEach((etape) => {
-        gsap.from(etape.querySelector('.etape-texte'), {
-          y: 54,
-          opacity: 0,
-          duration: 1.05,
-          ease: 'power3.out',
-          scrollTrigger: { trigger: etape, start: 'top 80%' },
-        });
-        gsap.from(etape.querySelector('.etape-visuel'), {
-          y: 38,
-          rotate: -2,
-          opacity: 0,
-          duration: 1.1,
-          ease: 'power3.out',
-          scrollTrigger: { trigger: etape, start: 'top 80%' },
-        });
-      });
+            onUpdate: (self) => placerGoutte(self.progress),
+          });
+        }
+
+        // Étapes : glissement doux à l'arrivée
+        if (!reduit) {
+          gsap.utils.toArray<HTMLElement>('.etape').forEach((etape) => {
+            gsap.from(etape.querySelector('.etape-texte'), {
+              y: 54,
+              opacity: 0,
+              duration: 1.05,
+              ease: 'power3.out',
+              scrollTrigger: { trigger: etape, start: 'top 80%' },
+            });
+            gsap.from(etape.querySelector('.etape-visuel'), {
+              y: 38,
+              rotate: -2,
+              opacity: 0,
+              duration: 1.1,
+              ease: 'power3.out',
+              scrollTrigger: { trigger: etape, start: 'top 80%' },
+            });
+          });
+        }
+      }
 
       /* ===== DÉCLARATION ===== */
       const decl = declRef.current?.querySelector<HTMLElement>('.declaration-texte');
@@ -211,48 +244,98 @@ export const LandingPage: React.FC = () => {
       }
 
       /* ===== CAPACITÉS ===== */
-      gsap.utils.toArray<HTMLElement>('.capacite').forEach((ligne) => {
-        gsap.from(ligne, {
-          y: 38,
+      if (!reduit) {
+        gsap.utils.toArray<HTMLElement>('.capacite').forEach((ligne) => {
+          gsap.from(ligne, {
+            y: 38,
+            opacity: 0,
+            duration: 0.9,
+            ease: 'power3.out',
+            scrollTrigger: { trigger: ligne, start: 'top 88%' },
+          });
+        });
+      }
+
+      /* ===== GALERIE : piste épinglée + carte active en perspective ===== */
+      const piste = galerieRef.current?.querySelector<HTMLElement>('.galerie-piste');
+      const track = galerieRef.current?.querySelector<HTMLElement>('.galerie-track');
+
+      const majCarteActive = () => {
+        const cartes = galerieRef.current?.querySelectorAll<HTMLElement>('.galerie-carte');
+        if (!cartes?.length) return;
+        const centre = window.innerWidth / 2;
+        let meilleur = 0;
+        let distMin = Infinity;
+        cartes.forEach((c, i) => {
+          const r = c.getBoundingClientRect();
+          const d = Math.abs(r.left + r.width / 2 - centre);
+          if (d < distMin) {
+            distMin = d;
+            meilleur = i;
+          }
+        });
+        cartes.forEach((c, i) => c.classList.toggle('carte-active', i === meilleur));
+      };
+
+      if (piste && track) {
+        majCarteActive();
+        piste.addEventListener('scroll', majCarteActive, { passive: true });
+
+        // Clavier : flèches gauche/droite entre les cartes
+        const onClavier = (e: KeyboardEvent) => {
+          if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+          const cartes = Array.from(track.querySelectorAll<HTMLElement>('.galerie-carte'));
+          const idx = cartes.indexOf(document.activeElement as HTMLElement);
+          if (idx === -1) return;
+          e.preventDefault();
+          const suivant = Math.max(0, Math.min(cartes.length - 1, idx + (e.key === 'ArrowRight' ? 1 : -1)));
+          cartes[suivant].focus();
+          const st = stGalerie.current;
+          if (st) {
+            st.scroll(st.start + ((suivant + 0.5) / cartes.length) * (st.end - st.start));
+          }
+        };
+        piste.addEventListener('keydown', onClavier);
+
+        mm.add('(min-width: 1024px) and (prefers-reduced-motion: no-preference)', () => {
+          const distance = () => Math.max(0, track.scrollWidth - piste.clientWidth + 48);
+          const tween = gsap.to(track, {
+            x: () => -distance(),
+            ease: 'none',
+            scrollTrigger: {
+              trigger: galerieRef.current,
+              start: 'top top',
+              end: () => `+=${distance() + window.innerHeight * 0.35}`,
+              pin: true,
+              scrub: 0.9,
+              invalidateOnRefresh: true,
+              anticipatePin: 1,
+              onUpdate: majCarteActive,
+            },
+          });
+          stGalerie.current = (tween as unknown as { scrollTrigger?: ScrollTrigger }).scrollTrigger ?? null;
+          return () => {
+            stGalerie.current = null;
+          };
+        });
+
+        return () => {
+          piste.removeEventListener('scroll', majCarteActive);
+          piste.removeEventListener('keydown', onClavier);
+        };
+      }
+
+      /* ===== TARIFS : la vedette s'ouvre en lumière ===== */
+      if (!reduit) {
+        gsap.from('.plan-vedette', {
+          y: 52,
+          scale: 0.95,
           opacity: 0,
-          duration: 0.9,
+          duration: 1.05,
           ease: 'power3.out',
-          scrollTrigger: { trigger: ligne, start: 'top 88%' },
+          scrollTrigger: { trigger: '.tarifs-grille', start: 'top 80%' },
         });
-      });
-
-      /* ===== GALERIE : piste horizontale épinglée (desktop) ===== */
-      mm.add('(min-width: 1024px) and (prefers-reduced-motion: no-preference)', () => {
-        const piste = galerieRef.current?.querySelector<HTMLElement>('.galerie-piste');
-        const track = galerieRef.current?.querySelector<HTMLElement>('.galerie-track');
-        if (!piste || !track) return;
-
-        const distance = () => Math.max(0, track.scrollWidth - piste.clientWidth + 48);
-
-        gsap.to(track, {
-          x: () => -distance(),
-          ease: 'none',
-          scrollTrigger: {
-            trigger: galerieRef.current,
-            start: 'top top',
-            end: () => `+=${distance() + window.innerHeight * 0.35}`,
-            pin: true,
-            scrub: 0.9,
-            invalidateOnRefresh: true,
-            anticipatePin: 1,
-          },
-        });
-      });
-
-      /* ===== TARIFS ===== */
-      gsap.from('.plan-vedette', {
-        y: 52,
-        scale: 0.95,
-        opacity: 0,
-        duration: 1.05,
-        ease: 'power3.out',
-        scrollTrigger: { trigger: '.tarifs-grille', start: 'top 80%' },
-      });
+      }
     },
     { scope: racine },
   );
@@ -313,8 +396,7 @@ export const LandingPage: React.FC = () => {
               <span className="ligne-masquee">
                 <span>
                   <span className="hero-mot">{t.hero.ligne2avant}</span>{' '}
-                  <span className="hero-mot italique-vif">{t.hero.ligne2italique}</span>
-                  <span className="hero-mot">.</span>
+                  <span className="hero-mot italique-vif">{t.hero.ligne2italique}.</span>
                 </span>
               </span>
             </h1>
@@ -345,10 +427,7 @@ export const LandingPage: React.FC = () => {
             <AuraSculptureCanvas />
             <div className="scene-halo" aria-hidden />
             <figure className="scene-cadre">
-              <img
-                src="/assets/aura-symbol-white.jpg"
-                alt={t.hero.legende}
-              />
+              <img src="/assets/aura-symbol-white.jpg" alt={t.hero.legende} />
             </figure>
             <figcaption className="scene-legende">{t.hero.legende}</figcaption>
           </div>
@@ -376,7 +455,7 @@ export const LandingPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ================= LE FIL ================= */}
+      {/* ================= LE FIL (ruban narratif) ================= */}
       <section id="fil" className="section fil" ref={filRef}>
         <svg
           className="fil-ruban-svg"
@@ -407,6 +486,14 @@ export const LandingPage: React.FC = () => {
             strokeWidth="5"
             strokeLinecap="round"
           />
+          {[0, 1, 2, 3].map((i) => (
+            <g className="fil-noeud" data-fil-noeud={i} key={i}>
+              <circle className="fil-noeud-halo" r="30" fill="url(#fil-grad)" />
+              <circle r="11" fill="#FFFDF8" stroke="url(#fil-grad)" strokeWidth="4" />
+            </g>
+          ))}
+          <circle data-fil-goutte r="10" fill="#FF790D" opacity="0.85" />
+          <circle data-fil-goutte-noyau r="4" fill="#FFFDF8" />
         </svg>
 
         <div className="wrap">
@@ -548,17 +635,29 @@ export const LandingPage: React.FC = () => {
           <p data-reveal>{t.galerie.sous}</p>
         </div>
 
-        <div className="galerie-piste">
+        <div className="galerie-piste" aria-label={t.galerie.kicker}>
           <div className="galerie-track">
             {t.galerie.creations.map((c, i) => (
-              <article className="galerie-carte" key={c.titre}>
-                <div className="carte-apercu">
-                  <div className="apercu-barre" aria-hidden>
-                    <i />
-                    <i />
-                    <i />
+              <Tilt
+                className="galerie-carte"
+                key={c.titre}
+                tabIndex={0}
+                role="group"
+                aria-label={c.titre}
+              >
+                <div className="carte-scene">
+                  <div className="apercu-pile" aria-hidden>
+                    <span className="apercu-volet volet-1" />
+                    <span className="apercu-volet volet-2" />
                   </div>
-                  <img src={IMAGES_GALERIE[i]} alt={`${t.galerie.badge} — ${c.titre}`} loading="lazy" />
+                  <div className="carte-apercu">
+                    <div className="apercu-barre" aria-hidden>
+                      <i />
+                      <i />
+                      <i />
+                    </div>
+                    <img src={IMAGES_GALERIE[i]} alt={`${t.galerie.badge} — ${c.titre}`} loading="lazy" />
+                  </div>
                 </div>
                 <div className="carte-meta">
                   <h3>{c.titre}</h3>
@@ -567,7 +666,7 @@ export const LandingPage: React.FC = () => {
                   </span>
                 </div>
                 <p className="carte-brief">{c.brief}</p>
-              </article>
+              </Tilt>
             ))}
           </div>
         </div>
@@ -592,10 +691,10 @@ export const LandingPage: React.FC = () => {
 
           <div className="tarifs-grille" ref={tarifsReveal}>
             {t.tarifs.plans.map((p) => (
-              <article
+              <Tilt
                 className={`plan${p.vedette ? ' plan-vedette' : ''}`}
                 key={p.nom}
-                data-reveal={p.vedette ? undefined : ''}
+                {...(p.vedette ? {} : { 'data-reveal': '' })}
               >
                 <div className="plan-nom">{p.nom}</div>
                 <div className="plan-prix">
@@ -612,7 +711,7 @@ export const LandingPage: React.FC = () => {
                 <Link to="/register" className={`btn ${p.vedette ? 'btn-ruban' : 'btn-ligne'}`}>
                   <span>{p.cta}</span>
                 </Link>
-              </article>
+              </Tilt>
             ))}
           </div>
 
@@ -624,6 +723,7 @@ export const LandingPage: React.FC = () => {
       <section className="section cta">
         <div className="wrap">
           <div className="cta-panneau" data-reveal>
+            <div className="cta-halo" aria-hidden />
             <span className="kicker" style={{ justifyContent: 'center' }}>
               {t.cta.kicker}
             </span>
