@@ -117,12 +117,54 @@ export interface Content {
     titre1: string;
     titre2: string;
     sous: string;
+    titreLogin1: string;
+    titreLogin2: string;
+    sousLogin: string;
+    nom: string;
+    nomPlaceholder: string;
     email: string;
     mdp: string;
     submit: string;
+    submitLogin: string;
+    submitEnvoi: string;
     note: string;
-    noteSoumis: string;
+    basculeLogin: string;
+    basculeRegister: string;
+    lienLogin: string;
+    lienRegister: string;
+    errMdp: string;
+    errSaisie: string;
+    errExiste: string;
+    errIdentifiants: string;
+    errStockage: string;
+    errLimite: string;
+    errServeur: string;
     retour: string;
+  };
+  espace: {
+    kicker: string;
+    titre1: string;
+    titre2: string;
+    sous: string;
+    chargement: string;
+    carteCompte: string;
+    membre: string;
+    deconnecter: string;
+    onbTitre: string;
+    onbFaitTitre: string;
+    onbSous: string;
+    onbObjectif: string;
+    onbModifier: string;
+    onbEnregistrer: string;
+    onbEnvoi: string;
+    onbEnregistre: string;
+    objectifLabel: string;
+    objectifs: string[];
+    modulesTitre: string;
+    dispo: string;
+    attente: string;
+    lienDocs: string;
+    sitePublic: string;
   };
   oops: {
     kicker: string;
@@ -463,14 +505,63 @@ const contentFr: Content = {
     titre1: 'Bienvenue',
     titre2: 'dans Aura',
     sous: "L'espace de travail où l'idée devient résultat.",
+    titreLogin1: 'Content',
+    titreLogin2: 'de vous revoir',
+    sousLogin: 'Reprenez le fil exactement où vous l\'aviez laissé.',
+    nom: 'Nom',
+    nomPlaceholder: 'Votre nom',
     email: 'Adresse e-mail',
     mdp: 'Mot de passe',
-    submit: 'Continuer',
+    submit: 'Créer mon compte',
+    submitLogin: 'Se connecter',
+    submitEnvoi: 'Un instant…',
     note:
-      'Le moteur de comptes se construit actuellement. Aucune donnée n\'est transmise pour l\'instant — la transparence fait partie de l\'identité d\'Aura.',
-    noteSoumis:
-      'Comptes bientôt ouverts. Le moteur de comptes arrive à la prochaine étape du chantier — votre saisie n\'est ni envoyée, ni enregistrée pour l\'instant.',
+      "Authentification par sessions côté serveur, mots de passe chiffrés (scrypt). Aucun traceur publicitaire.",
+    basculeLogin: 'Vous avez déjà un compte ?',
+    basculeRegister: 'Pas encore de compte ?',
+    lienLogin: 'Se connecter',
+    lienRegister: 'Créer un compte',
+    errMdp: 'Le mot de passe doit faire au moins 8 caractères.',
+    errSaisie: 'Saisie invalide.',
+    errExiste: 'Un compte existe déjà avec cette adresse.',
+    errIdentifiants: 'Identifiants incorrects.',
+    errStockage:
+      "Les comptes attendent la configuration du stockage sur cet environnement — l'équipe doit connecter une base (voir la documentation de déploiement).",
+    errLimite: 'Trop de tentatives. Réessayez plus tard.',
+    errServeur: 'Le service ne répond pas. Réessayez.',
     retour: "Retour à l'accueil",
+  },
+  espace: {
+    kicker: 'Votre espace',
+    titre1: 'Le fil',
+    titre2: 'vous appartient',
+    sous: 'Votre compte, votre premier lancement, et ce qui est réellement disponible.',
+    chargement: 'Ouverture de votre espace…',
+    carteCompte: 'Votre compte',
+    membre: 'Membre depuis',
+    deconnecter: 'Se déconnecter',
+    onbTitre: 'Votre premier lancement',
+    onbFaitTitre: 'Votre profil est prêt',
+    onbSous:
+      "En quelques secondes : dites-nous ce que vous comptez faire avec Aura. Ce choix est enregistré sur votre compte.",
+    onbObjectif: 'Votre objectif',
+    onbModifier: 'Modifier',
+    onbEnregistrer: 'Enregistrer',
+    onbEnvoi: 'Enregistrement…',
+    onbEnregistre: 'Profil enregistré. Bienvenue dans Aura.',
+    objectifLabel: 'Votre principal objectif',
+    objectifs: [
+      'Créer des visuels',
+      'Rédiger et résumer',
+      'Développer des projets',
+      'Explorer des sujets',
+      'Organiser des missions',
+    ],
+    modulesTitre: 'État des modules',
+    dispo: 'Disponible',
+    attente: 'En reconstruction',
+    lienDocs: 'Documentation',
+    sitePublic: 'Le site public',
   },
   oops: {
     kicker: 'Perdu dans les rubans',
@@ -740,14 +831,63 @@ const contentEn: Content = {
     titre1: 'Welcome',
     titre2: 'to Aura',
     sous: 'The workspace where ideas become results.',
+    titreLogin1: 'Good',
+    titreLogin2: 'to see you back',
+    sousLogin: 'Pick the thread up exactly where you left it.',
+    nom: 'Name',
+    nomPlaceholder: 'Your name',
     email: 'Email address',
     mdp: 'Password',
-    submit: 'Continue',
+    submit: 'Create my account',
+    submitLogin: 'Sign in',
+    submitEnvoi: 'One moment…',
     note:
-      'The account engine is currently being built. No data is transmitted for now — transparency is part of Aura’s identity.',
-    noteSoumis:
-      'Accounts opening soon. The account engine arrives at the next step of the workshop — your input is neither sent nor stored for now.',
+      'Server-side sessions, scrypt-hashed passwords. No advertising trackers.',
+    basculeLogin: 'Already have an account?',
+    basculeRegister: 'No account yet?',
+    lienLogin: 'Sign in',
+    lienRegister: 'Create an account',
+    errMdp: 'Password must be at least 8 characters.',
+    errSaisie: 'Invalid input.',
+    errExiste: 'An account already exists with this email.',
+    errIdentifiants: 'Incorrect credentials.',
+    errStockage:
+      'Accounts are waiting for storage configuration on this environment — the team must connect a database (see the deployment documentation).',
+    errLimite: 'Too many attempts. Try again later.',
+    errServeur: 'The service is not responding. Try again.',
     retour: 'Back to home',
+  },
+  espace: {
+    kicker: 'Your space',
+    titre1: 'The thread',
+    titre2: 'is yours',
+    sous: 'Your account, your first launch, and what is actually available.',
+    chargement: 'Opening your space…',
+    carteCompte: 'Your account',
+    membre: 'Member since',
+    deconnecter: 'Sign out',
+    onbTitre: 'Your first launch',
+    onbFaitTitre: 'Your profile is ready',
+    onbSous:
+      'In a few seconds: tell us what you plan to do with Aura. This choice is saved to your account.',
+    onbObjectif: 'Your goal',
+    onbModifier: 'Edit',
+    onbEnregistrer: 'Save',
+    onbEnvoi: 'Saving…',
+    onbEnregistre: 'Profile saved. Welcome to Aura.',
+    objectifLabel: 'Your main goal',
+    objectifs: [
+      'Create visuals',
+      'Write and summarize',
+      'Build projects',
+      'Explore topics',
+      'Organize missions',
+    ],
+    modulesTitre: 'Module status',
+    dispo: 'Available',
+    attente: 'Being rebuilt',
+    lienDocs: 'Documentation',
+    sitePublic: 'The public site',
   },
   oops: {
     kicker: 'Lost in the ribbons',

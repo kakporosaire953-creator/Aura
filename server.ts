@@ -1,36 +1,14 @@
 import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createApiApp } from './server/api';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isProd = process.env.NODE_ENV === 'production';
 const PORT = Number(process.env.PORT || 3000);
 
-export function createApiApp() {
-  const api = express.Router();
-  api.use(express.json());
-
-  // État réel du produit — jamais de fausse fonctionnalité.
-  api.get('/status', (_req, res) => {
-    res.json({
-      name: 'Aura',
-      phase: 'renaissance',
-      tagline: "De l'idée au résultat.",
-      features: {
-        publicSite: 'live',
-        intro: 'live',
-        sculpture3d: 'live',
-        accounts: 'rebuilding',
-        chat: 'rebuilding',
-        explore: 'rebuilding',
-        studio: 'rebuilding',
-        missions: 'rebuilding',
-      },
-    });
-  });
-
-  return api;
-}
+// API unique (dev + Vercel) : voir server/api.ts.
+export { createApiApp };
 
 async function main() {
   const app = express();
