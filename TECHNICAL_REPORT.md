@@ -166,3 +166,13 @@ sans fuite de secrets.
 3. Streaming des réponses chat + persistance Supabase en production.
 4. Vérification légale des pages (elles sont clairement non validées par un
    professionnel du droit) et mise en place du support (adresse réelle).
+
+---
+
+## 10. Motion system (GSAP + Three.js)
+
+- **Intro (`AuraIntroLoader`)** — once per session (`sessionStorage: aura_intro_v1`), skippable on any interaction, disabled under `prefers-reduced-motion`. The official logo asset is never altered: the choreography (ring draw, halo expansion, clip-reveal, light sweep, staggered tagline) animates **around** `AuraLogo`.
+- **Three.js (`AuraThreeRibbons`)** — lazy-loaded (550 kB chunk, never in the critical bundle), DPR capped at 2, paused via `IntersectionObserver`/`visibilitychange`, graceful no-op without WebGL, full buffer/material disposal on unmount, hidden < 768 px.
+- **Landing demo (`PromptToProductDemo`)** — one GSAP master timeline drives the real `applyProgressState(0–1)` stage engine (no duplicated state), with play/pause/replay controls and auto-start once per page view when pinned.
+- **Auth panel (`AuthMotionFilm`)** — infinite 8 s GSAP loop (light sweeps, value captions, floating UI cards, sparks); static fallback for reduced motion.
+- All timelines use `useGSAP` scopes for automatic cleanup; every piece has a `prefers-reduced-motion` path. Verified by `tsc --noEmit`, production build, and dev-module smoke checks (no headless browser is available in this sandbox for pixel testing).
