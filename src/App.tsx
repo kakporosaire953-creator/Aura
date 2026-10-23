@@ -7,6 +7,7 @@ import { LandingPage } from './pages/LandingPage';
 import { AuthPage } from './pages/AuthPage';
 import { DocumentationPage } from './pages/DocumentationPage';
 import { EspacePage } from './pages/EspacePage';
+import { ChatPage } from './pages/ChatPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
 const ScrollToTop: React.FC = () => {
@@ -38,6 +39,7 @@ export const App: React.FC = () => {
             <Route path="/login" element={<AuthPage />} />
             <Route path="/register" element={<AuthPage />} />
             <Route path="/documentation" element={<DocumentationPage />} />
+            <Route path="/chat" element={<ChatPage />} />
             <Route path="/app" element={<EspacePage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
