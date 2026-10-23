@@ -1,17 +1,58 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { AuraLogo } from '../components/brand/AuraLogo';
 import { useT } from '../app/prefs';
+import { useSession, appelerAuth } from '../app/session';
+
+/** Traduction des codes d'erreur de l'API en messages locaux (fr/en). */
+function messageErreur(
+  code: string | undefined,
+  secours: string,
+  t: ReturnType<typeof useT>,
+): string {
+  switch (code) {
+    case 'identifiants':
+      return t.auth.errIdentifiants;
+    case 'existe':
+      return t.auth.errExiste;
+    case 'validation':
+      return t.auth.errSaisie;
+    case 'stockage-indisponible':
+      return t.auth.errStockage;
+    case 'limite':
+      return t.auth.errLimite;
+    case 'reseau':
+      return t.auth.errServeur;
+    default:
+      return secours || t.auth.errServeur;
+  }
+}
 
 /**
  * Authentification — panneau gauche « film ruban » (boucle de 8 s)
- * et formulaire honnête : la saisie n'est pas envoyée.
+ * et formulaire réellement branché sur /api/auth (sessions serveur,
+ * stockage honnête). Inscription sur /register, connexion sur /login.
  */
 export const AuthPage: React.FC = () => {
   const t = useT();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { statut, rafraichir } = useSession();
+  const inscription = location.pathname.startsWith('/register');
   const filmRef = useRef<HTMLDivElement | null>(null);
-  const [soumis, setSoumis] = useState(false);
+
+  const [email, setEmail] = useState('');
+  const [mdp, setMdp] = useState('');
+  const [nom, setNom] = useState('');
+  const [etat, setEtat] = useState<'idle' | 'envoi' | 'erreur'>('idle');
+  const [erreur, setErreur] = useState<string | null>(null);
+  const [detail, setDetail] = useState<Record<string, string> | null>(null);
+
+  // Déjà connecté → espace.
+  useEffect(() => {
+    if (statut === 'connecte') navigate('/app', { replace: true });
+  }, [statut, navigate]);
 
   useEffect(() => {
     const reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -57,6 +98,34 @@ export const AuthPage: React.FC = () => {
     return () => ctx.revert();
   }, [t]);
 
+  const soumettre = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEtat('envoi');
+    setErreur(null);
+    setDetail(null);
+
+    // Validation locale immédiate, puis l'API reste juge.
+    if (inscription && mdp.length < 8) {
+      setEtat('erreur');
+      setDetail({ password: 'court' });
+      setErreur(t.auth.errMdp);
+      return;
+    }
+
+    const res = inscription
+      ? await appelerAuth('/auth/register', { email, password: mdp, nom })
+      : await appelerAuth('/auth/login', { email, password: mdp });
+
+    if (res.ok) {
+      await rafraichir();
+      navigate('/app', { replace: true });
+      return;
+    }
+    setEtat('erreur');
+    setErreur(messageErreur(res.code, res.erreur ?? '', t));
+    setDetail(res.detail ?? null);
+  };
+
   return (
     <div className="auth">
       <aside className="auth-film" ref={filmRef} aria-hidden>
@@ -94,17 +163,27 @@ export const AuthPage: React.FC = () => {
             <AuraLogo taille="sm" />
           </Link>
           <h1 className="display-lg">
-            {t.auth.titre1} <em className="italique-vif">{t.auth.titre2}</em>.
+            {inscription ? t.auth.titre1 : t.auth.titreLogin1}{' '}
+            <em className="italique-vif">{inscription ? t.auth.titre2 : t.auth.titreLogin2}</em>.
           </h1>
-          <p className="sous-titre">{t.auth.sous}</p>
+          <p className="sous-titre">{inscription ? t.auth.sous : t.auth.sousLogin}</p>
 
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              setSoumis(true);
-            }}
-            noValidate
-          >
+          <form onSubmit={soumettre} noValidate>
+            {inscription && (
+              <div className="form-groupe">
+                <label htmlFor="nom">{t.auth.nom}</label>
+                <input
+                  id="nom"
+                  type="text"
+                  className="form-champ"
+                  placeholder={t.auth.nomPlaceholder}
+                  autoComplete="name"
+                  value={nom}
+                  onChange={(e) => setNom(e.target.value)}
+                  maxLength={80}
+                />
+              </div>
+            )}
             <div className="form-groupe">
               <label htmlFor="email">{t.auth.email}</label>
               <input
@@ -113,6 +192,10 @@ export const AuthPage: React.FC = () => {
                 className="form-champ"
                 placeholder="vous@exemple.com"
                 autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                aria-invalid={detail?.email ? true : undefined}
               />
             </div>
             <div className="form-groupe">
@@ -122,27 +205,40 @@ export const AuthPage: React.FC = () => {
                 type="password"
                 className="form-champ"
                 placeholder="••••••••"
-                autoComplete="current-password"
+                autoComplete={inscription ? 'new-password' : 'current-password'}
+                required
+                minLength={inscription ? 8 : undefined}
+                value={mdp}
+                onChange={(e) => setMdp(e.target.value)}
+                aria-invalid={detail?.password ? true : undefined}
               />
             </div>
+
+            {erreur && (
+              <p className="form-erreur" role="alert">
+                <i className="fa-solid fa-circle-exclamation" aria-hidden /> {erreur}
+              </p>
+            )}
 
             <button
               type="submit"
               className="btn btn-ruban"
+              disabled={etat === 'envoi'}
               style={{ width: '100%', marginTop: '1.6rem' }}
             >
-              <span>{t.auth.submit}</span>
+              <span>{etat === 'envoi' ? t.auth.submitEnvoi : inscription ? t.auth.submit : t.auth.submitLogin}</span>
             </button>
           </form>
 
           <p className="form-note" role="status">
-            {soumis ? (
-              <>
-                <strong>{t.auth.noteSoumis}</strong>
-              </>
-            ) : (
-              t.auth.note
-            )}
+            {t.auth.note}
+          </p>
+
+          <p className="auth-bascule">
+            {inscription ? t.auth.basculeLogin : t.auth.basculeRegister}{' '}
+            <Link to={inscription ? '/login' : '/register'}>
+              {inscription ? t.auth.lienLogin : t.auth.lienRegister}
+            </Link>
           </p>
 
           <Link to="/" className="auth-retour">

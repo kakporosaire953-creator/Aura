@@ -2,12 +2,14 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AuraLogo } from '../brand/AuraLogo';
 import { usePrefs } from '../../app/prefs';
+import { useSession } from '../../app/session';
 
 /** Navigation légère partagée — jamais surchargée. */
 export const SiteNav: React.FC = () => {
   const [scrolled, setScrolled] = React.useState(false);
   const { pathname } = useLocation();
   const { t, theme, toggleTheme, lang, setLang } = usePrefs();
+  const { statut } = useSession();
 
   React.useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 32);
@@ -64,12 +66,21 @@ export const SiteNav: React.FC = () => {
               <i className={`fa-solid ${theme === 'dark' ? 'fa-sun' : 'fa-moon'}`} aria-hidden />
             </button>
           </div>
-          <Link to="/login" className="btn btn-ligne">
-            {t.nav.connexion}
-          </Link>
-          <Link to="/register" className="btn btn-encre">
-            <span>{t.nav.commencer}</span>
-          </Link>
+          {statut === 'connecte' ? (
+            <Link to="/app" className="btn btn-encre">
+              <i className="fa-solid fa-user" aria-hidden />
+              <span>{t.espace.kicker}</span>
+            </Link>
+          ) : (
+            <>
+              <Link to="/login" className="btn btn-ligne">
+                {t.nav.connexion}
+              </Link>
+              <Link to="/register" className="btn btn-encre">
+                <span>{t.nav.commencer}</span>
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </nav>
@@ -79,6 +90,7 @@ export const SiteNav: React.FC = () => {
 /** Pied de page partagé. */
 export const SiteFooter: React.FC = () => {
   const { t } = usePrefs();
+  const { statut } = useSession();
   return (
     <footer className="pied">
       <div className="wrap">
@@ -105,7 +117,11 @@ export const SiteFooter: React.FC = () => {
               <Link to="/#tarifs">{t.nav.tarifs}</Link>
             </li>
             <li>
-              <Link to="/login">{t.nav.connexion}</Link>
+              {statut === 'connecte' ? (
+                <Link to="/app">{t.espace.kicker}</Link>
+              ) : (
+                <Link to="/login">{t.nav.connexion}</Link>
+              )}
             </li>
           </ul>
         </div>
