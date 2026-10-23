@@ -10,12 +10,14 @@
     "start": "NODE_ENV=production tsx server.ts"
   },
   "dependencies": {
+    "@fortawesome/fontawesome-free": "^7.3.1",
     "@gsap/react": "^2.1.2",
     "express": "^4.21.2",
     "gsap": "^3.15.0",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
     "react-router-dom": "^7.18.4",
+    "simple-icons": "^16.35.0",
     "three": "^0.186.1"
   },
   "devDependencies": {
