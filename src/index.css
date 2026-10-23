@@ -2045,3 +2045,165 @@ button {
     transform: none;
   }
 }
+
+/* ============================================================
+   THÈME SOMBRE — la nuit du ruban (en fin de feuille : prioritaire)
+   ============================================================ */
+[data-theme='dark'] {
+  --ivoire: #0d1712;
+  --papier: #13211a;
+  --brume: #24352b;
+  --brume-2: #2e4236;
+  --encre: #f2f1e9;
+  --encre-2: #d3d7ce;
+  --encre-3: #9ba79e;
+  --ombre-douce: 0 24px 60px -28px rgba(0, 0, 0, 0.55);
+  --ombre-flottante: 0 40px 90px -30px rgba(0, 0, 0, 0.65);
+}
+
+[data-theme='dark'] body {
+  background: var(--ivoire);
+}
+
+[data-theme='dark'] .nav.scrolled {
+  background: rgba(13, 23, 18, 0.88);
+  box-shadow: 0 1px 0 rgba(255, 253, 248, 0.08);
+}
+
+[data-theme='dark'] .kicker {
+  color: var(--lime);
+}
+
+[data-theme='dark'] .etape-num {
+  -webkit-text-stroke-color: rgba(242, 241, 233, 0.28);
+}
+
+[data-theme='dark'] .etape:hover .etape-num {
+  -webkit-text-stroke-color: var(--lime);
+}
+
+[data-theme='dark'] .btn-ligne {
+  border-color: rgba(242, 241, 233, 0.28);
+  color: var(--encre);
+}
+
+[data-theme='dark'] .btn-ligne:hover {
+  border-color: var(--encre);
+  background: rgba(242, 241, 233, 0.08);
+}
+
+[data-theme='dark'] .hero-lueur {
+  opacity: 0.85;
+  filter: saturate(1.15);
+}
+
+[data-theme='dark'] .scene-legende {
+  background: rgba(19, 33, 26, 0.92);
+  border: 1px solid rgba(255, 253, 248, 0.12);
+  color: #e8e6da;
+}
+
+[data-theme='dark'] .capacite:hover {
+  background: rgba(165, 232, 56, 0.07);
+}
+
+[data-theme='dark'] .plan-vedette {
+  border: 1px solid rgba(255, 253, 248, 0.12);
+}
+
+[data-theme='dark'] .form-note {
+  background: rgba(234, 203, 55, 0.12);
+}
+
+[data-theme='dark'] .scroll-indices .trait::after {
+  background: var(--ivoire);
+}
+
+[data-theme='dark'] .cta-panneau::after {
+  opacity: 0.65;
+}
+
+/* Les sections « nuit » restent sombres dans les deux thèmes */
+.bandeau,
+.logos-ia,
+.galerie-section,
+.pied,
+.auth-film,
+.intro,
+.intro-rideau {
+  background: #12211b;
+}
+
+.bandeau,
+.galerie-section,
+.pied,
+.auth-film,
+.intro {
+  color: #fffdf8;
+}
+
+.pied-marque {
+  color: #fffdf8;
+}
+
+.plan-vedette {
+  background: #12211b;
+  color: #fffdf8;
+}
+
+/* ---------- Commandes nav (thème + langue) ---------- */
+.nav-outils {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.bascule-theme {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(18, 33, 27, 0.18);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--encre-2);
+  font-size: 0.92rem;
+  transition: transform 0.5s var(--soie), background 0.35s ease, color 0.35s ease,
+    border-color 0.35s ease;
+}
+
+.bascule-theme:hover {
+  transform: rotate(-14deg) scale(1.06);
+  background: var(--ruban);
+  border-color: transparent;
+  color: var(--encre);
+}
+
+[data-theme='dark'] .bascule-theme {
+  border-color: rgba(242, 241, 233, 0.28);
+}
+
+.bascule-langue {
+  display: inline-flex;
+  border: 1.5px solid rgba(18, 33, 27, 0.18);
+  border-radius: 999px;
+  overflow: hidden;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+[data-theme='dark'] .bascule-langue {
+  border-color: rgba(242, 241, 233, 0.28);
+}
+
+.bascule-langue button {
+  padding: 0.55em 0.85em;
+  color: var(--encre-3);
+  transition: background 0.35s ease, color 0.35s ease;
+}
+
+.bascule-langue button.actif {
+  background: var(--encre);
+  color: var(--ivoire);
+}

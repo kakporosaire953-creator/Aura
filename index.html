@@ -23,6 +23,18 @@
     />
   </head>
   <body>
+    <script>
+      // Applique le thème et la langue avant le premier rendu (anti-flash)
+      try {
+        var th = localStorage.getItem('aura_theme');
+        if (th !== 'dark' && th !== 'light') {
+          th = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.dataset.theme = th;
+        var lg = localStorage.getItem('aura_lang') === 'en' ? 'en' : 'fr';
+        document.documentElement.lang = lg;
+      } catch (e) {}
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
