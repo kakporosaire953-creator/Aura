@@ -117,7 +117,7 @@ button {
   font-family: var(--font-titre);
   font-weight: 380;
   font-size: clamp(3.1rem, 8.6vw, 7.2rem);
-  line-height: 0.98;
+  line-height: 1.06;
   letter-spacing: -0.028em;
   font-variation-settings: 'SOFT' 40, 'WONK' 1;
 }
@@ -126,7 +126,7 @@ button {
   font-family: var(--font-titre);
   font-weight: 400;
   font-size: clamp(2.5rem, 5.6vw, 4.6rem);
-  line-height: 1.02;
+  line-height: 1.08;
   letter-spacing: -0.024em;
   font-variation-settings: 'SOFT' 40, 'WONK' 1;
 }
@@ -989,7 +989,6 @@ button {
 }
 
 .galerie-carte:hover {
-  transform: translateY(-10px);
   background: rgba(255, 253, 248, 0.09);
   border-color: rgba(234, 203, 55, 0.4);
 }
@@ -1214,7 +1213,6 @@ button {
 }
 
 .doc-carte:hover {
-  transform: translateY(-7px);
   box-shadow: var(--ombre-douce);
   border-color: var(--brume);
 }
@@ -1285,7 +1283,6 @@ button {
 }
 
 .plan:hover {
-  transform: translateY(-8px);
   box-shadow: var(--ombre-douce);
 }
 
@@ -1870,17 +1867,17 @@ button {
   transform: none;
 }
 
-/* ligne masquée pour les titres hero */
+/* ligne masquée pour les titres hero — marges symétriques :
+   les accents (é, è) et les descendantes ne sont jamais rognés */
 .ligne-masquee {
   display: block;
   overflow: hidden;
-  padding-bottom: 0.08em;
-  margin-bottom: -0.08em;
+  padding: 0.14em 0.05em 0.18em;
+  margin: -0.14em -0.05em -0.18em;
 }
 
 .ligne-masquee > span {
   display: block;
-  transform: translateY(112%);
 }
 
 /* ---------- Responsive ---------- */
@@ -2206,4 +2203,213 @@ button {
 .bascule-langue button.actif {
   background: var(--encre);
   color: var(--ivoire);
+}
+
+/* ============================================================
+   ANIMATIONS PREMIUM — inclinaison 3D, reflets, profondeur
+   ============================================================ */
+
+/* --- C. Cartes à inclinaison 3D + reflet lumineux --- */
+.tilt {
+  position: relative;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.carte-scene {
+  position: relative;
+}
+
+.carte-apercu {
+  z-index: 2;
+}
+
+.tilt-brillance {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  background: radial-gradient(
+    420px circle at var(--tilt-x, 50%) var(--tilt-y, 50%),
+    rgba(255, 255, 255, 0.16),
+    transparent 42%
+  );
+  z-index: 3;
+}
+
+.tilt:hover .tilt-brillance,
+.tilt:focus-visible .tilt-brillance {
+  opacity: 1;
+}
+
+[data-theme='dark'] .tilt-brillance {
+  background: radial-gradient(
+    420px circle at var(--tilt-x, 50%) var(--tilt-y, 50%),
+    rgba(234, 203, 55, 0.14),
+    transparent 42%
+  );
+}
+
+/* --- D. Panneaux d'interface superposés (galerie) --- */
+.carte-apercu {
+  transform: translateZ(28px);
+}
+
+.apercu-pile {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.apercu-volet {
+  position: absolute;
+  inset: 6% 4% -2% 4%;
+  border-radius: 15px;
+  border: 1px solid rgba(255, 253, 248, 0.16);
+  background: rgba(255, 253, 248, 0.06);
+  transition: transform 0.9s var(--soie), opacity 0.9s ease;
+}
+
+.apercu-volet.volet-1 {
+  transform: rotate(-2.2deg) translateY(10px) scale(0.96);
+  opacity: 0.75;
+}
+
+.apercu-volet.volet-2 {
+  transform: rotate(1.8deg) translateY(18px) scale(0.92);
+  opacity: 0.5;
+}
+
+.galerie-carte:hover .apercu-volet.volet-1,
+.galerie-carte.carte-active .apercu-volet.volet-1 {
+  transform: rotate(-3.6deg) translateY(16px) scale(0.97);
+  opacity: 0.95;
+}
+
+.galerie-carte:hover .apercu-volet.volet-2,
+.galerie-carte.carte-active .apercu-volet.volet-2 {
+  transform: rotate(3deg) translateY(28px) scale(0.93);
+  opacity: 0.7;
+}
+
+/* --- E. Galerie : carte active mise en avant --- */
+.galerie-carte {
+  transition: transform 0.7s var(--soie), background 0.5s ease, border-color 0.5s ease,
+    opacity 0.6s ease;
+  opacity: 0.62;
+  transform: scale(0.965);
+  outline: none;
+}
+
+.galerie-carte.carte-active {
+  opacity: 1;
+  transform: scale(1.03) translateY(-10px);
+  border-color: rgba(234, 203, 55, 0.5);
+}
+
+.galerie-carte:focus-visible {
+  opacity: 1;
+  box-shadow: 0 0 0 3px var(--feu), 0 0 0 6px rgba(255, 121, 13, 0.25);
+}
+
+/* --- B. Nœuds narratifs du ruban --- */
+.fil-noeud {
+  transition: opacity 0.6s ease;
+  opacity: 0.35;
+}
+
+.fil-noeud.actif {
+  opacity: 1;
+}
+
+.fil-noeud-halo {
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+
+.fil-noeud.actif .fil-noeud-halo {
+  opacity: 0.5;
+}
+
+/* --- F. Micro-interactions --- */
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -70%;
+  width: 46%;
+  background: linear-gradient(
+    105deg,
+    transparent,
+    rgba(255, 255, 255, 0.38),
+    transparent
+  );
+  transform: skewX(-18deg);
+  transition: left 0.65s var(--soie);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.btn:hover::before,
+.btn:focus-visible::before {
+  left: 130%;
+}
+
+.btn-ruban::before,
+.btn-encre::before {
+  z-index: 2;
+}
+
+.cta-halo {
+  position: absolute;
+  width: 720px;
+  height: 720px;
+  left: 50%;
+  top: -300px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(234, 203, 55, 0.16),
+    rgba(255, 121, 13, 0.07) 45%,
+    transparent 68%
+  );
+  pointer-events: none;
+  animation: halo-respiration 7s ease-in-out infinite;
+}
+
+@keyframes halo-respiration {
+  0%,
+  100% {
+    transform: translateX(-50%) scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: translateX(-50%) scale(1.12);
+    opacity: 1;
+  }
+}
+
+.galerie-piste {
+  outline: none;
+}
+
+/* --- Tactile : pas d'inclinaison au doigt, focus net --- */
+@media (hover: none) {
+  .galerie-carte {
+    opacity: 1;
+    transform: none;
+  }
+
+  .galerie-carte.carte-active {
+    transform: none;
+  }
+
+  .tilt-brillance {
+    display: none;
+  }
 }
