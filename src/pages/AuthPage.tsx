@@ -2,15 +2,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import gsap from 'gsap';
 import { AuraLogo } from '../components/brand/AuraLogo';
-
-const MOTS = ['Réfléchir.', 'Rechercher.', 'Créer.', 'Développer.'];
+import { useT } from '../app/prefs';
 
 /**
- * Authentification — panneau gauche « film ruban » (boucle de 8 s,
- * façon Claude) et formulaire honnête : la saisie n'est pas envoyée,
- * les comptes ouvrent à la prochaine étape du chantier.
+ * Authentification — panneau gauche « film ruban » (boucle de 8 s)
+ * et formulaire honnête : la saisie n'est pas envoyée.
  */
 export const AuthPage: React.FC = () => {
+  const t = useT();
   const filmRef = useRef<HTMLDivElement | null>(null);
   const [soumis, setSoumis] = useState(false);
 
@@ -26,7 +25,6 @@ export const AuthPage: React.FC = () => {
 
       const tl = gsap.timeline({ repeat: -1 });
 
-      // Barrages de lumière
       tl.fromTo(
         '[data-auth-sweep]',
         { xPercent: -160, skewX: -14 },
@@ -34,8 +32,7 @@ export const AuthPage: React.FC = () => {
         0,
       );
 
-      // Mots qui se succèdent (2 s chacun, boucle de 8 s)
-      MOTS.forEach((_, i) => {
+      for (let i = 0; i < 4; i++) {
         tl.to('[data-auth-mot]', { opacity: 0, y: -14, duration: 0.45, ease: 'power2.in' }, i * 2 - 0.01)
           .fromTo(
             `[data-auth-mot="${i}"]`,
@@ -43,9 +40,8 @@ export const AuthPage: React.FC = () => {
             { opacity: 1, y: 0, duration: 0.75, ease: 'power3.out' },
             i * 2,
           );
-      });
+      }
 
-      // Cartes flottantes
       tl.fromTo(
         '[data-auth-carte]',
         { opacity: 0, y: 30 },
@@ -59,11 +55,10 @@ export const AuthPage: React.FC = () => {
     }, filmRef);
 
     return () => ctx.revert();
-  }, []);
+  }, [t]);
 
   return (
     <div className="auth">
-      {/* ---------- Film ruban (8 s en boucle) ---------- */}
       <aside className="auth-film" ref={filmRef} aria-hidden>
         <div className="auth-balayage" data-auth-sweep />
 
@@ -71,55 +66,37 @@ export const AuthPage: React.FC = () => {
           <img src="/assets/aura-symbol-white.jpg" alt="" />
         </div>
 
-        <div
-          className="auth-carte"
-          data-auth-carte
-          style={{ top: '12%', right: '9%' }}
-        >
-          <i style={{ background: 'var(--lime)' }} /> Idée reçue
+        <div className="auth-carte" data-auth-carte style={{ top: '12%', right: '9%' }}>
+          <i style={{ background: 'var(--lime)' }} /> {t.auth.cartes[0]}
         </div>
-        <div
-          className="auth-carte"
-          data-auth-carte
-          style={{ top: '30%', left: '7%' }}
-        >
-          <i style={{ background: 'var(--or)' }} /> Valeur créée
+        <div className="auth-carte" data-auth-carte style={{ top: '30%', left: '7%' }}>
+          <i style={{ background: 'var(--or)' }} /> {t.auth.cartes[1]}
         </div>
-        <div
-          className="auth-carte"
-          data-auth-carte
-          style={{ bottom: '34%', right: '12%' }}
-        >
-          <i style={{ background: 'var(--feu)' }} /> Livré
+        <div className="auth-carte" data-auth-carte style={{ bottom: '34%', right: '12%' }}>
+          <i style={{ background: 'var(--feu)' }} /> {t.auth.cartes[2]}
         </div>
 
         <div className="auth-film-texte">
           <div className="auth-mots">
-            {MOTS.map((m, i) => (
+            {t.auth.mots.map((m, i) => (
               <span className="auth-mot" data-auth-mot={i} key={m}>
                 {m}
               </span>
             ))}
           </div>
-          <p>
-            Le fil qui relie votre première phrase au résultat final — avec la
-            lumière du logo, sans jamais rompre le geste.
-          </p>
+          <p>{t.auth.film}</p>
         </div>
       </aside>
 
-      {/* ---------- Formulaire ---------- */}
       <main className="auth-formulaire">
         <div className="auth-boite">
-          <Link to="/" aria-label="Retour à l'accueil">
+          <Link to="/" aria-label="AURA">
             <AuraLogo taille="sm" />
           </Link>
           <h1 className="display-lg">
-            Bienvenue <em className="italique-vif">dans Aura</em>.
+            {t.auth.titre1} <em className="italique-vif">{t.auth.titre2}</em>.
           </h1>
-          <p className="sous-titre">
-            L'espace de travail où l'idée devient résultat.
-          </p>
+          <p className="sous-titre">{t.auth.sous}</p>
 
           <form
             onSubmit={(e) => {
@@ -129,7 +106,7 @@ export const AuthPage: React.FC = () => {
             noValidate
           >
             <div className="form-groupe">
-              <label htmlFor="email">Adresse e-mail</label>
+              <label htmlFor="email">{t.auth.email}</label>
               <input
                 id="email"
                 type="email"
@@ -139,7 +116,7 @@ export const AuthPage: React.FC = () => {
               />
             </div>
             <div className="form-groupe">
-              <label htmlFor="mdp">Mot de passe</label>
+              <label htmlFor="mdp">{t.auth.mdp}</label>
               <input
                 id="mdp"
                 type="password"
@@ -149,29 +126,27 @@ export const AuthPage: React.FC = () => {
               />
             </div>
 
-            <button type="submit" className="btn btn-ruban" style={{ width: '100%', marginTop: '1.6rem' }}>
-              <span>Continuer</span>
+            <button
+              type="submit"
+              className="btn btn-ruban"
+              style={{ width: '100%', marginTop: '1.6rem' }}
+            >
+              <span>{t.auth.submit}</span>
             </button>
           </form>
 
-          {soumis && (
-            <p className="form-note" role="status">
-              <strong>Comptes bientôt ouverts.</strong> Le moteur de comptes
-              arrive à la prochaine étape du chantier — votre saisie n'est ni
-              envoyée, ni enregistrée pour l'instant.
-            </p>
-          )}
-
-          {!soumis && (
-            <p className="form-note">
-              Le moteur de comptes se construit actuellement. Aucune donnée
-              n'est transmise pour l'instant — la transparence fait partie de
-              l'identité d'Aura.
-            </p>
-          )}
+          <p className="form-note" role="status">
+            {soumis ? (
+              <>
+                <strong>{t.auth.noteSoumis}</strong>
+              </>
+            ) : (
+              t.auth.note
+            )}
+          </p>
 
           <Link to="/" className="auth-retour">
-            ← Retour à l'accueil
+            ← {t.auth.retour}
           </Link>
         </div>
       </main>

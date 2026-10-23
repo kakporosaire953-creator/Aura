@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import gsap from 'gsap';
+import { useT } from '../../app/prefs';
 
 const CLE = 'aura_intro_v1';
 
@@ -23,6 +24,7 @@ interface Props {
  * Le logo n'est jamais modifié — la lumière danse AUTOUR.
  */
 export const AuraIntro: React.FC<Props> = ({ onDone }) => {
+  const t = useT();
   const racine = useRef<HTMLDivElement | null>(null);
   const fini = useRef(false);
 
@@ -136,8 +138,8 @@ export const AuraIntro: React.FC<Props> = ({ onDone }) => {
           ))}
         </div>
 
-        <div className="intro-tagline" data-intro-tag aria-label="De l'idée au résultat">
-          {"DE L'IDÉE AU RÉSULTAT".split('').map((c, i) => (
+        <div className="intro-tagline" data-intro-tag aria-label={t.intro.tagline}>
+          {t.intro.tagline.split('').map((c, i) => (
             <span key={i} style={{ whiteSpace: 'pre' }}>
               {c}
             </span>
@@ -146,7 +148,7 @@ export const AuraIntro: React.FC<Props> = ({ onDone }) => {
       </div>
 
       <button type="button" className="intro-skip" onClick={terminer}>
-        Passer
+        {t.intro.skip}
       </button>
     </div>
   );

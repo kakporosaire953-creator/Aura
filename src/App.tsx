@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { PrefsProvider } from './app/prefs';
 import { AuraIntro, shouldShowIntro } from './components/intro/AuraIntro';
 import { LandingPage } from './pages/LandingPage';
 import { AuthPage } from './pages/AuthPage';
@@ -25,7 +26,7 @@ export const App: React.FC = () => {
   const [showIntro, setShowIntro] = useState(() => shouldShowIntro());
 
   return (
-    <>
+    <PrefsProvider>
       {showIntro && <AuraIntro onDone={() => setShowIntro(false)} />}
       <BrowserRouter>
         <ScrollToTop />
@@ -37,6 +38,6 @@ export const App: React.FC = () => {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </BrowserRouter>
-    </>
+    </PrefsProvider>
   );
 };

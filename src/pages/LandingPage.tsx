@@ -18,6 +18,7 @@ import {
 import { AuraSculptureCanvas } from '../three/AuraSculptureCanvas';
 import { useRevealAll } from '../components/motion/useReveal';
 import { SiteNav, SiteFooter } from '../components/layout/SiteChrome';
+import { useT } from '../app/prefs';
 
 import imgTelephones from '../assets/galerie/boutique-telephones.jpg';
 import imgPhoto from '../assets/galerie/studio-photo.jpg';
@@ -28,13 +29,17 @@ import imgFestival from '../assets/galerie/festival-nuit.jpg';
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
+const IMAGES_GALERIE = [imgTelephones, imgPhoto, imgChef, imgFintech, imgVoyage, imgFestival];
+
+const COULEURS_MOTIF: [string, string][] = [
+  ['#A5E838', '#43BC2C'],
+  ['#EACB37', '#F4E07A'],
+  ['#FF790D', '#E85D00'],
+  ['#43BC2C', '#FF790D'],
+];
+
 /* ===== Logos de l'écosystème IA mondial (marques officielles) ===== */
-type LogoIA = {
-  nom: string;
-  couleur: string;
-  svg?: string;
-  fa?: string;
-};
+type LogoIA = { nom: string; couleur: string; svg?: string; fa?: string };
 
 const LOGOS_IA: LogoIA[] = [
   { nom: 'OpenAI', couleur: '#000000', fa: 'fa-openai' },
@@ -50,177 +55,8 @@ const LOGOS_IA: LogoIA[] = [
   { nom: 'Anthropic', couleur: '#B8B8B8', svg: siAnthropic.path },
 ];
 
-const MOTS_BANDEAU = [
-  'Réfléchir',
-  'Rechercher',
-  'Créer',
-  'Développer',
-  'Livrer',
-  'Réfléchir',
-  'Rechercher',
-  'Créer',
-  'Développer',
-  'Livrer',
-];
-
-const ETAPES = [
-  {
-    num: '01',
-    icone: 'fa-lightbulb',
-    titre: 'Réfléchir',
-    texte:
-      "Tout commence par une conversation. L'idée se clarifie, se découpe, se confronte — jusqu'à ce que le vrai projet apparaisse.",
-    mots: ['Conversation', 'Clarification', 'Vision'],
-    c1: '#A5E838',
-    c2: '#43BC2C',
-  },
-  {
-    num: '02',
-    icone: 'fa-earth-africa',
-    titre: 'Rechercher',
-    texte:
-      "Aura Explore interroge le web et ne renvoie que des réponses sourcées et traçables. La confiance naît de la preuve.",
-    mots: ['Sourcé', 'Traçable', 'Web'],
-    c1: '#EACB37',
-    c2: '#F4E07A',
-  },
-  {
-    num: '03',
-    icone: 'fa-wand-magic-sparkles',
-    titre: 'Créer',
-    texte:
-      "Du brief au projet structuré : designs, documents, code. Aura Studio construit, itère, versionne — sous vos yeux.",
-    mots: ['Studio', 'Itération', 'Versions'],
-    c1: '#FF790D',
-    c2: '#E85D00',
-  },
-  {
-    num: '04',
-    icone: 'fa-rocket',
-    titre: 'Développer',
-    texte:
-      "Le résultat se livre : code exécutable, exports propres, mission close. De l'idée au résultat, sans rupture de fil.",
-    mots: ['Exécution', 'Livrable', 'Résultat'],
-    c1: '#43BC2C',
-    c2: '#FF790D',
-  },
-];
-
-const CAPACITES = [
-  {
-    idx: '01',
-    icone: 'fa-comments',
-    titre: 'Conversations',
-    texte:
-      "Un fil de pensée qui garde le contexte, explique ses choix et se souvient de vos projets. Pas un chatbot de plus : un partenaire de travail.",
-    mots: ['Contexte long', 'Multimodal', 'Mémoire de projet'],
-  },
-  {
-    idx: '02',
-    icone: 'fa-magnifying-glass-chart',
-    titre: 'Recherche sourcée',
-    texte:
-      "Explore fouille le web et cite ses sources à chaque affirmation. Les réponses se vérifient, se comparent, se partagent.",
-    mots: ['Citations', 'Veille', 'Comparaison'],
-  },
-  {
-    idx: '03',
-    icone: 'fa-wand-magic-sparkles',
-    titre: 'Studio de création',
-    texte:
-      "Générez des sites, documents et visuels qui deviennent de vrais projets : versions, aperçus multi-écrans, exports propres.",
-    mots: ['Génération', 'Aperçus', 'Export'],
-  },
-  {
-    idx: '04',
-    icone: 'fa-list-check',
-    titre: 'Missions & projets',
-    texte:
-      "Découpez un objectif en missions suivies, avec étapes, livrables et quotas clairs. L'ambition devient un plan exécutable.",
-    mots: ['Planification', 'Suivi', 'Quotas clairs'],
-  },
-];
-
-const DECLARATION =
-  "Aura tient le fil : votre première phrase devient un plan, le plan devient une création, la création devient un résultat.";
-
-const CREATIONS = [
-  {
-    titre: 'Boutique de téléphones — Cotonou',
-    brief: 'Brief : e-commerce premium, prix en FCFA, mobile d’abord.',
-    img: imgTelephones,
-  },
-  {
-    titre: 'Studio photo — lumière douce',
-    brief: 'Brief : portfolio éditorial, galerie immersive, contact direct.',
-    img: imgPhoto,
-  },
-  {
-    titre: 'Chef cuisinier — table du jour',
-    brief: 'Brief : site vitrine gourmand, menu illustré, réservation.',
-    img: imgChef,
-  },
-  {
-    titre: 'Fintech — épargne mobile',
-    brief: 'Brief : landing rassurante, parcours simple, chiffres clairs.',
-    img: imgFintech,
-  },
-  {
-    titre: 'Voyage — carnet du Bénin',
-    brief: 'Brief : récit de voyage illustré, carte, carnet photo.',
-    img: imgVoyage,
-  },
-  {
-    titre: 'Festival — nuit d’ouverture',
-    brief: 'Brief : page événementielle vibrante, programme, billetterie.',
-    img: imgFestival,
-  },
-];
-
-const PLANS = [
-  {
-    nom: 'Découverte',
-    prix: 'Gratuit',
-    detail: 'Pour commencer le fil, dès l’ouverture.',
-    vedette: false,
-    features: [
-      '30 unités IA par mois',
-      '10 recherches sourcées',
-      '3 créations Studio',
-      '3 projets actifs',
-    ],
-    cta: 'Commencer',
-  },
-  {
-    nom: 'Créateur',
-    prix: 'Bientôt annoncé',
-    detail: 'Pour ceux qui créent tous les jours.',
-    vedette: true,
-    features: [
-      'Unités IA étendues',
-      'Créations Studio accrues',
-      'Versions illimitées',
-      'Exports complets',
-    ],
-    cta: 'Être prévenu',
-  },
-  {
-    nom: 'Équipe',
-    prix: 'Bientôt annoncé',
-    detail: 'Pour les collectifs qui avancent ensemble.',
-    vedette: false,
-    features: [
-      'Espace partagé',
-      'Rôles & permissions',
-      'Quotas mutualisés',
-      'Accompagnement dédié',
-    ],
-    cta: 'Être prévenu',
-  },
-];
-
-const BandeauLogos: React.FC = () => (
-  <div className="logos-ia" aria-label="L'écosystème IA mondial">
+const BandeauLogos: React.FC<{ label: string }> = ({ label }) => (
+  <div className="logos-ia" aria-label={label}>
     <div className="logos-ia-piste">
       {[...LOGOS_IA, ...LOGOS_IA].map((logo, i) => (
         <span className="logo-ia" key={`${logo.nom}-${i}`}>
@@ -243,6 +79,7 @@ const BandeauLogos: React.FC = () => (
 );
 
 export const LandingPage: React.FC = () => {
+  const t = useT();
   const racine = useRef<HTMLDivElement | null>(null);
   const bandeauRef = useRef<HTMLDivElement | null>(null);
   const filRef = useRef<HTMLDivElement | null>(null);
@@ -270,16 +107,8 @@ export const LandingPage: React.FC = () => {
             },
             0.18,
           )
-          .from(
-            '[data-hero]',
-            { opacity: 0, y: 32, duration: 1.05, stagger: 0.12 },
-            0.55,
-          )
-          .from(
-            '.hero-lueur',
-            { scale: 0.6, opacity: 0, duration: 1.7, ease: 'power2.out' },
-            0,
-          );
+          .from('[data-hero]', { opacity: 0, y: 32, duration: 1.05, stagger: 0.12 }, 0.55)
+          .from('.hero-lueur', { scale: 0.6, opacity: 0, duration: 1.7, ease: 'power2.out' }, 0);
       } else {
         gsap.set('.ligne-masquee > span', { y: 0 });
         gsap.set('.hero-mot, [data-hero]', { opacity: 1, y: 0 });
@@ -289,68 +118,42 @@ export const LandingPage: React.FC = () => {
       /* ===== HERO : chorégraphies par viewport (gsap.matchMedia) ===== */
       const mm = gsap.matchMedia();
 
-      mm.add(
-        '(min-width: 1024px) and (prefers-reduced-motion: no-preference)',
-        () => {
-          gsap.utils.toArray<HTMLElement>('.hero-mot').forEach((mot, i) => {
-            gsap.to(mot, {
-              yPercent: i % 2 ? -22 : -40,
-              rotate: i % 2 ? -1.6 : 1.2,
-              ease: 'none',
-              scrollTrigger: {
-                trigger: '.hero',
-                start: 'top top',
-                end: 'bottom top',
-                scrub: true,
-              },
-            });
-          });
-          gsap.to('.hero-scene', {
-            yPercent: -14,
-            scale: 1.12,
+      mm.add('(min-width: 1024px) and (prefers-reduced-motion: no-preference)', () => {
+        gsap.utils.toArray<HTMLElement>('.hero-mot').forEach((mot, i) => {
+          gsap.to(mot, {
+            yPercent: i % 2 ? -22 : -40,
+            rotate: i % 2 ? -1.6 : 1.2,
             ease: 'none',
-            scrollTrigger: {
-              trigger: '.hero',
-              start: 'top top',
-              end: 'bottom top',
-              scrub: true,
-            },
+            scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true },
           });
-          gsap.utils.toArray<SVGElement>('.hero-traits svg').forEach((svg, i) => {
-            gsap.to(svg, {
-              xPercent: i ? -10 : 10,
-              rotate: i ? -4 : 4,
-              ease: 'none',
-              scrollTrigger: {
-                trigger: '.hero',
-                start: 'top top',
-                end: 'bottom top',
-                scrub: true,
-              },
-            });
+        });
+        gsap.to('.hero-scene', {
+          yPercent: -14,
+          scale: 1.12,
+          ease: 'none',
+          scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true },
+        });
+        gsap.utils.toArray<SVGElement>('.hero-traits svg').forEach((svg, i) => {
+          gsap.to(svg, {
+            xPercent: i ? -10 : 10,
+            rotate: i ? -4 : 4,
+            ease: 'none',
+            scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true },
           });
-        },
-      );
+        });
+      });
 
-      mm.add(
-        '(max-width: 1023px) and (prefers-reduced-motion: no-preference)',
-        () => {
-          gsap.utils.toArray<HTMLElement>('.hero-mot').forEach((mot, i) => {
-            gsap.to(mot, {
-              yPercent: i % 2 ? -7 : -13,
-              ease: 'none',
-              scrollTrigger: {
-                trigger: '.hero',
-                start: 'top top',
-                end: 'bottom top',
-                scrub: true,
-              },
-            });
+      mm.add('(max-width: 1023px) and (prefers-reduced-motion: no-preference)', () => {
+        gsap.utils.toArray<HTMLElement>('.hero-mot').forEach((mot, i) => {
+          gsap.to(mot, {
+            yPercent: i % 2 ? -7 : -13,
+            ease: 'none',
+            scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true },
           });
-        },
-      );
+        });
+      });
 
-      /* ===== BANDEAU MOTS : défilement soie ===== */
+      /* ===== BANDEAU MOTS ===== */
       const ruban = bandeauRef.current?.querySelector<HTMLElement>('.bandeau-ruban');
       if (ruban) {
         gsap.to(ruban, { xPercent: -50, duration: 22, ease: 'none', repeat: -1 });
@@ -390,7 +193,7 @@ export const LandingPage: React.FC = () => {
         });
       });
 
-      /* ===== DÉCLARATION : mots accrochés au scroll ===== */
+      /* ===== DÉCLARATION ===== */
       const decl = declRef.current?.querySelector<HTMLElement>('.declaration-texte');
       if (decl) {
         gsap.to(decl.querySelectorAll('.mot'), {
@@ -419,32 +222,29 @@ export const LandingPage: React.FC = () => {
       });
 
       /* ===== GALERIE : piste horizontale épinglée (desktop) ===== */
-      mm.add(
-        '(min-width: 1024px) and (prefers-reduced-motion: no-preference)',
-        () => {
-          const piste = galerieRef.current?.querySelector<HTMLElement>('.galerie-piste');
-          const track = galerieRef.current?.querySelector<HTMLElement>('.galerie-track');
-          if (!piste || !track) return;
+      mm.add('(min-width: 1024px) and (prefers-reduced-motion: no-preference)', () => {
+        const piste = galerieRef.current?.querySelector<HTMLElement>('.galerie-piste');
+        const track = galerieRef.current?.querySelector<HTMLElement>('.galerie-track');
+        if (!piste || !track) return;
 
-          const distance = () => Math.max(0, track.scrollWidth - piste.clientWidth + 48);
+        const distance = () => Math.max(0, track.scrollWidth - piste.clientWidth + 48);
 
-          gsap.to(track, {
-            x: () => -distance(),
-            ease: 'none',
-            scrollTrigger: {
-              trigger: galerieRef.current,
-              start: 'top top',
-              end: () => `+=${distance() + window.innerHeight * 0.35}`,
-              pin: true,
-              scrub: 0.9,
-              invalidateOnRefresh: true,
-              anticipatePin: 1,
-            },
-          });
-        },
-      );
+        gsap.to(track, {
+          x: () => -distance(),
+          ease: 'none',
+          scrollTrigger: {
+            trigger: galerieRef.current,
+            start: 'top top',
+            end: () => `+=${distance() + window.innerHeight * 0.35}`,
+            pin: true,
+            scrub: 0.9,
+            invalidateOnRefresh: true,
+            anticipatePin: 1,
+          },
+        });
+      });
 
-      /* ===== TARIFS : la vedette s'ouvre en lumière ===== */
+      /* ===== TARIFS ===== */
       gsap.from('.plan-vedette', {
         y: 52,
         scale: 0.95,
@@ -502,36 +302,33 @@ export const LandingPage: React.FC = () => {
         <div className="wrap hero-grille">
           <div className="hero-texte">
             <span className="kicker" data-hero>
-              Plateforme d'intelligence artificielle
+              {t.hero.kicker}
             </span>
             <h1 className="display-xxl">
               <span className="ligne-masquee">
                 <span>
-                  <span className="hero-mot">De</span>{' '}
-                  <span className="hero-mot">l'idée</span>
+                  <span className="hero-mot">{t.hero.ligne1}</span>
                 </span>
               </span>
               <span className="ligne-masquee">
                 <span>
-                  <span className="hero-mot">au</span>{' '}
-                  <span className="hero-mot italique-vif">résultat</span>
+                  <span className="hero-mot">{t.hero.ligne2avant}</span>{' '}
+                  <span className="hero-mot italique-vif">{t.hero.ligne2italique}</span>
                   <span className="hero-mot">.</span>
                 </span>
               </span>
             </h1>
             <p className="sous-titre" data-hero>
-              Conversation, recherche sourcée, création et exécution — un seul fil
-              de pensée qui mène du prompt au livrable. L'IA qui travaille
-              vraiment avec vous.
+              {t.hero.sous}
             </p>
             <div className="hero-actions" data-hero>
               <Link to="/register" className="btn btn-ruban">
                 <i className="fa-solid fa-bolt" aria-hidden />
-                <span>Commencer l'expérience</span>
+                <span>{t.hero.cta1}</span>
               </Link>
               <a href="#galerie" className="btn btn-ligne">
                 <i className="fa-solid fa-images" aria-hidden />
-                <span>Voir la galerie</span>
+                <span>{t.hero.cta2}</span>
               </a>
             </div>
             <div className="hero-energie" data-hero>
@@ -540,8 +337,7 @@ export const LandingPage: React.FC = () => {
                 <i />
                 <i />
               </span>
-              Vert pour l'idée qui pousse. Or pour la valeur créée. Orange pour
-              l'énergie qui livre.
+              {t.hero.energie}
             </div>
           </div>
 
@@ -551,30 +347,32 @@ export const LandingPage: React.FC = () => {
             <figure className="scene-cadre">
               <img
                 src="/assets/aura-symbol-white.jpg"
-                alt="La sculpture AURA : trois rubans verts, dorés et orange tissés en flamme"
+                alt={t.hero.legende}
               />
             </figure>
-            <figcaption className="scene-legende">La sculpture vivante d'Aura</figcaption>
+            <figcaption className="scene-legende">{t.hero.legende}</figcaption>
           </div>
         </div>
 
         <div className="scroll-indices" aria-hidden>
           <span className="trait" />
-          Défiler
+          {t.hero.scroll}
         </div>
       </header>
 
-      {/* ===== LOGOS IA (juste après le hero) ===== */}
-      <BandeauLogos />
+      {/* ===== LOGOS IA ===== */}
+      <BandeauLogos label={t.logos.label} />
 
       {/* ===== BANDEAU MOTS ===== */}
       <div ref={bandeauRef} className="bandeau" aria-hidden>
         <div className="bandeau-ruban">
-          {MOTS_BANDEAU.map((mot, i) => (
-            <span className="bandeau-mot" key={i}>
-              <i /> {mot}
-            </span>
-          ))}
+          {[...t.bandeau.mots, ...t.bandeau.mots, ...t.bandeau.mots, ...t.bandeau.mots].map(
+            (mot, i) => (
+              <span className="bandeau-mot" key={i}>
+                <i /> {mot}
+              </span>
+            ),
+          )}
         </div>
       </div>
 
@@ -614,27 +412,25 @@ export const LandingPage: React.FC = () => {
         <div className="wrap">
           <div className="fil-en-tete">
             <span className="kicker" data-reveal>
-              Le fil Aura
+              {t.fil.kicker}
             </span>
             <h2 className="display-xl" data-reveal>
-              Un seul fil, <em className="italique-vif">quatre gestes</em>.
+              {t.fil.titre1} <em className="italique-vif">{t.fil.titre2}</em>.
             </h2>
             <p className="sous-titre" data-reveal>
-              Là où d'autres empilent des outils, Aura tient une seule ligne — de
-              la première phrase au résultat final.
+              {t.fil.sous}
             </p>
           </div>
 
           <div className="fil-etapes">
-            {ETAPES.map((e) => (
+            {t.fil.etapes.map((e, i) => (
               <article className="etape" key={e.num}>
                 <div className="etape-texte">
                   <div className="etape-num" aria-hidden>
                     {e.num}
                   </div>
                   <h3 className="display-lg">
-                    <i className={`fa-solid ${e.icone} etape-icone`} aria-hidden />{' '}
-                    {e.titre}
+                    <i className={`fa-solid ${e.icone} etape-icone`} aria-hidden /> {e.titre}
                   </h3>
                   <p className="corps">{e.texte}</p>
                   <div className="capacite-mots">
@@ -650,7 +446,6 @@ export const LandingPage: React.FC = () => {
                     fill="none"
                     preserveAspectRatio="xMidYMid slice"
                   >
-                    <rect width="480" height="320" fill="#FFFDF8" />
                     <path
                       d="M-20 250 C 120 140, 200 300, 330 170 C 400 105, 460 120, 520 60"
                       stroke={`url(#motif-${e.num})`}
@@ -662,7 +457,7 @@ export const LandingPage: React.FC = () => {
                       d="M-20 250 C 120 140, 200 300, 330 170 C 400 105, 460 120, 520 60"
                       stroke="#FFFDF8"
                       strokeWidth="2"
-                      opacity="0.7"
+                      opacity="0.55"
                     />
                     <defs>
                       <linearGradient
@@ -673,8 +468,8 @@ export const LandingPage: React.FC = () => {
                         y2="0"
                         gradientUnits="userSpaceOnUse"
                       >
-                        <stop stopColor={e.c1} />
-                        <stop offset="1" stopColor={e.c2} />
+                        <stop stopColor={COULEURS_MOTIF[i][0]} />
+                        <stop offset="1" stopColor={COULEURS_MOTIF[i][1]} />
                       </linearGradient>
                     </defs>
                   </svg>
@@ -689,15 +484,13 @@ export const LandingPage: React.FC = () => {
       <section className="declaration" ref={declRef}>
         <div className="wrap-etroit">
           <p className="declaration-texte">
-            {DECLARATION.split(' ').map((mot, i) => (
+            {t.decl.texte.split(' ').map((mot, i) => (
               <React.Fragment key={i}>
                 <span className="mot">{mot}</span>{' '}
               </React.Fragment>
             ))}
           </p>
-          <span className="kicker declaration-signature">
-            Une seule ligne, de bout en bout
-          </span>
+          <span className="kicker declaration-signature">{t.decl.signature}</span>
         </div>
       </section>
 
@@ -706,19 +499,18 @@ export const LandingPage: React.FC = () => {
         <div className="wrap">
           <div className="fil-en-tete">
             <span className="kicker" data-reveal>
-              Capacités
+              {t.capacites.kicker}
             </span>
             <h2 className="display-xl" data-reveal>
-              Quatre forces, <em className="italique-vif">une lumière</em>.
+              {t.capacites.titre1} <em className="italique-vif">{t.capacites.titre2}</em>.
             </h2>
             <p className="sous-titre" data-reveal>
-              Chaque capacité pousse dans la continuité des autres. Rien à
-              ré-exporter, rien à re-saisir.
+              {t.capacites.sous}
             </p>
           </div>
 
           <div className="capacite-liste">
-            {CAPACITES.map((c) => (
+            {t.capacites.lignes.map((c) => (
               <div className="capacite" key={c.idx}>
                 <div className="capacite-index" aria-hidden>
                   {c.idx}
@@ -747,22 +539,18 @@ export const LandingPage: React.FC = () => {
         <div className="wrap galerie-entete">
           <div>
             <span className="kicker" data-reveal>
-              Galerie Studio
+              {t.galerie.kicker}
             </span>
-            <h2 className="display-xl" data-reveal style={{ color: 'var(--papier)' }}>
-              Des créations qui{' '}
-              <em className="italique-vif">respirent</em>.
+            <h2 className="display-xl" data-reveal style={{ color: '#FFFDF8' }}>
+              {t.galerie.titre1} <em className="italique-vif">{t.galerie.titre2}</em>.
             </h2>
           </div>
-          <p data-reveal>
-            Une vitrine de rendus de démonstration — la vitrine du Studio qui
-            ouvre bientôt. Faites défiler pour traverser la galerie.
-          </p>
+          <p data-reveal>{t.galerie.sous}</p>
         </div>
 
         <div className="galerie-piste">
           <div className="galerie-track">
-            {CREATIONS.map((c) => (
+            {t.galerie.creations.map((c, i) => (
               <article className="galerie-carte" key={c.titre}>
                 <div className="carte-apercu">
                   <div className="apercu-barre" aria-hidden>
@@ -770,12 +558,12 @@ export const LandingPage: React.FC = () => {
                     <i />
                     <i />
                   </div>
-                  <img src={c.img} alt={`Rendu de démonstration — ${c.titre}`} loading="lazy" />
+                  <img src={IMAGES_GALERIE[i]} alt={`${t.galerie.badge} — ${c.titre}`} loading="lazy" />
                 </div>
                 <div className="carte-meta">
                   <h3>{c.titre}</h3>
                   <span className="carte-demo">
-                    <i className="fa-solid fa-flask" aria-hidden /> Démonstration
+                    <i className="fa-solid fa-flask" aria-hidden /> {t.galerie.badge}
                   </span>
                 </div>
                 <p className="carte-brief">{c.brief}</p>
@@ -784,10 +572,7 @@ export const LandingPage: React.FC = () => {
           </div>
         </div>
 
-        <p className="galerie-note">
-          Rendus de démonstration illustratifs — aucune création client réelle
-          n'est présentée. Le Studio ouvre bientôt.
-        </p>
+        <p className="galerie-note">{t.galerie.note}</p>
       </section>
 
       {/* ================= TARIFS ================= */}
@@ -795,19 +580,18 @@ export const LandingPage: React.FC = () => {
         <div className="wrap">
           <div className="fil-en-tete">
             <span className="kicker" data-reveal>
-              Tarifs
+              {t.tarifs.kicker}
             </span>
             <h2 className="display-xl" data-reveal>
-              Clair, <em className="italique-vif">sans surprise</em>.
+              {t.tarifs.titre1} <em className="italique-vif">{t.tarifs.titre2}</em>.
             </h2>
             <p className="sous-titre" data-reveal>
-              Les contours sont posés — les prix finaux seront annoncés avant
-              l'ouverture, en toute transparence.
+              {t.tarifs.sous}
             </p>
           </div>
 
           <div className="tarifs-grille" ref={tarifsReveal}>
-            {PLANS.map((p) => (
+            {t.tarifs.plans.map((p) => (
               <article
                 className={`plan${p.vedette ? ' plan-vedette' : ''}`}
                 key={p.nom}
@@ -825,20 +609,14 @@ export const LandingPage: React.FC = () => {
                     </li>
                   ))}
                 </ul>
-                <Link
-                  to="/register"
-                  className={`btn ${p.vedette ? 'btn-ruban' : 'btn-ligne'}`}
-                >
+                <Link to="/register" className={`btn ${p.vedette ? 'btn-ruban' : 'btn-ligne'}`}>
                   <span>{p.cta}</span>
                 </Link>
               </article>
             ))}
           </div>
 
-          <p className="tarifs-note">
-            Aucun prix n'est figé tant qu'il n'est pas définitivement annoncé —
-            pas de mauvaise surprise, jamais.
-          </p>
+          <p className="tarifs-note">{t.tarifs.note}</p>
         </div>
       </section>
 
@@ -847,29 +625,24 @@ export const LandingPage: React.FC = () => {
         <div className="wrap">
           <div className="cta-panneau" data-reveal>
             <span className="kicker" style={{ justifyContent: 'center' }}>
-              Le chantier est vivant
+              {t.cta.kicker}
             </span>
             <h2 className="display-xl">
-              Votre prochaine idée mérite un{' '}
-              <em className="italique-vif">résultat</em>.
+              {t.cta.titre1} <em className="italique-vif">{t.cta.titre2}</em>.
             </h2>
             <p className="sous-titre" style={{ marginInline: 'auto' }}>
-              AURA se construit au grand jour. Le site et l'identité sont là —
-              les comptes et le moteur IA ouvrent aux prochaines étapes.
+              {t.cta.sous}
             </p>
             <div className="cta-actions">
               <Link to="/register" className="btn btn-encre">
-                <span>Entrer dans Aura</span>
+                <span>{t.cta.b1}</span>
               </Link>
               <Link to="/documentation" className="btn btn-ligne">
                 <i className="fa-solid fa-book-open" aria-hidden />
-                <span>Lire la documentation</span>
+                <span>{t.cta.b2}</span>
               </Link>
             </div>
-            <p className="cta-note">
-              Fonctionnement annoncé à l'état réel uniquement — aucune
-              fonctionnalité simulée.
-            </p>
+            <p className="cta-note">{t.cta.note}</p>
           </div>
         </div>
       </section>
