@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MarketingLayout } from '../../components/layout/MarketingLayout';
+import { useAuraMarketingMotion } from '../../components/landing/useAuraMarketingMotion';
+import imgAbstract from '../../assets/images/create_preview_abstract_1791622857564.jpg';
+import imgProduct from '../../assets/images/aura_showcase_product_1791622893523.jpg';
 
 export const ContactPage: React.FC = () => {
+  const scope = useAuraMarketingMotion<HTMLDivElement>();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [subject, setSubject] = useState('');
@@ -37,22 +41,32 @@ export const ContactPage: React.FC = () => {
 
   return (
     <MarketingLayout>
-      <section className="mx-auto max-w-[1160px] px-4 py-16 sm:px-8">
-        <div className="grid gap-12 lg:grid-cols-[1fr_1.15fr]">
-          <div>
-            <span className="inline-flex items-center gap-2 rounded-full border border-[#E8E6DE] bg-[#FFFDF8] px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.15em] text-[#77817F] dark:border-[#243337] dark:bg-[#152023]">
-              <i className="fa-regular fa-envelope text-[#078348]" />
-              Contact
-            </span>
-            <h1 className="mt-5 font-display text-[34px] font-bold leading-[1.1] tracking-[-0.02em] text-[#14282D] sm:text-[44px] dark:text-[#F3F2EC]">
-              Parlons de votre projet.
-            </h1>
-            <p className="mt-5 max-w-md text-[14.5px] leading-[1.75] text-[#77817F]">
-              Une question sur le produit, une demande de fonctionnalité, un sujet
-              de collaboration ? Écrivez-nous : votre message est enregistré et
-              suivi par l’équipe Aura.
-            </p>
-            <div className="mt-8 space-y-4">
+      <div ref={scope}>
+        <section className="mx-auto max-w-[1160px] px-4 py-16 sm:px-8">
+          <div className="grid gap-12 lg:grid-cols-[1fr_1.15fr]">
+            <div>
+              <span
+                data-hero-item
+                className="inline-flex items-center gap-2 rounded-full border border-[#E8E6DE] bg-[#FFFDF8] px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.15em] text-[#77817F] dark:border-[#243337] dark:bg-[#152023]"
+              >
+                <i className="fa-regular fa-envelope text-[#078348]" />
+                Contact
+              </span>
+              <h1
+                data-hero-item
+                className="mt-5 font-display text-[34px] font-bold leading-[1.1] tracking-[-0.02em] text-[#14282D] sm:text-[44px] dark:text-[#F3F2EC]"
+              >
+                Parlons de votre projet.
+              </h1>
+              <p
+                data-hero-item
+                className="mt-5 max-w-md text-[14.5px] leading-[1.75] text-[#77817F]"
+              >
+                Une question sur le produit, une demande de fonctionnalité, un sujet
+                de collaboration ? Écrivez-nous : votre message est enregistré et
+                suivi par l’équipe Aura.
+              </p>
+              <div data-stagger className="mt-8 space-y-4">
               <div className="flex items-start gap-3">
                 <div className="flex h-9 w-9 items-center justify-center rounded-[11px] bg-[#EAF1E8] text-[#078348] dark:bg-[#182E24] dark:text-[#8CCB4A]">
                   <i className="fa-solid fa-book-open text-[13px]" />
@@ -86,9 +100,35 @@ export const ContactPage: React.FC = () => {
                 </div>
               </div>
             </div>
-          </div>
 
-          <div className="rounded-[20px] border border-[#E8E6DE] bg-[#FFFDF8] p-6 shadow-[0_14px_44px_rgba(20,40,45,0.05)] sm:p-8 dark:border-[#243337] dark:bg-[#152023]">
+              {/* Visuel de marque */}
+              <div data-reveal className="mt-9 overflow-hidden rounded-[18px] border border-[#E8E6DE] shadow-[0_18px_46px_rgba(20,40,45,0.1)] dark:border-[#243337]">
+                <div className="relative h-[190px] overflow-hidden">
+                  <img
+                    src={imgAbstract}
+                    alt="Rubans verts et orange en mouvement, signature visuelle Aura"
+                    data-parallax
+                    className="h-[118%] w-full object-cover"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#14282D]/35 to-transparent" />
+                </div>
+                <div className="flex items-center gap-3 bg-[#FFFDF8] p-4 dark:bg-[#152023]">
+                  <img
+                    src={imgProduct}
+                    alt="Exemple de création produit avec Aura"
+                    className="h-12 w-12 rounded-[10px] object-cover"
+                    loading="lazy"
+                  />
+                  <p className="text-[11.5px] leading-relaxed text-[#77817F]">
+                    Une équipe à l’écoute des créateurs, développeurs et entrepreneurs
+                    qui construisent avec Aura.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+          <div data-hero-item className="rounded-[20px] border border-[#E8E6DE] bg-[#FFFDF8] p-6 shadow-[0_14px_44px_rgba(20,40,45,0.05)] sm:p-8 dark:border-[#243337] dark:bg-[#152023]">
             {phase === 'sent' ? (
               <div className="flex flex-col items-center gap-4 py-12 text-center">
                 <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#EAF1E8] dark:bg-[#182E24]">
@@ -199,6 +239,7 @@ export const ContactPage: React.FC = () => {
           </div>
         </div>
       </section>
+      </div>
     </MarketingLayout>
   );
 };
