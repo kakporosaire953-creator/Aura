@@ -20,6 +20,7 @@ export const Tilt: React.FC<TiltProps> = ({ className = '', children, ...rest })
   const ref = useTilt<HTMLDivElement>();
   return (
     <div ref={ref} className={`tilt ${className}`} {...rest}>
+      <span className="tilt-verre" aria-hidden />
       {children}
       <div className="tilt-brillance" aria-hidden />
     </div>
