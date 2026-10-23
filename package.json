@@ -1,57 +1,33 @@
 {
-  "name": "react-example",
+  "name": "aura",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "start": "node server.ts",
     "build": "vite build",
-    "preview": "vite preview",
-    "clean": "rm -rf dist server.js",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "start": "NODE_ENV=production tsx server.ts"
   },
   "dependencies": {
-    "@codemirror/commands": "^6.11.1",
-    "@codemirror/lang-css": "^6.3.1",
-    "@codemirror/lang-html": "^6.4.12",
-    "@codemirror/lang-javascript": "^6.2.5",
-    "@codemirror/lang-json": "^6.0.2",
-    "@codemirror/lang-markdown": "^6.5.2",
-    "@codemirror/language": "^6.13.1",
-    "@codemirror/search": "^6.7.2",
-    "@codemirror/state": "^6.7.6",
-    "@codemirror/view": "^6.43.15",
-    "@fortawesome/fontawesome-free": "^7.3.1",
-    "@google/genai": "^2.4.0",
     "@gsap/react": "^2.1.2",
-    "@lezer/highlight": "^1.2.5",
-    "@supabase/supabase-js": "^2.117.3",
-    "@tailwindcss/vite": "^4.3.3",
-    "@types/three": "^0.186.0",
-    "@vitejs/plugin-react": "^6.1.1",
-    "codemirror": "^6.0.2",
-    "dotenv": "^17.2.3",
     "express": "^4.21.2",
     "gsap": "^3.15.0",
-    "lucide-react": "^0.546.0",
-    "motion": "^12.23.24",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
     "react-router-dom": "^7.18.4",
-    "three": "^0.186.1",
-    "vite": "^8.3.0",
-    "zod": "^4.6.5"
+    "three": "^0.186.1"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
     "@types/node": "^22.14.0",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
-    "autoprefixer": "^10.4.21",
+    "@types/three": "^0.186.0",
+    "@vitejs/plugin-react": "^6.1.1",
     "esbuild": "^0.28.0",
-    "tailwindcss": "^4.3.3",
     "tsx": "^4.21.0",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vite": "^8.3.0"
   }
 }

@@ -1,54 +1,42 @@
 import type { Request, Response } from 'express';
-import { apiApp } from '../src/server/apiApp.ts';
+import express from 'express';
 
+/**
+ * Fonction serverless Vercel — même API honnête que server.ts.
+ * Les fonctionnalités du moteur reviennent par étapes ; cet endpoint
+ * ne décrit que ce qui existe réellement.
+ */
 export default function handler(req: Request, res: Response) {
-  // 1. Recover the true client path when Vercel rewrites /api/(.*)
   const qAny = req.query as Record<string, unknown> | undefined;
   const vercelPath = qAny?.__path;
-
-  if (typeof vercelPath === 'string' && vercelPath.trim()) {
-    if (qAny) {
-      delete qAny.__path;
-    }
+  if (typeof vercelPath === 'string' && vercelPath.trim() && qAny) {
+    delete qAny.__path;
     const [subpath, search] = vercelPath.split('?');
-    const cleanSubpath = subpath.replace(/^\/+/, '');
-    req.url = '/api/' + cleanSubpath + (search ? '?' + search : '');
-  } else {
-    // Check headers sent by Vercel Edge proxy
-    const forwardedUri =
-      (req.headers['x-forwarded-uri'] as string) ||
-      (req.headers['x-original-url'] as string) ||
-      (req.headers['x-real-url'] as string);
-
-    if (forwardedUri && forwardedUri.startsWith('/api') && !forwardedUri.includes('api/index')) {
-      req.url = forwardedUri;
-    } else {
-      const rawMatched =
-        (req.headers['x-matched-path'] as string) ||
-        (req.headers['x-vercel-matched-path'] as string);
-
-      if (rawMatched && rawMatched.startsWith('/api') && !rawMatched.includes('api/index')) {
-        req.url = rawMatched;
-      } else if (req.url) {
-        if (req.url.startsWith('/api/index') || req.url === '/api' || req.url === '/') {
-          if (forwardedUri && !forwardedUri.includes('api/index')) {
-            req.url = forwardedUri;
-          } else {
-            req.url = '/api';
-          }
-        } else if (!req.url.startsWith('/api') && !req.url.startsWith('/?')) {
-          req.url = '/api' + (req.url.startsWith('/') ? req.url : '/' + req.url);
-        }
-      }
-    }
+    req.url = '/api/' + subpath.replace(/^\/+/, '') + (search ? '?' + search : '');
   }
 
-  // 2. Prevent body-parser from hanging on pre-buffered Vercel serverless request bodies
-  const rawAny = req as unknown as { body?: unknown; _body?: boolean };
-  if (rawAny.body && typeof rawAny.body === 'object') {
-    rawAny._body = true;
-  }
+  const router = express.Router();
+  router.use(express.json());
+  router.get('/status', (_req2, res2) => {
+    res2.json({
+      name: 'Aura',
+      phase: 'renaissance',
+      tagline: "De l'idée au résultat.",
+      features: {
+        publicSite: 'live',
+        intro: 'live',
+        sculpture3d: 'live',
+        accounts: 'rebuilding',
+        chat: 'rebuilding',
+        explore: 'rebuilding',
+        studio: 'rebuilding',
+        missions: 'rebuilding',
+      },
+    });
+  });
 
-  return apiApp(req, res);
+  req.url = req.url || '/api/status';
+  router(req, res, () => {
+    res.status(404).json({ error: 'introuvable' });
+  });
 }
-
