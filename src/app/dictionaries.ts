@@ -58,7 +58,7 @@ export interface Content {
     legende: string;
     scroll: string;
   };
-  logos: { label: string };
+  logos: { titre: string };
   bandeau: { mots: string[] };
   fil: {
     kicker: string;
@@ -67,7 +67,7 @@ export interface Content {
     sous: string;
     etapes: Etape[];
   };
-  decl: { texte: string; signature: string };
+  decl: { kicker: string; texte: string; signature: string };
   capacites: {
     kicker: string;
     titre1: string;
@@ -232,7 +232,7 @@ const contentFr: Content = {
     legende: "La sculpture vivante d'Aura",
     scroll: 'Défiler',
   },
-  logos: { label: "L'écosystème IA mondial" },
+  logos: { titre: "L'écosystème IA mondial" },
   bandeau: {
     mots: ['Réfléchir', 'Rechercher', 'Créer', 'Développer', 'Livrer'],
   },
@@ -245,6 +245,7 @@ const contentFr: Content = {
     etapes: etapesFr,
   },
   decl: {
+    kicker: 'Manifeste',
     texte:
       "Aura tient le fil : votre première phrase devient un plan, le plan devient une création, la création devient un résultat.",
     signature: 'Une seule ligne, de bout en bout',
@@ -509,7 +510,7 @@ const contentEn: Content = {
     legende: "Aura's living sculpture",
     scroll: 'Scroll',
   },
-  logos: { label: 'The global AI ecosystem' },
+  logos: { titre: 'The global AI ecosystem' },
   bandeau: {
     mots: ['Think', 'Research', 'Create', 'Develop', 'Deliver'],
   },
@@ -522,6 +523,7 @@ const contentEn: Content = {
     etapes: etapesEn,
   },
   decl: {
+    kicker: 'Manifesto',
     texte:
       'Aura keeps the thread: your first sentence becomes a plan, the plan becomes a creation, the creation becomes a result.',
     signature: 'One line, end to end',
