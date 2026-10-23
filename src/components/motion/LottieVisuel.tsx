@@ -2,19 +2,19 @@ import React, { useEffect, useRef, useState } from 'react';
 import { DotLottieReact, type DotLottie } from '@lottiefiles/dotlottie-react';
 
 /**
- * « L'œil magique » — animation Lottie (œil + étoiles scintillantes, palette lime/or).
- * Fichier .lottie hébergé sur lottie.host, chargé par le lecteur dotLottie.
+ * Visuel animé Lottie des cadres du fil narratif.
  *
- * - monté seulement quand il approche du viewport (lazy-load) ;
+ * - montage différé : le fichier n'est chargé qu'à l'approche du viewport ;
  * - pause de rendu hors écran (freezeOnOffscreen) ;
  * - prefers-reduced-motion → première image figée, sans autoplay ;
  * - échec de chargement → retrait discret (le motif du ruban reste visible),
  *   jamais de faux rendu.
  */
-const SRC_LOTTIE =
-  'https://lottie.host/77459ef8-5aa4-44ce-a705-cdccda781171/z57ZyI3DR0.lottie';
-
-export const MagicEye: React.FC<{ className?: string; label: string }> = ({ className, label }) => {
+export const LottieVisuel: React.FC<{ src: string; className?: string; label: string }> = ({
+  src,
+  className,
+  label,
+}) => {
   const hote = useRef<HTMLDivElement | null>(null);
   const [visible, setVisible] = useState(false);
   const [echec, setEchec] = useState(false);
@@ -55,10 +55,10 @@ export const MagicEye: React.FC<{ className?: string; label: string }> = ({ clas
   }, [instance]);
 
   return (
-    <div ref={hote} className={className} data-oeil="">
+    <div ref={hote} className={className} data-lottie="">
       {visible && !echec && (
         <DotLottieReact
-          src={SRC_LOTTIE}
+          src={src}
           loop
           autoplay={!reduit}
           renderConfig={{ freezeOnOffscreen: true, autoResize: true }}

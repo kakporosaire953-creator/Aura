@@ -18,7 +18,7 @@ import {
 import { AuraSculptureCanvas } from '../three/AuraSculptureCanvas';
 import { useRevealAll } from '../components/motion/useReveal';
 import { Tilt } from '../components/motion/Tilt';
-import { MagicEye } from '../components/motion/MagicEye';
+import { LottieVisuel } from '../components/motion/LottieVisuel';
 import { SiteNav, SiteFooter } from '../components/layout/SiteChrome';
 import { useT } from '../app/prefs';
 
@@ -40,6 +40,17 @@ const COULEURS_MOTIF: [string, string][] = [
   ['#43BC2C', '#FF790D'],
 ];
 
+/* Animations Lottie des cadres du fil : étincelle (Réfléchir),
+   l'œil magique (Explorer), le ruban qui se tisse (Créer), le départ (Livrer). */
+const URL_OEIL =
+  'https://lottie.host/77459ef8-5aa4-44ce-a705-cdccda781171/z57ZyI3DR0.lottie';
+const ANIMATIONS_ETAPE = [
+  '/assets/lottie/etincelle.json',
+  URL_OEIL,
+  '/assets/lottie/ruban.json',
+  '/assets/lottie/depart.json',
+];
+
 type LogoIA = { nom: string; couleur: string; svg?: string; fa?: string };
 
 const LOGOS_IA: LogoIA[] = [
@@ -56,8 +67,9 @@ const LOGOS_IA: LogoIA[] = [
   { nom: 'Anthropic', couleur: '#B8B8B8', svg: siAnthropic.path },
 ];
 
-const BandeauLogos: React.FC<{ label: string }> = ({ label }) => (
-  <div className="logos-ia" aria-label={label}>
+const BandeauLogos: React.FC<{ titre: string }> = ({ titre }) => (
+  <div className="logos-ia" aria-label={titre}>
+    <h2 className="logos-ia-titre">{titre}</h2>
     <div className="logos-ia-piste">
       {[...LOGOS_IA, ...LOGOS_IA].map((logo, i) => (
         <span className="logo-ia" key={`${logo.nom}-${i}`}>
@@ -441,7 +453,7 @@ export const LandingPage: React.FC = () => {
       </header>
 
       {/* ===== LOGOS IA ===== */}
-      <BandeauLogos label={t.logos.label} />
+      <BandeauLogos titre={t.logos.titre} />
 
       {/* ===== BANDEAU MOTS ===== */}
       <div ref={bandeauRef} className="bandeau" aria-hidden>
@@ -561,9 +573,11 @@ export const LandingPage: React.FC = () => {
                       </linearGradient>
                     </defs>
                   </svg>
-                  {i === 1 && (
-                    <MagicEye className="etape-oeil" label={e.titre} />
-                  )}
+                  <LottieVisuel
+                    className="etape-anime"
+                    label={e.titre}
+                    src={ANIMATIONS_ETAPE[i]}
+                  />
                 </div>
               </article>
             ))}
@@ -574,6 +588,7 @@ export const LandingPage: React.FC = () => {
       {/* ================= DÉCLARATION ================= */}
       <section className="declaration" ref={declRef}>
         <div className="wrap-etroit">
+          <span className="kicker declaration-titre">{t.decl.kicker}</span>
           <p className="declaration-texte">
             {t.decl.texte.split(' ').map((mot, i) => (
               <React.Fragment key={i}>
