@@ -9,9 +9,16 @@ import {
   Conversation,
   LibraryItem,
   OnboardingData,
+  StudioGenerationRun,
+  StudioProject,
+  StudioProjectSummary,
+  StudioProjectType,
+  StudioProjectVersion,
   UsageMetrics,
   UserProfile,
+  VirtualStudioFile,
 } from '../shared/types.ts';
+import { composePreviewHtml } from '../shared/studio.ts';
 import {
   AURA_PLANS,
   CATEGORY_UNIT_COSTS,
@@ -41,6 +48,17 @@ interface SessionRecord {
   createdAt: string;
 }
 
+export interface ContactMessageRecord {
+  id: string;
+  kind: 'contact' | 'waitlist';
+  name?: string;
+  email: string;
+  subject?: string;
+  message: string;
+  planId?: string;
+  createdAt: string;
+}
+
 interface PersistedDatabase {
   users: Record<string, StoredUserRecord>;
   sessions: Record<string, SessionRecord>;
@@ -48,6 +66,8 @@ interface PersistedDatabase {
   projects: AuraProject[];
   missions: AuraMission[];
   library: LibraryItem[];
+  studioProjects: StudioProject[];
+  contactMessages: ContactMessageRecord[];
   usageByUser: Record<string, UsageMetrics>;
   subscriptions: Record<string, UserSubscriptionState>;
   usageLedger: UsageLedgerEntry[];
@@ -175,6 +195,8 @@ function createCleanDatabase(): PersistedDatabase {
     projects: [],
     missions: [],
     library: [],
+    studioProjects: [],
+    contactMessages: [],
     usageByUser: {},
     subscriptions: {},
     usageLedger: [],
@@ -298,6 +320,18 @@ class AuraDataStore {
       }
       this.db.library = Array.from(merged.values());
     }
+    if (Array.isArray(remote.studioProjects)) {
+      const merged = new Map<string, StudioProject>();
+      for (const sp of [...remote.studioProjects, ...this.db.studioProjects]) {
+        if (sp && sp.id && sp.userId && !LEGACY_SEED_IDS.has(sp.id)) {
+          const prev = merged.get(sp.id);
+          if (!prev || (sp.updatedAt || '') >= (prev.updatedAt || '')) {
+            merged.set(sp.id, sp);
+          }
+        }
+      }
+      this.db.studioProjects = Array.from(merged.values());
+    }
     if (remote.usageByUser && typeof remote.usageByUser === 'object') {
       this.db.usageByUser = {
         ...remote.usageByUser,
@@ -407,6 +441,17 @@ class AuraDataStore {
             )
           : [];
 
+        const cleanStudioProjects = Array.isArray(parsed.studioProjects)
+          ? parsed.studioProjects.filter(
+              (sp) =>
+                sp &&
+                sp.id &&
+                sp.userId &&
+                validUserIds.has(sp.userId) &&
+                !LEGACY_SEED_IDS.has(sp.id)
+            )
+          : [];
+
         const cleanUsageByUser: Record<string, UsageMetrics> = {};
         if (parsed.usageByUser && typeof parsed.usageByUser === 'object') {
           for (const [uid, uMetrics] of Object.entries(parsed.usageByUser)) {
@@ -423,6 +468,10 @@ class AuraDataStore {
           projects: cleanProjects,
           missions: cleanMissions,
           library: cleanLibrary,
+          studioProjects: cleanStudioProjects,
+          contactMessages: Array.isArray(parsed.contactMessages)
+            ? parsed.contactMessages.filter((c) => c && c.id && c.email)
+            : [],
           usageByUser: cleanUsageByUser,
           subscriptions:
             parsed.subscriptions && typeof parsed.subscriptions === 'object'
@@ -1089,6 +1138,354 @@ class AuraDataStore {
     return this.db.missions.length < before;
   }
 
+  // --- Aura Studio : projets de création persistés (Strictement per user) ---
+  private normalizeStudioFiles(files: VirtualStudioFile[]): VirtualStudioFile[] {
+    const seen = new Set<string>();
+    const out: VirtualStudioFile[] = [];
+    for (const f of files) {
+      if (!f || typeof f.path !== 'string' || typeof f.content !== 'string') {
+        continue;
+      }
+      const cleanPath = f.path.trim().replace(/^\/+/, '');
+      if (
+        !cleanPath ||
+        cleanPath.includes('..') ||
+        cleanPath.length > 180 ||
+        f.content.length > 400_000
+      ) {
+        continue;
+      }
+      const key = cleanPath.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({
+        path: cleanPath,
+        language:
+          (f.language || '').trim() ||
+          cleanPath.split('.').pop()?.toLowerCase() ||
+          'text',
+        content: f.content,
+      });
+    }
+    return out;
+  }
+
+  private summarizeStudioProject(sp: StudioProject): StudioProjectSummary {
+    const hasIndexHtml = sp.files.some((f) => f.path.toLowerCase() === 'index.html');
+    return {
+      id: sp.id,
+      name: sp.name,
+      description: sp.description,
+      type: sp.type,
+      status: sp.status,
+      fileCount: sp.files.length,
+      hasIndexHtml,
+      versionCount: sp.versions.length,
+      lastBuildStatus: sp.lastBuildStatus,
+      createdAt: sp.createdAt,
+      updatedAt: sp.updatedAt,
+      previewHtml:
+        hasIndexHtml && sp.status === 'ready'
+          ? composePreviewHtml(sp.files)
+          : undefined,
+    };
+  }
+
+  getStudioProjectSummaries(userId: string): StudioProjectSummary[] {
+    return this.db.studioProjects
+      .filter((sp) => sp.userId === userId)
+      .sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''))
+      .map((sp) => this.summarizeStudioProject(sp));
+  }
+
+  getStudioProjects(userId: string): StudioProject[] {
+    return this.db.studioProjects
+      .filter((sp) => sp.userId === userId)
+      .sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
+  }
+
+  getStudioProject(userId: string, id: string): StudioProject | undefined {
+    return this.db.studioProjects.find(
+      (sp) => sp.id === id && sp.userId === userId
+    );
+  }
+
+  countStudioProjects(userId: string): number {
+    return this.db.studioProjects.filter((sp) => sp.userId === userId).length;
+  }
+
+  createStudioProject(
+    userId: string,
+    params: {
+      id?: string;
+      name: string;
+      description: string;
+      type: StudioProjectType;
+      files?: VirtualStudioFile[];
+      status?: StudioProject['status'];
+    }
+  ): StudioProject {
+    const now = new Date().toISOString();
+    const created: StudioProject = {
+      id:
+        params.id ||
+        `studio-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      userId,
+      name: params.name,
+      description: params.description,
+      type: params.type,
+      status: params.status || 'draft',
+      files: this.normalizeStudioFiles(params.files || []),
+      lastBuildStatus: 'unknown',
+      versions: [],
+      generationRuns: [],
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.db.studioProjects.unshift(created);
+    this.saveToDisk();
+    return created;
+  }
+
+  updateStudioProject(
+    userId: string,
+    id: string,
+    updates: {
+      name?: string;
+      description?: string;
+      type?: StudioProjectType;
+      status?: StudioProject['status'];
+      lastBuildStatus?: StudioProject['lastBuildStatus'];
+      lastBuildError?: string;
+    }
+  ): StudioProject | undefined {
+    const sp = this.getStudioProject(userId, id);
+    if (!sp) return undefined;
+    if (typeof updates.name === 'string' && updates.name.trim()) {
+      sp.name = updates.name.trim().slice(0, 80);
+    }
+    if (typeof updates.description === 'string') {
+      sp.description = updates.description.slice(0, 2000);
+    }
+    if (updates.type) sp.type = updates.type;
+    if (updates.status) sp.status = updates.status;
+    if (updates.lastBuildStatus) sp.lastBuildStatus = updates.lastBuildStatus;
+    if (typeof updates.lastBuildError === 'string') {
+      sp.lastBuildError = updates.lastBuildError.slice(0, 2000);
+    } else if (updates.lastBuildStatus === 'ok') {
+      sp.lastBuildError = undefined;
+    }
+    sp.updatedAt = new Date().toISOString();
+    this.saveToDisk();
+    return sp;
+  }
+
+  /** Enregistre une nouvelle version réelle du projet (fichiers complets). */
+  saveStudioProjectFiles(
+    userId: string,
+    id: string,
+    files: VirtualStudioFile[],
+    opts: {
+      label?: string;
+      origin: StudioProjectVersion['origin'];
+      generationRunId?: string;
+      status?: StudioProject['status'];
+      lastBuildStatus?: StudioProject['lastBuildStatus'];
+      lastBuildError?: string;
+    }
+  ): { project: StudioProject; version: StudioProjectVersion } | undefined {
+    const sp = this.getStudioProject(userId, id);
+    if (!sp) return undefined;
+    const normalized = this.normalizeStudioFiles(files);
+    if (normalized.length === 0) return undefined;
+
+    const now = new Date().toISOString();
+    const version: StudioProjectVersion = {
+      id: `ver-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      label:
+        (opts.label || '').trim().slice(0, 140) ||
+        (opts.origin === 'manual'
+          ? 'Sauvegarde manuelle'
+          : opts.origin === 'iteration'
+            ? 'Modification IA'
+            : opts.origin === 'restore'
+              ? 'Restauration de version'
+              : 'Génération initiale'),
+      createdAt: now,
+      origin: opts.origin,
+      generationRunId: opts.generationRunId,
+      fileCount: normalized.length,
+      files: normalized,
+    };
+
+    sp.files = normalized;
+    sp.versions.unshift(version);
+    // Keep a bounded, real version history (30 revisions max)
+    if (sp.versions.length > 30) sp.versions = sp.versions.slice(0, 30);
+    if (opts.status) sp.status = opts.status;
+    if (opts.lastBuildStatus) sp.lastBuildStatus = opts.lastBuildStatus;
+    if (typeof opts.lastBuildError === 'string') {
+      sp.lastBuildError = opts.lastBuildError.slice(0, 2000);
+    } else if (opts.lastBuildStatus === 'ok') {
+      sp.lastBuildError = undefined;
+    }
+    sp.updatedAt = now;
+    this.saveToDisk();
+    return { project: sp, version };
+  }
+
+  restoreStudioProjectVersion(
+    userId: string,
+    id: string,
+    versionId: string
+  ): { project: StudioProject; version: StudioProjectVersion } | undefined {
+    const sp = this.getStudioProject(userId, id);
+    if (!sp) return undefined;
+    const target = sp.versions.find((v) => v.id === versionId);
+    if (!target) return undefined;
+    return this.saveStudioProjectFiles(userId, id, target.files, {
+      label: `Restauration : ${target.label}`,
+      origin: 'restore',
+      generationRunId: target.generationRunId,
+      status: 'ready',
+      lastBuildStatus: 'unknown',
+    });
+  }
+
+  duplicateStudioProject(userId: string, id: string): StudioProject | undefined {
+    const sp = this.getStudioProject(userId, id);
+    if (!sp) return undefined;
+    const now = new Date().toISOString();
+    const copy: StudioProject = {
+      id: `studio-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      userId,
+      name: `${sp.name} (copie)`.slice(0, 80),
+      description: sp.description,
+      type: sp.type,
+      status: sp.files.length > 0 ? 'ready' : 'draft',
+      files: this.normalizeStudioFiles(sp.files),
+      lastBuildStatus: sp.lastBuildStatus,
+      versions: [],
+      generationRuns: [],
+      createdAt: now,
+      updatedAt: now,
+    };
+    if (copy.files.length > 0) {
+      copy.versions = [
+        {
+          id: `ver-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          label: `Dupliqué depuis « ${sp.name} »`,
+          createdAt: now,
+          origin: 'manual',
+          fileCount: copy.files.length,
+          files: this.normalizeStudioFiles(sp.files),
+        },
+      ];
+    }
+    this.db.studioProjects.unshift(copy);
+    this.saveToDisk();
+    return copy;
+  }
+
+  deleteStudioProject(userId: string, id: string): boolean {
+    const before = this.db.studioProjects.length;
+    this.db.studioProjects = this.db.studioProjects.filter(
+      (sp) => !(sp.id === id && sp.userId === userId)
+    );
+    this.saveToDisk();
+    return this.db.studioProjects.length < before;
+  }
+
+  startStudioGenerationRun(
+    userId: string,
+    projectId: string,
+    params: {
+      runId?: string;
+      kind: StudioGenerationRun['kind'];
+      prompt: string;
+      modelId?: string;
+      providerId?: string;
+    }
+  ): StudioGenerationRun | undefined {
+    const sp = this.getStudioProject(userId, projectId);
+    if (!sp) return undefined;
+    const run: StudioGenerationRun = {
+      id:
+        params.runId ||
+        `run-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      kind: params.kind,
+      prompt: params.prompt.slice(0, 8000),
+      status: 'running',
+      modelId: params.modelId,
+      providerId: params.providerId,
+      createdAt: new Date().toISOString(),
+    };
+    sp.generationRuns.unshift(run);
+    if (sp.generationRuns.length > 50) sp.generationRuns = sp.generationRuns.slice(0, 50);
+    sp.status = 'generating';
+    sp.updatedAt = run.createdAt;
+    this.saveToDisk();
+    return run;
+  }
+
+  finishStudioGenerationRun(
+    userId: string,
+    projectId: string,
+    runId: string,
+    params: {
+      status: 'succeeded' | 'failed';
+      error?: string;
+      versionId?: string;
+      modelId?: string;
+      providerId?: string;
+    }
+  ): StudioGenerationRun | undefined {
+    const sp = this.getStudioProject(userId, projectId);
+    if (!sp) return undefined;
+    const run = sp.generationRuns.find((r) => r.id === runId);
+    if (!run) return undefined;
+    run.status = params.status;
+    run.error = params.error?.slice(0, 1000);
+    run.versionId = params.versionId;
+    if (params.modelId) run.modelId = params.modelId;
+    if (params.providerId) run.providerId = params.providerId;
+    run.completedAt = new Date().toISOString();
+    sp.updatedAt = run.completedAt;
+    this.saveToDisk();
+    return run;
+  }
+
+  addContactMessage(params: {
+    kind: 'contact' | 'waitlist';
+    name?: string;
+    email: string;
+    subject?: string;
+    message: string;
+    planId?: string;
+  }): ContactMessageRecord {
+    const record: ContactMessageRecord = {
+      id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      kind: params.kind,
+      name: params.name?.slice(0, 120),
+      email: params.email.trim().toLowerCase().slice(0, 200),
+      subject: params.subject?.slice(0, 200),
+      message: params.message.slice(0, 4000),
+      planId: params.planId,
+      createdAt: new Date().toISOString(),
+    };
+    if (!this.db.contactMessages) this.db.contactMessages = [];
+    this.db.contactMessages.unshift(record);
+    if (this.db.contactMessages.length > 500) {
+      this.db.contactMessages = this.db.contactMessages.slice(0, 500);
+    }
+    this.saveToDisk();
+    return record;
+  }
+
+  listContactMessages(): ContactMessageRecord[] {
+    return this.db.contactMessages || [];
+  }
+
   // --- Subscriptions & Plans (Per user) ---
   getUserSubscription(userId: string): UserSubscriptionState {
     if (!this.db.subscriptions) {
@@ -1612,6 +2009,7 @@ class AuraDataStore {
     const projects = this.getProjects(userId);
     const missions = this.getMissions(userId);
     const library = this.getLibrary(userId);
+    const studioProjects = this.getStudioProjects(userId);
     const usage = this.getUsage(userId);
     const subscription = this.getUserSubscription(userId);
 
@@ -1649,6 +2047,7 @@ class AuraDataStore {
       projects,
       missions,
       library,
+      studioProjects,
     };
   }
 
@@ -1683,6 +2082,9 @@ class AuraDataStore {
     this.db.projects = this.db.projects.filter((p) => p.userId !== userId);
     this.db.missions = this.db.missions.filter((m) => m.userId !== userId);
     this.db.library = this.db.library.filter((l) => l.userId !== userId);
+    this.db.studioProjects = this.db.studioProjects.filter(
+      (sp) => sp.userId !== userId
+    );
     delete this.db.usageByUser[userId];
     delete this.db.subscriptions[userId];
     this.db.usageLedger = this.db.usageLedger.filter((entry) => entry.userId !== userId);

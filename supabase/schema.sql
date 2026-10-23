@@ -157,3 +157,53 @@ CREATE TABLE IF NOT EXISTS public.aura_billing_events (
   processed BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- 11. Table des projets Aura Studio (fichiers, versions, exécutions de génération)
+-- Chaque projet appartient strictement à un utilisateur (owner checks côté serveur + RLS).
+CREATE TABLE IF NOT EXISTS public.aura_studio_projects (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES public.aura_users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  project_type TEXT NOT NULL DEFAULT 'site-web',
+  status TEXT NOT NULL DEFAULT 'draft',
+  files JSONB NOT NULL DEFAULT '[]'::jsonb,
+  last_build_status TEXT NOT NULL DEFAULT 'unknown',
+  last_build_error TEXT,
+  versions JSONB NOT NULL DEFAULT '[]'::jsonb,
+  generation_runs JSONB NOT NULL DEFAULT '[]'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_aura_studio_projects_user ON public.aura_studio_projects(user_id);
+CREATE INDEX IF NOT EXISTS idx_aura_studio_projects_updated ON public.aura_studio_projects(updated_at DESC);
+
+-- 12. Messages de contact / liste d'attente (persistance réelle des formulaires publics)
+CREATE TABLE IF NOT EXISTS public.aura_contact_messages (
+  id TEXT PRIMARY KEY,
+  kind TEXT NOT NULL DEFAULT 'contact',
+  name TEXT,
+  email TEXT NOT NULL,
+  subject TEXT,
+  message TEXT NOT NULL,
+  plan_id TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_aura_contact_created ON public.aura_contact_messages(created_at DESC);
+
+-- Politiques RLS : accès strictement personnel pour les projets Studio.
+ALTER TABLE public.aura_studio_projects ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "studio_projects_select_own" ON public.aura_studio_projects
+  FOR SELECT USING (auth.uid()::text = user_id);
+
+CREATE POLICY "studio_projects_insert_own" ON public.aura_studio_projects
+  FOR INSERT WITH CHECK (auth.uid()::text = user_id);
+
+CREATE POLICY "studio_projects_update_own" ON public.aura_studio_projects
+  FOR UPDATE USING (auth.uid()::text = user_id);
+
+CREATE POLICY "studio_projects_delete_own" ON public.aura_studio_projects
+  FOR DELETE USING (auth.uid()::text = user_id);

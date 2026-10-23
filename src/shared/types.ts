@@ -333,6 +333,153 @@ export interface VirtualStudioFile {
   content: string;
 }
 
+// --- Aura Studio : projets de création persistés ---
+
+export type StudioProjectType =
+  | 'site-web'
+  | 'application-web'
+  | 'dashboard'
+  | 'portfolio'
+  | 'landing-page'
+  | 'design-ui'
+  | 'document';
+
+export type StudioProjectStatus =
+  | 'generating'
+  | 'ready'
+  | 'failed'
+  | 'draft';
+
+export const StudioProjectTypeSchema = z.enum([
+  'site-web',
+  'application-web',
+  'dashboard',
+  'portfolio',
+  'landing-page',
+  'design-ui',
+  'document',
+]);
+
+export type StudioBuildStatus = 'ok' | 'failed' | 'unknown';
+
+export interface StudioProjectVersion {
+  id: string;
+  label: string;
+  createdAt: string;
+  origin: 'generation' | 'iteration' | 'manual' | 'restore';
+  generationRunId?: string;
+  fileCount: number;
+  files: VirtualStudioFile[];
+}
+
+export interface StudioGenerationRun {
+  id: string;
+  kind: 'creation' | 'modification';
+  prompt: string;
+  status: 'running' | 'succeeded' | 'failed';
+  modelId?: string;
+  providerId?: string;
+  error?: string;
+  createdAt: string;
+  completedAt?: string;
+  versionId?: string;
+}
+
+export interface StudioProject {
+  id: string;
+  userId: string;
+  name: string;
+  description: string;
+  type: StudioProjectType;
+  status: StudioProjectStatus;
+  files: VirtualStudioFile[];
+  lastBuildStatus: StudioBuildStatus;
+  lastBuildError?: string;
+  versions: StudioProjectVersion[];
+  generationRuns: StudioGenerationRun[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Résumé allégé utilisé pour la galerie (sans historiques lourds). */
+export interface StudioProjectSummary {
+  id: string;
+  name: string;
+  description: string;
+  type: StudioProjectType;
+  status: StudioProjectStatus;
+  fileCount: number;
+  hasIndexHtml: boolean;
+  versionCount: number;
+  lastBuildStatus: StudioBuildStatus;
+  createdAt: string;
+  updatedAt: string;
+  /** HTML autonome pour la miniature isolée de la carte (sans fichiers sources). */
+  previewHtml?: string;
+}
+
+export const STUDIO_PROJECT_TYPE_LABELS: Record<
+  StudioProjectType,
+  { fr: string; en: string }
+> = {
+  'site-web': { fr: 'Site web', en: 'Website' },
+  'application-web': { fr: 'Application web', en: 'Web app' },
+  dashboard: { fr: 'Dashboard', en: 'Dashboard' },
+  portfolio: { fr: 'Portfolio', en: 'Portfolio' },
+  'landing-page': { fr: 'Landing page', en: 'Landing page' },
+  'design-ui': { fr: 'Design UI', en: 'UI design' },
+  document: { fr: 'Document', en: 'Document' },
+};
+
+export const StudioFileInputSchema = z.object({
+  path: z
+    .string()
+    .min(1)
+    .max(180)
+    .regex(
+      /^[A-Za-z0-9_\-./ ]+$/,
+      'Chemin de fichier invalide (lettres, chiffres, espaces, - _ . / uniquement)'
+    )
+    .refine((p) => !p.includes('..') && !p.startsWith('/'), {
+      message: 'Chemin de fichier non autorisé',
+    }),
+  language: z.string().max(40).optional(),
+  content: z.string().max(400_000),
+});
+
+export const StudioCreateRequestSchema = z.object({
+  idea: z.string().min(8, 'Décrivez votre idée (8 caractères minimum)').max(8000),
+  name: z.string().max(80).optional(),
+  type: StudioProjectTypeSchema.optional(),
+  sections: z.string().max(2000).optional(),
+  styleNotes: z.string().max(2000).optional(),
+  providerId: z.string().max(40).optional(),
+  modelId: z.string().max(60).optional(),
+});
+
+export const StudioIterateRequestSchema = z.object({
+  instruction: z
+    .string()
+    .min(3, 'Instruction trop courte')
+    .max(4000),
+  providerId: z.string().max(40).optional(),
+  modelId: z.string().max(60).optional(),
+});
+
+export const StudioSaveFilesRequestSchema = z.object({
+  files: z.array(StudioFileInputSchema).min(1).max(80),
+  label: z.string().max(140).optional(),
+});
+
+export const StudioProjectPatchSchema = z.object({
+  name: z.string().min(1).max(80).optional(),
+  description: z.string().max(2000).optional(),
+  type: StudioProjectTypeSchema.optional(),
+});
+
+export type StudioCreateRequest = z.infer<typeof StudioCreateRequestSchema>;
+export type StudioIterateRequest = z.infer<typeof StudioIterateRequestSchema>;
+
 export interface CodeArtifact {
   language: string;
   filename: string;
