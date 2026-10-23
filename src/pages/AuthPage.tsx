@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { AuraLogo } from '../components/brand/AuraLogo';
+import { AuthMotionFilm } from '../components/brand/AuthMotionFilm';
+import { AuraThreeCanvas } from '../components/three/AuraThreeCanvas';
 import { useAura } from '../context/AuraContext';
 import authHeroImg from '../assets/images/auth_hero_workspace_1791685458368.jpg';
 
@@ -206,6 +208,19 @@ export const AuthPage: React.FC = () => {
           referrerPolicy="no-referrer"
           className="absolute inset-0 w-full h-full object-cover object-bottom scale-[1.02]"
         />
+
+        {/* Sculpture Three.js — rubans Aura vivants (desktop, mouvement autorisé) */}
+        <div className="absolute inset-0 opacity-[0.55] mix-blend-screen">
+          <AuraThreeCanvas
+            className="h-full w-full"
+            opacity={0.9}
+            interactive
+            hideOnMobile
+          />
+        </div>
+
+        {/* Film GSAP — boucle de 8 s (balayage, cartes, sous-titres) */}
+        <AuthMotionFilm />
 
         {/* Luminous Golden-Ivory Sky Scrim in the upper half so the dark typography matches Image 2 */}
         <div

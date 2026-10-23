@@ -192,38 +192,105 @@ export const PromptToProductDemo: React.FC<PromptToProductDemoProps> = ({
   }, [applyProgressState, reducedMotion]);
 
   /**
-   * Lecture manuelle (bouton « Rejouer la séquence ») empêchant toute exécution simultanée
+   * Lecture cinématique GSAP (« façon vidéo ») : une master timeline de ~9 s
+   * pilote la progression du prompt → génération → résultat avec des courbes
+   * organiques. Lecture auto à l'entrée dans le viewport, pause/reprise et
+   * rejeu possibles. Aucun setTimeout : nettoyage propre via GSAP.
    */
-  const handleManualReplay = useCallback(() => {
-    clearAllTimers();
-    const currentRun = ++runIdRef.current;
+  const cinematicTweenRef = useRef<gsap.core.Tween | null>(null);
+  const hasAutoplayedRef = useRef<boolean>(false);
 
-    if (reducedMotion) {
-      applyProgressState(1);
-      return;
+  const stopCinematic = useCallback(() => {
+    if (cinematicTweenRef.current) {
+      cinematicTweenRef.current.kill();
+      cinematicTweenRef.current = null;
     }
+    setIsManualPlaying(false);
+    manualModeRef.current = false;
+  }, []);
 
-    manualModeRef.current = true;
-    setIsManualPlaying(true);
-    setExpandedPreview(false);
+  const startCinematic = useCallback(
+    (fromProgress = 0) => {
+      clearAllTimers();
+      stopCinematic();
+      runIdRef.current++;
 
-    const totalSteps = 24;
-    const stepMs = 175;
+      if (reducedMotion) {
+        applyProgressState(1);
+        return;
+      }
 
-    applyProgressState(0.05);
+      manualModeRef.current = true;
+      setIsManualPlaying(true);
+      setExpandedPreview(false);
 
-    for (let i = 1; i <= totalSteps; i++) {
-      schedule(() => {
-        if (runIdRef.current !== currentRun) return;
-        const p = i / totalSteps;
-        applyProgressState(p);
-        if (i === totalSteps) {
+      const proxy = { p: fromProgress };
+      applyProgressState(fromProgress);
+
+      cinematicTweenRef.current = gsap.to(proxy, {
+        p: 1,
+        duration: Math.max(2.2, 9 * (1 - fromProgress)),
+        ease: 'power1.inOut',
+        onUpdate: () => applyProgressState(proxy.p),
+        onComplete: () => {
+          applyProgressState(1);
           setIsManualPlaying(false);
           manualModeRef.current = false;
-        }
-      }, i * stepMs);
+          cinematicTweenRef.current = null;
+        },
+      });
+    },
+    [applyProgressState, clearAllTimers, reducedMotion, stopCinematic]
+  );
+
+  const handleManualReplay = useCallback(() => {
+    startCinematic(0.02);
+  }, [startCinematic]);
+
+  const toggleCinematicPause = useCallback(() => {
+    const tween = cinematicTweenRef.current;
+    if (!tween) {
+      startCinematic(scrollProgress >= 0.99 ? 0.02 : scrollProgress);
+      return;
     }
-  }, [applyProgressState, clearAllTimers, reducedMotion, schedule]);
+    if (tween.paused()) {
+      tween.resume();
+      setIsManualPlaying(true);
+      manualModeRef.current = true;
+    } else {
+      tween.pause();
+      setIsManualPlaying(false);
+    }
+  }, [scrollProgress, startCinematic]);
+
+  // --- Lecture auto une fois la séquence visible (comme une vidéo qui démarre) ---
+  useEffect(() => {
+    if (reducedMotion) return;
+    const node = pinWorkspaceRef.current;
+    if (!node || typeof IntersectionObserver === 'undefined') return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting && !hasAutoplayedRef.current && !manualModeRef.current) {
+            hasAutoplayedRef.current = true;
+            startCinematic(0.02);
+            observer.disconnect();
+          }
+        }
+      },
+      { threshold: 0.35 }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [reducedMotion, startCinematic]);
+
+  // Stop propre si le composant est démonté en pleine lecture
+  useEffect(() => {
+    return () => {
+      stopCinematic();
+    };
+  }, [stopCinematic]);
 
   const handleSelectStep = (targetMacroStep: 'A' | 'B' | 'C') => {
     clearAllTimers();
@@ -296,19 +363,25 @@ export const PromptToProductDemo: React.FC<PromptToProductDemoProps> = ({
 
               <button
                 type="button"
-                onClick={handleManualReplay}
-                disabled={isManualPlaying}
-                aria-label="Lancer ou rejouer la démonstration Prompt to Product"
-                className="px-4 py-2 rounded-full bg-[#FFFDF8] dark:bg-[#152023] hover:bg-[#F4F2EA] dark:hover:bg-[#1B292D] border border-[#E8E6DE] dark:border-[#243337] text-xs font-semibold text-[#14282D] dark:text-[#F3F2EC] inline-flex items-center gap-2 transition-colors cursor-pointer disabled:opacity-55"
+                onClick={toggleCinematicPause}
+                aria-label={isManualPlaying ? 'Mettre la séquence en pause' : 'Lire la séquence'}
+                className="px-4 py-2 rounded-full bg-[#FFFDF8] dark:bg-[#152023] hover:bg-[#F4F2EA] dark:hover:bg-[#1B292D] border border-[#E8E6DE] dark:border-[#243337] text-xs font-semibold text-[#14282D] dark:text-[#F3F2EC] inline-flex items-center gap-2 transition-colors cursor-pointer"
               >
                 <i
                   className={`fa-solid ${
-                    isManualPlaying
-                      ? 'fa-circle-notch fa-spin text-[#FF790D]'
-                      : 'fa-rotate-right text-[#078348]'
+                    isManualPlaying ? 'fa-pause text-[#FF790D]' : 'fa-play text-[#078348]'
                   } text-[11px]`}
                 />
-                <span>{isManualPlaying ? 'Séquence en cours...' : 'Rejouer la séquence'}</span>
+                <span>{isManualPlaying ? 'Pause' : 'Lire la séquence'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleManualReplay}
+                aria-label="Rejouer la démonstration Prompt to Product depuis le début"
+                className="px-4 py-2 rounded-full bg-[#FFFDF8] dark:bg-[#152023] hover:bg-[#F4F2EA] dark:hover:bg-[#1B292D] border border-[#E8E6DE] dark:border-[#243337] text-xs font-semibold text-[#14282D] dark:text-[#F3F2EC] inline-flex items-center gap-2 transition-colors cursor-pointer"
+              >
+                <i className="fa-solid fa-rotate-right text-[#078348] text-[11px]" />
+                <span>Rejouer</span>
               </button>
             </StaggerReveal>
           </div>

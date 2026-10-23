@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { AuraLogo } from '../components/brand/AuraLogo';
 import { useAura } from '../context/AuraContext';
+import { useAuraMarketingMotion } from '../components/landing/useAuraMarketingMotion';
 
 export interface HelpArticle {
   id: string;
@@ -227,6 +228,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
 
 export const HelpPage: React.FC = () => {
   const { isAuthenticated, language } = useAura();
+  const motionScope = useAuraMarketingMotion<HTMLDivElement>();
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [expandedArticleId, setExpandedArticleId] = useState<string | null>(null);
@@ -254,7 +256,7 @@ export const HelpPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF8F2] dark:bg-[#0E1618] text-[#14282D] dark:text-[#F3F2EC] flex flex-col font-sans transition-colors selection:bg-[#8CCB4A]/30">
+    <div ref={motionScope} className="min-h-screen bg-[#FAF8F2] dark:bg-[#0E1618] text-[#14282D] dark:text-[#F3F2EC] flex flex-col font-sans transition-colors selection:bg-[#8CCB4A]/30">
       {/* Top Header */}
       <header className="sticky top-0 z-40 backdrop-blur-md bg-[#FAF8F2]/90 dark:bg-[#0E1618]/90 border-b border-[#EAE6DC] dark:border-[#243337]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -313,16 +315,16 @@ export const HelpPage: React.FC = () => {
       {/* Hero Banner with Integrated Search */}
       <section className="relative py-12 sm:py-16 px-4 sm:px-6 lg:px-8 border-b border-[#EAE6DC] dark:border-[#243337] bg-gradient-to-b from-[#F4F1E6]/50 to-transparent">
         <div className="max-w-4xl mx-auto text-center space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#EAF2E2] dark:bg-[#182E24] text-[#078348] dark:text-[#8CCB4A] text-xs font-semibold border border-[#078348]/20">
+          <div data-hero-item className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#EAF2E2] dark:bg-[#182E24] text-[#078348] dark:text-[#8CCB4A] text-xs font-semibold border border-[#078348]/20">
             <i className="fa-solid fa-circle-question text-xs" />
             <span>Documentation & Assistance officielle</span>
           </div>
 
-          <h1 className="font-display font-extrabold text-2xl sm:text-4xl text-[#14282D] dark:text-[#F3F2EC] tracking-tight">
+          <h1 data-hero-item className="font-display font-extrabold text-2xl sm:text-4xl text-[#14282D] dark:text-[#F3F2EC] tracking-tight">
             Comment pouvons-nous vous aider aujourd’hui ?
           </h1>
 
-          <p className="text-xs sm:text-sm text-[#5A6562] dark:text-[#94A09E] max-w-2xl mx-auto leading-relaxed">
+          <p data-hero-item className="text-xs sm:text-sm text-[#5A6562] dark:text-[#94A09E] max-w-2xl mx-auto leading-relaxed">
             Consultez nos guides détaillés sur Aura Chat, Aura Studio, la gestion des quotas freemium, et l’exercice de vos droits de confidentialité.
           </p>
 

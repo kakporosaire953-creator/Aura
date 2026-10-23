@@ -27,10 +27,37 @@ npm run build
   - `src/components/brand/AuraLogo.tsx` : Symbole propriétaire Aura (rubans organiques entrelacés vert `#078348` → vert lumineux `#8CCB4A` → jaune `#EACB37` → orange `#FF790D`) en version icône, logo horizontal et sculpture centrale 3D.
   - `src/components/workspace/PromptComposer.tsx` : Composant de saisie unifié aux 4 modes avec gestion réelle des pièces jointes (images, documents, code).
   - `src/components/workspace/MessageList.tsx` : Rendu conversationnel avec blocs de code, **aperçu HTML/CSS/JS interactif en direct (sandbox)**, citations de sources web vérifiées et sauvegarde dans la bibliothèque.
-  - `src/pages/` : `LandingPage` (`/`), `WorkspacePage` (`/app`, `/app/chat/:conversationId`), `LibraryPage` (`/app/library`), `ProjectsPage` (`/app/projects`), `ExplorePage` (`/app/explore`), `UsagePage` (`/app/usage`), `SettingsPage` (`/app/settings`), `AuthPage` (`/login`, `/register`, `/forgot-password`).
+  - `src/pages/` : `LandingPage` (`/`), `WorkspacePage` (`/app`, `/app/chat/:conversationId`), `LibraryPage` (`/app/history`), `ProjectsPage` (`/app/projects`), `ExplorePage` (`/app/explore`), `UsagePage` (`/app/usage`), `SettingsPage` (`/app/settings`), `AuthPage` (`/login`, `/register`, `/forgot-password`) + pages marketing (`/features`, `/features/:module`, `/about`, `/contact`, 404).
+- **Aura Studio (produit créatif de première classe)** :
+  - `src/pages/studio/` : `StudioGalleryPage` (`/app/studio` — galerie des créations réelles), `StudioNewPage` (`/app/studio/new` — workflow de génération), `StudioPreviewPage` (`/app/studio/:id/preview` — aperçu immersif plein écran avec viewports ordinateur/tablette/mobile réels), `StudioDevelopPage` (`/app/studio/:id/develop` — Developer Mode : explorateur de fichiers, éditeur CodeMirror, aperçu en direct).
+  - `src/components/studio/` : `StudioPreviewFrame` (iframe **sandboxée sans `allow-same-origin`** — le code généré n'accède jamais à l'application Aura), `StudioFileExplorer`, `StudioCodeEditor` (CodeMirror 6, chargé dynamiquement), `StudioProjectCard`, `StudioIterateBar`.
+  - `src/shared/studio.ts` : helpers partagés (composition d'aperçu isolé, extraction de fichiers, validation de compilation) — utilisés par le serveur et le client.
+  - `src/services/studioService.ts` : client API Studio (CRUD, versions, export ZIP, itérations IA).
 - **Backend (`/server.ts` & `/src/server`)** :
   - `src/server/ai/` : Couche d'abstraction multi-fournisseurs (`AIProviderAdapter`) avec `GeminiProviderAdapter` (actif via `@google/genai`), `OpenAIProviderAdapter` et `AnthropicProviderAdapter`.
-  - `src/server/dataStore.ts` : Persistance serveur (`.data/aura-store.json`), hachage cryptographique des mots de passe (`crypto.scryptSync`) et contrôle strict des quotas quotidiens côté serveur.
+  - `src/server/ai/studioGenerator.ts` : prompts de génération/édition Studio et ré-export des helpers de fichiers (indépendant du fournisseur).
+  - `src/server/zip.ts` : générateur d'archives ZIP (sans dépendance) pour l'export réel des projets.
+  - `src/server/dataStore.ts` : Persistance serveur (`.data/aura-store.json`), hachage cryptographique des mots de passe (`crypto.scryptSync`), contrôle strict des quotas (réservation / engagement / libération des unités d'usage) et projets Studio versionnés.
+
+---
+
+## 2.1 API Aura Studio (extrait)
+
+| Méthode | Route | Description |
+| --- | --- | --- |
+| GET | `/api/studio/projects` | Galerie (résumés + aperçus miniatures + quota de stockage) |
+| POST | `/api/studio/projects` | Crée un projet **et lance une vraie génération IA** (réservation d'usage `studio_creation`) |
+| GET | `/api/studio/projects/:id` | Projet complet + HTML d'aperçu composé |
+| PATCH | `/api/studio/projects/:id` | Renommer / description / type |
+| DELETE | `/api/studio/projects/:id` | Suppression confirmée côté client |
+| POST | `/api/studio/projects/:id/duplicate` | Dupliquer |
+| PUT | `/api/studio/projects/:id/files` | Sauvegarde des fichiers (Developer Mode) + version + validation de compilation |
+| POST | `/api/studio/projects/:id/iterate` | Modification IA ciblée (réservation `studio_modification`, fusion fichiers par chemins) |
+| POST | `/api/studio/projects/:id/versions/:versionId/restore` | Restauration d'une version réelle |
+| GET | `/api/studio/projects/:id/export` | Téléchargement ZIP des fichiers réels |
+| POST | `/api/studio/projects/:id/build` | Validation structurelle persistée (statut de compilation honnête) |
+
+Toutes les routes sont authentifiées et strictement isolées par utilisateur. En cas d'échec du fournisseur IA, les unités réservées sont **libérées** (aucun débit) et le projet passe en statut `failed` avec l'erreur réelle affichée.
 
 ---
 

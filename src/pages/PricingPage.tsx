@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AuraLogo } from '../components/brand/AuraLogo';
 import { useAura } from '../context/AuraContext';
+import { useAuraMarketingMotion } from '../components/landing/useAuraMarketingMotion';
 import { AURA_PLANS, PlanDefinition, PlanId } from '../shared/plans';
 
 type Currency = 'XOF' | 'EUR' | 'USD';
@@ -10,6 +11,7 @@ type ProfileType = 'starter' | 'creator' | 'team';
 
 export const PricingPage: React.FC = () => {
   const { user, authenticatedUser, isAuthenticated, theme, toggleTheme } = useAura();
+  const motionScope = useAuraMarketingMotion<HTMLDivElement>();
 
   const [billingCycle, setBillingCycle] = useState<BillingInterval>('monthly');
   const [currency, setCurrency] = useState<Currency>('XOF');
@@ -168,7 +170,7 @@ export const PricingPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#FAF8F2] dark:bg-[#0E1618] text-[#14282D] dark:text-[#F3F2EC] flex flex-col font-sans transition-colors selection:bg-[#078348]/20">
+    <div ref={motionScope} className="min-h-screen bg-[#FAF8F2] dark:bg-[#0E1618] text-[#14282D] dark:text-[#F3F2EC] flex flex-col font-sans transition-colors selection:bg-[#078348]/20">
       {/* =====================================================================
           1. TOP NAVIGATION BAR
       ===================================================================== */}
@@ -242,19 +244,19 @@ export const PricingPage: React.FC = () => {
           2. HERO SECTION — CLEAR, STATELY & TRANSPARENT
       ===================================================================== */}
       <section className="relative py-12 sm:py-16 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto text-center space-y-5">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#EAF2E2] dark:bg-[#182E24] border border-[#078348]/25 text-xs font-bold text-[#078348] dark:text-[#8CCB4A]">
+        <div data-hero-item className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#EAF2E2] dark:bg-[#182E24] border border-[#078348]/25 text-xs font-bold text-[#078348] dark:text-[#8CCB4A]">
           <span className="w-2 h-2 rounded-full bg-[#078348] animate-pulse" />
           <span>Grille Tarifaire Transparente &amp; Freemium Équitable</span>
         </div>
 
-        <h1 className="font-display font-extrabold text-3xl sm:text-5xl lg:text-6xl text-[#14282D] dark:text-[#F3F2EC] tracking-tight leading-[1.1]">
+        <h1 data-hero-item className="font-display font-extrabold text-3xl sm:text-5xl lg:text-6xl text-[#14282D] dark:text-[#F3F2EC] tracking-tight leading-[1.1]">
           Des quotas clairs pour créer librement.{' '}
           <span className="block mt-2 bg-gradient-to-r from-[#078348] via-[#8CCB4A] to-[#FF790D] bg-clip-text text-transparent">
             Évoluez sans surprise selon vos besoins.
           </span>
         </h1>
 
-        <p className="text-sm sm:text-base text-[#5A6562] dark:text-[#94A09E] max-w-2xl mx-auto leading-relaxed">
+        <p data-hero-item className="text-sm sm:text-base text-[#5A6562] dark:text-[#94A09E] max-w-2xl mx-auto leading-relaxed">
           Démarrez gratuitement avec l’offre <strong>Aura Free</strong> sans carte bancaire. Vos quotas d’unités IA se renouvellent automatiquement chaque 1er du mois.
         </p>
 
@@ -312,7 +314,7 @@ export const PricingPage: React.FC = () => {
       {/* =====================================================================
           3. INTERACTIVE PROFILE SELECTOR ("Quelle offre est faite pour vous ?")
       ===================================================================== */}
-      <section className="max-w-4xl mx-auto px-4 sm:px-6 mb-10 w-full">
+      <section data-reveal className="max-w-4xl mx-auto px-4 sm:px-6 mb-10 w-full">
         <div className="p-4 sm:p-5 rounded-2xl bg-[#FFFDF9] dark:bg-[#152023] border border-[#EAE6DC] dark:border-[#243337] shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-left">
             <span className="text-[11px] font-bold uppercase tracking-wider text-[#078348] dark:text-[#8CCB4A]">
@@ -364,7 +366,7 @@ export const PricingPage: React.FC = () => {
       {/* =====================================================================
           4. THE 3 BALANCED PRICING CARDS
       ===================================================================== */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 w-full">
+      <section data-reveal className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 w-full">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 items-stretch">
           {/* ==================== CARD 1: AURA FREE ==================== */}
           <div

@@ -107,8 +107,8 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
     },
     {
       id: 'history',
-      path: '/app/library',
-      label: language === 'en' ? 'Library & History' : 'Bibliothèque',
+      path: '/app/history',
+      label: language === 'en' ? 'Library & History' : 'Historique',
       icon: 'fa-solid fa-clock-rotate-left',
       active: isHistoryActive,
     },
@@ -121,7 +121,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
     },
     {
       id: 'studio',
-      path: '/app?studio=1',
+      path: '/app/studio',
       label: 'Aura Studio',
       icon: 'fa-solid fa-table-cells-large',
       active: isStudioRoute,

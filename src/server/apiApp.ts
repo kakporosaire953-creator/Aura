@@ -3,7 +3,25 @@ import express, { Request, Response } from 'express';
 import { GoogleGenAI, GenerateVideosOperation } from '@google/genai';
 import { aiRegistry } from './ai/externalAdapters.ts';
 import { dataStore } from './dataStore.ts';
-import { SendMessagePayloadSchema, ChatMessage, UserProfile } from '../shared/types.ts';
+import {
+  SendMessagePayloadSchema,
+  ChatMessage,
+  UserProfile,
+  StudioCreateRequestSchema,
+  StudioIterateRequestSchema,
+  StudioProjectPatchSchema,
+  StudioSaveFilesRequestSchema,
+  VirtualStudioFile,
+} from '../shared/types.ts';
+import {
+  buildStudioCreationPrompt,
+  buildStudioIterationPrompt,
+  composePreviewHtml,
+  ensureIndexHtml,
+  extractStudioFiles,
+  validateStudioProject,
+} from './ai/studioGenerator.ts';
+import { createProjectZip } from './zip.ts';
 import { AURA_PLANS, classifyUsageCategory, PlanId } from '../shared/plans.ts';
 import { paymentGatewayService } from './billing/paymentAdapter.ts';
 
@@ -938,12 +956,40 @@ export function createApiApp() {
       res.status(400).json({ error: 'Adresse e-mail valide requise.' });
       return;
     }
+    const record = dataStore.addContactMessage({
+      kind: 'waitlist',
+      email: String(email),
+      message: String(note || 'Inscription liste d’attente Aura.'),
+      planId: planId ? String(planId) : undefined,
+    });
     res.json({
       success: true,
-      message: 'Votre intérêt a bien été pris en compte. Vous serez notifié prioritairement lors de l’ouverture officielle.',
-      email: String(email).trim().toLowerCase(),
-      planId: planId || 'plus',
-      registeredAt: new Date().toISOString(),
+      message: 'Votre intérêt a bien été enregistré. Vous serez notifié prioritairement lors de l’ouverture officielle.',
+      email: record.email,
+      planId: record.planId || 'plus',
+      registeredAt: record.createdAt,
+    });
+  });
+
+  app.post('/api/contact', (req, res) => {
+    const { name, email, subject, message } = req.body || {};
+    if (!email || !String(email).includes('@') || !message || String(message).trim().length < 10) {
+      res.status(400).json({
+        error: 'Une adresse e-mail valide et un message d’au moins 10 caractères sont requis.',
+      });
+      return;
+    }
+    const record = dataStore.addContactMessage({
+      kind: 'contact',
+      name: name ? String(name) : undefined,
+      email: String(email),
+      subject: subject ? String(subject) : undefined,
+      message: String(message),
+    });
+    res.json({
+      success: true,
+      message: 'Votre message a bien été enregistré. L’équipe Aura le traitera prochainement.',
+      receivedAt: record.createdAt,
     });
   });
 
@@ -1202,6 +1248,519 @@ export function createApiApp() {
       dailyLimit ? Number(dailyLimit) : undefined
     );
     res.json({ usage });
+  });
+
+  // --- API: Aura Studio (Projets de création persistés, versions, export) ---
+  app.get('/api/studio/projects', (req, res) => {
+    const user = getAuthenticatedUser(req);
+    if (!user) {
+      res.status(401).json({ error: 'Non authentifié.' });
+      return;
+    }
+    const plan = dataStore.getUserPlan(user.id);
+    res.json({
+      projects: dataStore.getStudioProjectSummaries(user.id),
+      storage: {
+        used: dataStore.countStudioProjects(user.id),
+        limit: plan.limits.maxProjects,
+        planId: plan.id,
+      },
+    });
+  });
+
+  app.post('/api/studio/projects', async (req: Request, res: Response) => {
+    const user = getAuthenticatedUser(req);
+    if (!user) {
+      res.status(401).json({ error: 'Veuillez vous connecter pour créer avec Aura Studio.' });
+      return;
+    }
+
+    const parseResult = StudioCreateRequestSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      res.status(400).json({
+        error: 'Données de création invalides.',
+        details: parseResult.error.flatten(),
+      });
+      return;
+    }
+    const payload = parseResult.data;
+
+    // Contrôle de stockage côté serveur (jamais de confiance au frontend)
+    const plan = dataStore.getUserPlan(user.id);
+    if (dataStore.countStudioProjects(user.id) >= plan.limits.maxProjects) {
+      res.status(429).json({
+        error: `Limite de projets Studio atteinte (${plan.limits.maxProjects} sur l'offre ${plan.name}). Supprimez un projet ou passez à une offre supérieure.`,
+        code: 'STORAGE_LIMIT',
+      });
+      return;
+    }
+
+    const clientOpId =
+      (req.headers['x-client-request-id'] as string) ||
+      `studio-create-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+
+    const reservation = dataStore.reserveUsage(user.id, {
+      operationId: clientOpId,
+      category: 'studio_creation',
+      modelId: payload.modelId || 'aura-studio-architect',
+      providerId: payload.providerId || 'gemini',
+    });
+
+    if (!reservation.allowed) {
+      res.status(429).json({
+        error: reservation.reason || 'Quota mensuel de créations atteint.',
+        code: reservation.code || 'QUOTA_EXCEEDED',
+        usage: dataStore.getUsage(user.id),
+        renewalDate: reservation.renewalDate,
+      });
+      return;
+    }
+
+    const projectName =
+      (payload.name || '').trim() ||
+      (payload.idea.length > 48 ? `${payload.idea.slice(0, 48)}…` : payload.idea);
+
+    // Création d'un VRAI projet et d'une VRAIE exécution de génération, avant l'appel IA
+    const project = dataStore.createStudioProject(user.id, {
+      name: projectName,
+      description: payload.idea.slice(0, 600),
+      type: payload.type || 'site-web',
+      status: 'generating',
+    });
+
+    const run = dataStore.startStudioGenerationRun(user.id, project.id, {
+      kind: 'creation',
+      prompt: payload.idea,
+      modelId: payload.modelId || 'aura-studio-architect',
+      providerId: payload.providerId || 'gemini',
+    });
+
+    try {
+      const adapter = aiRegistry.getAdapter(payload.providerId, payload.modelId);
+      const prompt = buildStudioCreationPrompt({
+        idea: payload.idea,
+        name: projectName,
+        type: payload.type,
+        sections: payload.sections,
+        styleNotes: payload.styleNotes,
+        language: user.preferences?.language || 'fr',
+      });
+
+      const aiResponse = await adapter.generateCompletion({
+        mode: 'code',
+        prompt,
+        history: [],
+        modelId: payload.modelId || 'aura-studio-architect',
+        language: user.preferences?.language || 'fr',
+      });
+
+      let files = extractStudioFiles(aiResponse.text);
+      if (files.length === 0 && aiResponse.codeArtifact?.files?.length) {
+        files = aiResponse.codeArtifact.files;
+      }
+      files = ensureIndexHtml(files);
+      const validation = validateStudioProject(files);
+      if (!validation.ok) {
+        throw new Error(`Résultat de génération invalide : ${validation.error}`);
+      }
+
+      const saved = dataStore.saveStudioProjectFiles(user.id, project.id, files, {
+        label: 'Génération initiale',
+        origin: 'generation',
+        generationRunId: run?.id,
+        status: 'ready',
+        lastBuildStatus: 'ok',
+      });
+      if (!saved) {
+        throw new Error('Impossible de persister les fichiers générés.');
+      }
+
+      dataStore.finishStudioGenerationRun(user.id, project.id, run!.id, {
+        status: 'succeeded',
+        versionId: saved.version.id,
+        modelId: aiResponse.modelId,
+        providerId: aiResponse.providerId,
+      });
+
+      const updatedUsage = reservation.reservationId
+        ? dataStore.commitUsage(reservation.reservationId, {
+            inputTokens: aiResponse.estimatedInputTokens,
+            outputTokens: aiResponse.estimatedOutputTokens,
+            mode: 'code',
+          })
+        : dataStore.getUsage(user.id);
+
+      res.json({
+        project: dataStore.getStudioProject(user.id, project.id),
+        usage: updatedUsage,
+      });
+    } catch (error: unknown) {
+      const errMessage =
+        error instanceof Error
+          ? error.message
+          : 'Erreur inattendue pendant la génération.';
+
+      if (reservation.reservationId) {
+        dataStore.releaseUsage(reservation.reservationId, errMessage);
+      }
+      if (run) {
+        dataStore.finishStudioGenerationRun(user.id, project.id, run.id, {
+          status: 'failed',
+          error: errMessage,
+        });
+      }
+      dataStore.updateStudioProject(user.id, project.id, {
+        status: 'failed',
+        lastBuildStatus: 'unknown',
+        lastBuildError: errMessage,
+      });
+
+      const isNotConfigured = errMessage.includes('PROVIDER_NOT_CONFIGURED');
+      res.status(isNotConfigured ? 503 : 500).json({
+        error: errMessage.replace('PROVIDER_NOT_CONFIGURED: ', ''),
+        code: isNotConfigured ? 'PROVIDER_NOT_CONFIGURED' : 'AI_PROVIDER_ERROR',
+        projectId: project.id,
+        usage: dataStore.getUsage(user.id),
+      });
+    }
+  });
+
+  app.get('/api/studio/projects/:id', (req, res) => {
+    const user = getAuthenticatedUser(req);
+    if (!user) {
+      res.status(401).json({ error: 'Non authentifié.' });
+      return;
+    }
+    const project = dataStore.getStudioProject(user.id, req.params.id);
+    if (!project) {
+      res.status(404).json({ error: 'Projet Studio introuvable.' });
+      return;
+    }
+    res.json({
+      project,
+      previewHtml: composePreviewHtml(project.files),
+    });
+  });
+
+  app.patch('/api/studio/projects/:id', (req, res) => {
+    const user = getAuthenticatedUser(req);
+    if (!user) {
+      res.status(401).json({ error: 'Non authentifié.' });
+      return;
+    }
+    const parseResult = StudioProjectPatchSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      res.status(400).json({ error: 'Mise à jour invalide.', details: parseResult.error.flatten() });
+      return;
+    }
+    const updated = dataStore.updateStudioProject(user.id, req.params.id, parseResult.data);
+    if (!updated) {
+      res.status(404).json({ error: 'Projet Studio introuvable.' });
+      return;
+    }
+    res.json({ project: updated });
+  });
+
+  app.delete('/api/studio/projects/:id', (req, res) => {
+    const user = getAuthenticatedUser(req);
+    if (!user) {
+      res.status(401).json({ error: 'Non authentifié.' });
+      return;
+    }
+    const deleted = dataStore.deleteStudioProject(user.id, req.params.id);
+    if (!deleted) {
+      res.status(404).json({ error: 'Projet Studio introuvable.' });
+      return;
+    }
+    res.json({ deleted: true });
+  });
+
+  app.post('/api/studio/projects/:id/duplicate', (req, res) => {
+    const user = getAuthenticatedUser(req);
+    if (!user) {
+      res.status(401).json({ error: 'Non authentifié.' });
+      return;
+    }
+    const plan = dataStore.getUserPlan(user.id);
+    if (dataStore.countStudioProjects(user.id) >= plan.limits.maxProjects) {
+      res.status(429).json({
+        error: `Limite de projets Studio atteinte (${plan.limits.maxProjects} sur l'offre ${plan.name}).`,
+        code: 'STORAGE_LIMIT',
+      });
+      return;
+    }
+    const copy = dataStore.duplicateStudioProject(user.id, req.params.id);
+    if (!copy) {
+      res.status(404).json({ error: 'Projet Studio introuvable.' });
+      return;
+    }
+    res.json({ project: copy });
+  });
+
+  app.put('/api/studio/projects/:id/files', (req, res) => {
+    const user = getAuthenticatedUser(req);
+    if (!user) {
+      res.status(401).json({ error: 'Non authentifié.' });
+      return;
+    }
+    const parseResult = StudioSaveFilesRequestSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      res.status(400).json({ error: 'Fichiers invalides.', details: parseResult.error.flatten() });
+      return;
+    }
+    const files = parseResult.data.files.map(
+      (f): VirtualStudioFile => ({
+        path: f.path,
+        language: f.language || f.path.split('.').pop() || 'text',
+        content: f.content,
+      })
+    );
+    const validation = validateStudioProject(files);
+    const saved = dataStore.saveStudioProjectFiles(user.id, req.params.id, files, {
+      label: parseResult.data.label,
+      origin: 'manual',
+      status: 'ready',
+      lastBuildStatus: validation.ok ? 'ok' : 'failed',
+      lastBuildError: validation.error,
+    });
+    if (!saved) {
+      res.status(404).json({ error: 'Projet Studio introuvable ou fichiers invalides.' });
+      return;
+    }
+    res.json({
+      project: saved.project,
+      version: saved.version,
+      build: validation,
+    });
+  });
+
+  app.post('/api/studio/projects/:id/iterate', async (req: Request, res: Response) => {
+    const user = getAuthenticatedUser(req);
+    if (!user) {
+      res.status(401).json({ error: 'Non authentifié.' });
+      return;
+    }
+    const parseResult = StudioIterateRequestSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      res.status(400).json({ error: 'Instruction invalide.', details: parseResult.error.flatten() });
+      return;
+    }
+    const project = dataStore.getStudioProject(user.id, req.params.id);
+    if (!project) {
+      res.status(404).json({ error: 'Projet Studio introuvable.' });
+      return;
+    }
+    if (project.files.length === 0) {
+      res.status(400).json({
+        error: 'Ce projet ne contient aucun fichier à modifier. Relancez une génération.',
+      });
+      return;
+    }
+
+    const clientOpId =
+      (req.headers['x-client-request-id'] as string) ||
+      `studio-iter-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+
+    const reservation = dataStore.reserveUsage(user.id, {
+      operationId: clientOpId,
+      category: 'studio_modification',
+      modelId: parseResult.data.modelId || 'aura-studio-architect',
+      providerId: parseResult.data.providerId || 'gemini',
+    });
+
+    if (!reservation.allowed) {
+      res.status(429).json({
+        error: reservation.reason || 'Quota mensuel de modifications atteint.',
+        code: reservation.code || 'QUOTA_EXCEEDED',
+        usage: dataStore.getUsage(user.id),
+        renewalDate: reservation.renewalDate,
+      });
+      return;
+    }
+
+    const run = dataStore.startStudioGenerationRun(user.id, project.id, {
+      kind: 'modification',
+      prompt: parseResult.data.instruction,
+      modelId: parseResult.data.modelId || 'aura-studio-architect',
+      providerId: parseResult.data.providerId || 'gemini',
+    });
+
+    try {
+      const adapter = aiRegistry.getAdapter(
+        parseResult.data.providerId,
+        parseResult.data.modelId
+      );
+      const prompt = buildStudioIterationPrompt({
+        instruction: parseResult.data.instruction,
+        files: project.files,
+        language: user.preferences?.language || 'fr',
+      });
+
+      const aiResponse = await adapter.generateCompletion({
+        mode: 'code',
+        prompt,
+        history: [],
+        modelId: parseResult.data.modelId || 'aura-studio-architect',
+        language: user.preferences?.language || 'fr',
+      });
+
+      let changedFiles = extractStudioFiles(aiResponse.text);
+      if (changedFiles.length === 0 && aiResponse.codeArtifact?.files?.length) {
+        changedFiles = aiResponse.codeArtifact.files;
+      }
+      if (changedFiles.length === 0) {
+        throw new Error('Aucun fichier modifié n’a été retourné par le modèle.');
+      }
+
+      // Fusion ciblée : seuls les fichiers renvoyés sont remplacés, le reste est préservé
+      const merged = new Map(project.files.map((f) => [f.path.toLowerCase(), f]));
+      for (const f of changedFiles) {
+        merged.set(f.path.toLowerCase(), f);
+      }
+      const files = ensureIndexHtml([...merged.values()]);
+
+      const validation = validateStudioProject(files);
+      const saved = dataStore.saveStudioProjectFiles(user.id, project.id, files, {
+        label: parseResult.data.instruction.slice(0, 140),
+        origin: 'iteration',
+        generationRunId: run?.id,
+        status: 'ready',
+        lastBuildStatus: validation.ok ? 'ok' : 'failed',
+        lastBuildError: validation.error,
+      });
+      if (!saved) {
+        throw new Error('Impossible de persister les fichiers modifiés.');
+      }
+
+      dataStore.finishStudioGenerationRun(user.id, project.id, run!.id, {
+        status: 'succeeded',
+        versionId: saved.version.id,
+        modelId: aiResponse.modelId,
+        providerId: aiResponse.providerId,
+      });
+
+      const updatedUsage = reservation.reservationId
+        ? dataStore.commitUsage(reservation.reservationId, {
+            inputTokens: aiResponse.estimatedInputTokens,
+            outputTokens: aiResponse.estimatedOutputTokens,
+            mode: 'code',
+          })
+        : dataStore.getUsage(user.id);
+
+      res.json({
+        project: saved.project,
+        version: saved.version,
+        previewHtml: composePreviewHtml(saved.project.files),
+        build: validation,
+        usage: updatedUsage,
+      });
+    } catch (error: unknown) {
+      const errMessage =
+        error instanceof Error ? error.message : 'Erreur pendant la modification.';
+      if (reservation.reservationId) {
+        dataStore.releaseUsage(reservation.reservationId, errMessage);
+      }
+      if (run) {
+        dataStore.finishStudioGenerationRun(user.id, project.id, run.id, {
+          status: 'failed',
+          error: errMessage,
+        });
+      }
+      const isNotConfigured = errMessage.includes('PROVIDER_NOT_CONFIGURED');
+      res.status(isNotConfigured ? 503 : 500).json({
+        error: errMessage.replace('PROVIDER_NOT_CONFIGURED: ', ''),
+        code: isNotConfigured ? 'PROVIDER_NOT_CONFIGURED' : 'AI_PROVIDER_ERROR',
+        usage: dataStore.getUsage(user.id),
+      });
+    }
+  });
+
+  app.post('/api/studio/projects/:id/versions/:versionId/restore', (req, res) => {
+    const user = getAuthenticatedUser(req);
+    if (!user) {
+      res.status(401).json({ error: 'Non authentifié.' });
+      return;
+    }
+    const restored = dataStore.restoreStudioProjectVersion(
+      user.id,
+      req.params.id,
+      req.params.versionId
+    );
+    if (!restored) {
+      res.status(404).json({ error: 'Projet ou version introuvable.' });
+      return;
+    }
+    res.json({
+      project: restored.project,
+      version: restored.version,
+      previewHtml: composePreviewHtml(restored.project.files),
+    });
+  });
+
+  app.get('/api/studio/projects/:id/preview', (req, res) => {
+    const user = getAuthenticatedUser(req);
+    if (!user) {
+      res.status(401).json({ error: 'Non authentifié.' });
+      return;
+    }
+    const project = dataStore.getStudioProject(user.id, req.params.id);
+    if (!project) {
+      res.status(404).json({ error: 'Projet Studio introuvable.' });
+      return;
+    }
+    res.json({ previewHtml: composePreviewHtml(project.files) });
+  });
+
+  app.post('/api/studio/projects/:id/build', (req, res) => {
+    const user = getAuthenticatedUser(req);
+    if (!user) {
+      res.status(401).json({ error: 'Non authentifié.' });
+      return;
+    }
+    const project = dataStore.getStudioProject(user.id, req.params.id);
+    if (!project) {
+      res.status(404).json({ error: 'Projet Studio introuvable.' });
+      return;
+    }
+    // Compilation honnête d'un projet statique : validation structurelle réelle
+    const validation = validateStudioProject(project.files);
+    const updated = dataStore.updateStudioProject(user.id, project.id, {
+      lastBuildStatus: validation.ok ? 'ok' : 'failed',
+      lastBuildError: validation.error,
+    });
+    res.json({ build: validation, project: updated });
+  });
+
+  app.get('/api/studio/projects/:id/export', (req, res) => {
+    const user = getAuthenticatedUser(req);
+    if (!user) {
+      res.status(401).json({ error: 'Non authentifié.' });
+      return;
+    }
+    const project = dataStore.getStudioProject(user.id, req.params.id);
+    if (!project) {
+      res.status(404).json({ error: 'Projet Studio introuvable.' });
+      return;
+    }
+    if (project.files.length === 0) {
+      res.status(400).json({ error: 'Ce projet ne contient aucun fichier à exporter.' });
+      return;
+    }
+    const zip = createProjectZip(project.files);
+    const safeName =
+      (project.name || 'projet-aura')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 60) || 'projet-aura';
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${safeName}.zip"`
+    );
+    res.send(zip);
   });
 
   return app;
