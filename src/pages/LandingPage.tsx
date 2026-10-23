@@ -18,6 +18,7 @@ import {
 import { AuraSculptureCanvas } from '../three/AuraSculptureCanvas';
 import { useRevealAll } from '../components/motion/useReveal';
 import { Tilt } from '../components/motion/Tilt';
+import { MagicEye } from '../components/motion/MagicEye';
 import { SiteNav, SiteFooter } from '../components/layout/SiteChrome';
 import { useT } from '../app/prefs';
 
@@ -560,6 +561,9 @@ export const LandingPage: React.FC = () => {
                       </linearGradient>
                     </defs>
                   </svg>
+                  {i === 1 && (
+                    <MagicEye className="etape-oeil" label={e.titre} />
+                  )}
                 </div>
               </article>
             ))}
