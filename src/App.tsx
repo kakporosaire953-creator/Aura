@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuraProvider, useAura } from './context/AuraContext';
 import { AuraIntelligenceCore } from './components/brand/AuraIntelligenceCore';
+import { AuraIntroLoader, shouldShowIntro } from './components/brand/AuraIntroLoader';
 import { LandingPage } from './pages/LandingPage';
 import { WorkspacePage } from './pages/WorkspacePage';
 import { LibraryPage } from './pages/LibraryPage';
@@ -78,8 +79,11 @@ const RequireAuthForOnboarding: React.FC<{ children: React.ReactNode }> = ({ chi
 };
 
 export default function App() {
+  const [showIntro] = React.useState(() => shouldShowIntro());
+
   return (
     <AuraProvider>
+      {showIntro && <AuraIntroLoader />}
       <BrowserRouter>
         <Routes>
           {/* Landing Page Publique */}

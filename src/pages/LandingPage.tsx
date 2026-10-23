@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { AuraLogo } from '../components/brand/AuraLogo';
+import { AuraThreeCanvas } from '../components/three/AuraThreeCanvas';
 import { useAura } from '../context/AuraContext';
 import { AuraMode } from '../shared/types';
 import {
@@ -554,6 +555,16 @@ export const LandingPage: React.FC = () => {
               filter: 'blur(32px)',
             }}
           />
+
+          {/* Sculpture Three.js — rubans Aura vivants derrière le visuel principal */}
+          <div className="absolute right-[2%] top-[6%] h-[320px] w-[320px] sm:right-[3%] sm:top-[4%] sm:h-[520px] sm:w-[520px] opacity-80 dark:opacity-50">
+            <AuraThreeCanvas
+              className="h-full w-full"
+              opacity={0.85}
+              interactive
+              hideOnMobile
+            />
+          </div>
 
           {/* Bottom-Left Sweeping Ribbon Wave */}
           <svg
