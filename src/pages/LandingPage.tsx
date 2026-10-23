@@ -12,6 +12,7 @@ import {
   StaggerReveal,
 } from '../components/landing/useScrollReveal';
 import { AuraGallerySection } from '../components/landing/AuraGallerySection';
+import { PromptToProductDemo } from '../components/landing/PromptToProductDemo';
 
 import fashionModelImg from '../assets/images/yourbrand_fashion_model_1791684477799.jpg';
 import avatarWoman1 from '../assets/images/avatar_user_woman_1_1791684488026.jpg';
@@ -1875,7 +1876,14 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* =====================================================================
-          5. AURA GALLERY — LES 8 CRÉATIONS (Placed right before the Final CTA)
+          5. PROMPT-TO-PRODUCT — DÉMO CINÉMATIQUE (séquence GSAP « comme une vidéo »)
+      ===================================================================== */}
+      <PromptToProductDemo
+        onTryInWorkspace={(prompt) => handleLaunchWithPrompt('code', prompt)}
+      />
+
+      {/* =====================================================================
+          6. AURA GALLERY — LES 8 CRÉATIONS (Placed right before the Final CTA)
       ===================================================================== */}
       <AuraGallerySection onSelectCreation={handleLaunchWithPrompt} />
 
