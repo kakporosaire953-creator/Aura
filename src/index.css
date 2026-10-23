@@ -753,115 +753,507 @@ button {
   border-radius: 999px;
 }
 
-/* ---------- Sculpture (section sombre) ---------- */
-.sculpture {
+/* ---------- Hero : rubans de fond + indices ---------- */
+.hero-traits {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.hero-traits svg {
+  position: absolute;
+  width: 120%;
+  height: auto;
+  opacity: 0.5;
+}
+
+.hero-traits svg:nth-child(1) {
+  top: -6%;
+  right: -30%;
+}
+
+.hero-traits svg:nth-child(2) {
+  bottom: -12%;
+  left: -32%;
+}
+
+.hero-mot {
+  display: inline-block;
+  will-change: transform;
+}
+
+.scroll-indices {
+  position: absolute;
+  bottom: 2.4rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  z-index: 5;
+  color: var(--encre-3);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+}
+
+.scroll-indices .trait {
+  width: 2px;
+  height: 52px;
+  border-radius: 2px;
+  background: linear-gradient(var(--vert), var(--or), var(--feu));
+  overflow: hidden;
+  position: relative;
+}
+
+.scroll-indices .trait::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: -40%;
+  width: 100%;
+  height: 40%;
+  background: var(--papier);
+  animation: goutte 1.8s var(--soie-lente) infinite;
+}
+
+@keyframes goutte {
+  0% {
+    top: -40%;
+  }
+  100% {
+    top: 110%;
+  }
+}
+
+/* ---------- Déclaration (mots accrochés au scroll) ---------- */
+.declaration {
+  position: relative;
+  padding: clamp(5.5rem, 12vw, 10.5rem) 0;
+  text-align: center;
+}
+
+.declaration-texte {
+  font-family: var(--font-titre);
+  font-weight: 400;
+  font-size: clamp(1.9rem, 4.6vw, 3.7rem);
+  line-height: 1.22;
+  letter-spacing: -0.02em;
+  max-width: 17em;
+  margin-inline: auto;
+}
+
+.declaration-texte .mot {
+  display: inline-block;
+  opacity: 0.13;
+  transition: opacity 0.35s ease;
+  will-change: opacity, transform;
+}
+
+.declaration-signature {
+  margin-top: 2.6rem;
+  justify-content: center;
+}
+
+/* ---------- Galerie Studio (piste horizontale) ---------- */
+.galerie-section {
+  position: relative;
   background: var(--encre);
   color: var(--papier);
   overflow: hidden;
+  padding: clamp(4.8rem, 9vw, 7.5rem) 0;
 }
 
-.sculpture::before {
+.galerie-section::before {
   content: '';
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(1100px 520px at 78% 18%, rgba(255, 121, 13, 0.16), transparent 60%),
-    radial-gradient(900px 520px at 16% 82%, rgba(67, 188, 44, 0.14), transparent 60%),
-    radial-gradient(700px 420px at 50% 50%, rgba(234, 203, 55, 0.1), transparent 65%);
+    radial-gradient(900px 420px at 85% 10%, rgba(255, 121, 13, 0.17), transparent 60%),
+    radial-gradient(760px 420px at 8% 88%, rgba(67, 188, 44, 0.15), transparent 60%),
+    radial-gradient(620px 360px at 50% 50%, rgba(234, 203, 55, 0.1), transparent 65%);
   pointer-events: none;
 }
 
-.sculpture .kicker {
+.galerie-section .kicker {
   color: var(--or);
 }
 
-.sculpture .kicker::before {
+.galerie-section .kicker::before {
   background: var(--ruban-inverse);
 }
 
-.sculpture-grille {
-  position: relative;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: clamp(2.8rem, 6vw, 5.5rem);
-  align-items: center;
-}
-
-.sculpture-figure {
+.galerie-entete {
   position: relative;
   display: flex;
-  justify-content: center;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.6rem;
 }
 
-.sculpture-figure img {
-  width: min(420px, 78%);
-  filter: drop-shadow(0 34px 70px rgba(255, 121, 13, 0.32))
-    drop-shadow(0 12px 30px rgba(234, 203, 55, 0.22));
-  animation: sculpture-flotter 11s var(--soie-lente) infinite alternate;
+.galerie-entete p {
+  max-width: 30em;
+  color: rgba(255, 253, 248, 0.72);
 }
 
-.sculpture-texte h2 {
-  margin: 1.3rem 0 1.6rem;
+.galerie-piste {
+  position: relative;
+  margin-top: clamp(2.6rem, 5vw, 3.8rem);
+  overflow: hidden;
 }
 
-.sculpture-texte p {
-  color: rgba(255, 253, 248, 0.74);
-  max-width: 33em;
+.galerie-track {
+  display: flex;
+  gap: clamp(1.2rem, 2.4vw, 1.9rem);
+  width: max-content;
+  padding: 0.4rem clamp(1.4rem, 4vw, 3.2rem);
+  will-change: transform;
 }
 
-.energies {
-  margin-top: 2.6rem;
+.galerie-carte {
+  width: clamp(300px, 30vw, 460px);
+  flex-shrink: 0;
+  border-radius: 24px;
+  background: rgba(255, 253, 248, 0.05);
+  border: 1px solid rgba(255, 253, 248, 0.11);
+  padding: 1.15rem 1.15rem 1.45rem;
+  transition: transform 0.7s var(--soie), background 0.5s ease, border-color 0.5s ease;
+}
+
+.galerie-carte:hover {
+  transform: translateY(-10px);
+  background: rgba(255, 253, 248, 0.09);
+  border-color: rgba(234, 203, 55, 0.4);
+}
+
+.carte-apercu {
+  aspect-ratio: 16 / 10.2;
+  border-radius: 15px;
+  overflow: hidden;
+  position: relative;
+  background: var(--ivoire);
+}
+
+.apercu-barre {
+  height: 11.5%;
+  min-height: 22px;
+  background: rgba(18, 33, 27, 0.06);
+  display: flex;
+  align-items: center;
+  gap: 4.5px;
+  padding: 0 10px;
+}
+
+.apercu-barre i {
+  width: 6.5px;
+  height: 6.5px;
+  border-radius: 50%;
+  background: rgba(18, 33, 27, 0.16);
+}
+
+.apercu-corps {
+  height: 88.5%;
+  padding: 6.5% 7%;
   display: flex;
   flex-direction: column;
-  gap: 1.15rem;
+  gap: 7%;
 }
 
-.energie {
+.apercu-hero {
+  height: 38%;
+  border-radius: 8px;
+  background: var(--apercu-grad, var(--ruban));
+  position: relative;
+  overflow: hidden;
+}
+
+.apercu-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 78% 30%, rgba(255, 255, 255, 0.55), transparent 46%);
+}
+
+.apercu-lignes {
   display: flex;
+  flex-direction: column;
+  gap: 8%;
+  flex: 1;
+}
+
+.apercu-lignes span {
+  height: 12%;
+  border-radius: 999px;
+  background: rgba(18, 33, 27, 0.1);
+}
+
+.apercu-lignes span:nth-child(1) {
+  width: 58%;
+}
+.apercu-lignes span:nth-child(2) {
+  width: 84%;
+}
+.apercu-lignes span:nth-child(3) {
+  width: 70%;
+}
+
+.apercu-bas {
+  display: flex;
+  gap: 5%;
+  height: 27%;
+}
+
+.apercu-bas i {
+  flex: 1;
+  border-radius: 8px;
+  background: var(--apercu-grad, var(--ruban));
+  opacity: 0.28;
+}
+
+.carte-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.15rem;
+}
+
+.carte-meta h3 {
+  font-family: var(--font-titre);
+  font-weight: 500;
+  font-size: 1.18rem;
+  letter-spacing: -0.01em;
+}
+
+.carte-demo {
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--encre);
+  background: var(--or);
+  padding: 0.45em 0.85em;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.carte-brief {
+  margin-top: 0.55rem;
+  font-size: 0.86rem;
+  color: rgba(255, 253, 248, 0.62);
+  line-height: 1.55;
+}
+
+.galerie-note {
+  position: relative;
+  margin-top: 2.2rem;
+  text-align: center;
+  font-size: 0.82rem;
+  color: rgba(255, 253, 248, 0.55);
+}
+
+/* ---------- Documentation ---------- */
+.docs {
+  background: var(--papier);
+  border-block: 1px solid var(--brume);
+}
+
+.docs-grille {
+  margin-top: clamp(2.8rem, 5.5vw, 4.2rem);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 1.15rem;
-  align-items: flex-start;
-  padding: 1.15rem 1.35rem;
-  border-radius: 18px;
-  background: rgba(255, 253, 248, 0.05);
-  border: 1px solid rgba(255, 253, 248, 0.1);
-  transition: background 0.5s ease, transform 0.5s var(--soie);
 }
 
-.energie:hover {
-  background: rgba(255, 253, 248, 0.09);
-  transform: translateX(8px);
+.doc-carte {
+  position: relative;
+  border-radius: 20px;
+  border: 1px solid var(--brume-2);
+  background: var(--ivoire);
+  padding: 1.75rem 1.65rem 1.85rem;
+  overflow: hidden;
+  transition: transform 0.6s var(--soie), box-shadow 0.6s var(--soie), border-color 0.4s ease;
 }
 
-.energie-tiret {
-  width: 5px;
-  height: 44px;
-  border-radius: 4px;
-  flex-shrink: 0;
-  margin-top: 2px;
+.doc-carte::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--ruban);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.7s var(--soie);
 }
 
-.energie:nth-child(1) .energie-tiret {
-  background: linear-gradient(var(--lime), var(--vert));
-}
-.energie:nth-child(2) .energie-tiret {
-  background: linear-gradient(var(--or-doux), var(--or));
-}
-.energie:nth-child(3) .energie-tiret {
-  background: linear-gradient(var(--feu), var(--feu-profond));
+.doc-carte:hover {
+  transform: translateY(-7px);
+  box-shadow: var(--ombre-douce);
+  border-color: var(--brume);
 }
 
-.energie strong {
-  display: block;
+.doc-carte:hover::before {
+  transform: scaleX(1);
+}
+
+.doc-num {
+  font-family: var(--font-titre);
+  font-style: italic;
+  font-size: 0.95rem;
+  color: var(--encre-3);
+}
+
+.doc-carte h3 {
+  margin: 0.65rem 0 0.55rem;
   font-family: var(--font-titre);
   font-weight: 550;
-  font-size: 1.16rem;
-  margin-bottom: 0.18rem;
+  font-size: 1.32rem;
+  letter-spacing: -0.012em;
 }
 
-.energie span {
-  color: rgba(255, 253, 248, 0.66);
+.doc-carte p {
+  font-size: 0.92rem;
+  color: var(--encre-3);
+  line-height: 1.65;
+}
+
+.doc-statut {
+  display: inline-flex;
+  margin-top: 1.15rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.42em 0.95em;
+  border-radius: 999px;
+  border: 1px solid var(--brume-2);
+  color: var(--encre-2);
+  background: var(--papier);
+}
+
+.doc-statut[data-etat='redaction'] {
+  border-color: rgba(67, 188, 44, 0.45);
+  color: var(--vert-profond);
+  background: rgba(165, 232, 56, 0.12);
+}
+
+/* ---------- Tarifs ---------- */
+.tarifs-grille {
+  margin-top: clamp(2.8rem, 5.5vw, 4.4rem);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.35rem;
+  align-items: stretch;
+}
+
+.plan {
+  position: relative;
+  border-radius: 24px;
+  border: 1px solid var(--brume-2);
+  background: var(--papier);
+  padding: 2.15rem 1.9rem 2.25rem;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.6s var(--soie), box-shadow 0.6s var(--soie);
+}
+
+.plan:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--ombre-douce);
+}
+
+.plan-vedette {
+  border: none;
+  background: var(--encre);
+  color: var(--papier);
+  box-shadow: var(--ombre-flottante);
+}
+
+.plan-vedette::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  border-radius: 24px 24px 0 0;
+  background: var(--ruban);
+}
+
+.plan-vedette .corps,
+.plan-vedette .plan-liste li {
+  color: rgba(255, 253, 248, 0.72);
+}
+
+.plan-nom {
+  font-family: var(--font-titre);
+  font-weight: 550;
+  font-size: 1.45rem;
+  letter-spacing: -0.015em;
+}
+
+.plan-prix {
+  margin: 1.05rem 0 0.35rem;
+  font-family: var(--font-titre);
+  font-size: clamp(2.15rem, 3.6vw, 2.85rem);
+  font-weight: 400;
+  letter-spacing: -0.025em;
+  line-height: 1;
+}
+
+.plan-prix small {
+  font-family: var(--font-texte);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  opacity: 0.62;
+  display: block;
+  margin-top: 0.5em;
+}
+
+.plan-liste {
+  list-style: none;
+  margin: 1.55rem 0 1.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.72rem;
+  flex: 1;
+}
+
+.plan-liste li {
+  display: flex;
+  gap: 0.72em;
+  align-items: flex-start;
   font-size: 0.93rem;
-  line-height: 1.6;
+  color: var(--encre-2);
+  line-height: 1.55;
+}
+
+.plan-liste li::before {
+  content: '';
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-top: 0.42em;
+  flex-shrink: 0;
+  background: var(--ruban);
+}
+
+.plan .btn {
+  width: 100%;
+}
+
+.tarifs-note {
+  margin-top: 2.15rem;
+  text-align: center;
+  font-size: 0.88rem;
+  color: var(--encre-3);
 }
 
 /* ---------- CTA final ---------- */
@@ -1412,8 +1804,14 @@ button {
     grid-template-columns: 1fr;
   }
 
-  .sculpture-figure {
-    order: -1;
+  .docs-grille {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .tarifs-grille {
+    grid-template-columns: 1fr;
+    max-width: 480px;
+    margin-inline: auto;
   }
 
   .auth {
@@ -1466,6 +1864,28 @@ button {
   .capacite {
     grid-template-columns: 1fr;
     gap: 0.7rem;
+  }
+
+  .docs-grille {
+    grid-template-columns: 1fr;
+  }
+
+  .galerie-carte {
+    width: min(78vw, 340px);
+  }
+
+  .galerie-piste {
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .galerie-carte {
+    scroll-snap-align: center;
+  }
+
+  .scroll-indices {
+    display: none;
   }
 
   .cta-actions .btn {
