@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { SiteNav, SiteFooter } from '../components/layout/SiteChrome';
 import { useSession, appelerAuth } from '../app/session';
@@ -16,6 +16,17 @@ export const EspacePage: React.FC = () => {
   const [objectif, setObjectif] = useState('');
   const [sauvegarde, setSauvegarde] = useState<'idle' | 'envoi' | 'fait' | 'erreur'>('idle');
   const [erreur, setErreur] = useState<string | null>(null);
+  const [modules, setModules] = useState<Record<string, string>>({});
+
+  // État réel des modules (jamais supposé).
+  useEffect(() => {
+    fetch('/api/status')
+      .then((r) => r.json())
+      .then((d: { features?: Record<string, string> }) => {
+        if (d.features) setModules(d.features);
+      })
+      .catch(() => setModules({}));
+  }, []);
 
   if (statut === 'chargement') {
     return (
@@ -165,14 +176,32 @@ export const EspacePage: React.FC = () => {
                 </span>
                 <Link to="/">{t.espace.sitePublic}</Link>
               </li>
-              {['Chat', 'Explore', 'Studio', 'Missions'].map((m) => (
-                <li key={m}>
-                  <span className="etat-attente">
-                    <i className="fa-solid fa-hammer" aria-hidden /> {t.espace.attente}
-                  </span>
-                  <span>{m}</span>
-                </li>
-              ))}
+              {['chat', 'explore', 'studio', 'missions'].map((m) => {
+                const etatModule = modules[m] ?? 'rebuilding';
+                return (
+                  <li key={m}>
+                    {etatModule === 'live' ? (
+                      <span className="etat-live">
+                        <i className="fa-solid fa-circle-check" aria-hidden /> {t.espace.dispo}
+                      </span>
+                    ) : etatModule === 'setup-required' ? (
+                      <span className="etat-attente">
+                        <i className="fa-solid fa-screwdriver-wrench" aria-hidden />{' '}
+                        {t.espace.aConfigurer}
+                      </span>
+                    ) : (
+                      <span className="etat-attente">
+                        <i className="fa-solid fa-hammer" aria-hidden /> {t.espace.attente}
+                      </span>
+                    )}
+                    {etatModule === 'live' && m === 'chat' ? (
+                      <Link to="/chat">Chat</Link>
+                    ) : (
+                      <span style={{ textTransform: 'capitalize' }}>{m}</span>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </section>
         </div>

@@ -19,15 +19,16 @@ import {
   type ComptePublic,
   type Utilisateur,
 } from './accounts';
+import { appelerGemini, validerMessages, ErreurModele } from './chat';
 
 const magasin = choisirMagasin();
 
 /* ── Limitation de débit mémoire (best-effort par instance) ── */
 const tentatives = new Map<string, number[]>();
-function tropDeTentatives(ip: string): boolean {
+function tropDeTentatives(ip: string, max = 25, fenetreMs = 10 * 60 * 1000): boolean {
   const maintenant = Date.now();
-  const fenetre = (tentatives.get(ip) ?? []).filter((t) => maintenant - t < 10 * 60 * 1000);
-  if (fenetre.length >= 25) {
+  const fenetre = (tentatives.get(ip) ?? []).filter((t) => maintenant - t < fenetreMs);
+  if (fenetre.length >= max) {
     tentatives.set(ip, fenetre);
     return true;
   }
@@ -77,6 +78,7 @@ export function createApiApp(): express.Router {
   // État réel du produit — jamais de fausse fonctionnalité.
   api.get('/status', (_req, res) => {
     const comptesActifs = magasin.mode !== 'indisponible';
+    const chatActif = Boolean(process.env.GEMINI_API_KEY);
     res.json({
       name: 'Aura',
       phase: 'renaissance',
@@ -86,12 +88,19 @@ export function createApiApp(): express.Router {
         intro: 'live',
         sculpture3d: 'live',
         accounts: comptesActifs ? 'live' : 'setup-required',
-        chat: 'rebuilding',
+        chat: chatActif ? 'live' : 'setup-required',
         explore: 'rebuilding',
         studio: 'rebuilding',
         missions: 'rebuilding',
       },
-      setup: comptesActifs ? undefined : { accounts: magasin.raison },
+      setup: {
+        ...(comptesActifs ? {} : { accounts: magasin.raison }),
+        ...(chatActif
+          ? {}
+          : {
+              chat: 'Chat non configuré sur cet environnement : ajoutez GEMINI_API_KEY (clé serveur uniquement). Modèle par défaut gemini-3.8-flash, surchargeable par AURA_MODELE.',
+            }),
+      },
     });
   });
 
@@ -233,6 +242,47 @@ export function createApiApp(): express.Router {
     reqAuth.compte.utilisateur = u;
     await magasin.ecrire(donnees);
     res.json({ compte: versPublic(u) });
+  });
+
+  /* ── Chat (modèle Gemini côté serveur) ── */
+  api.post('/chat', async (req, res) => {
+    const reqAuth = req as ReqAuth;
+    if (!reqAuth.compte) {
+      res.status(401).json({ error: 'non connecté', code: 'anonyme' });
+      return;
+    }
+    if (!process.env.GEMINI_API_KEY) {
+      res.status(503).json({
+        error:
+          'Chat non configuré sur cet environnement : la clé GEMINI_API_KEY manque côté serveur.',
+        code: 'chat-indisponible',
+      });
+      return;
+    }
+    const ip = reqAuth.compte.utilisateur.id || (req.ip ?? 'inconnu');
+    if (tropDeTentatives('chat:' + ip, 40, 5 * 60 * 1000)) {
+      res.status(429).json({ error: 'Trop de messages. Réessayez dans quelques minutes.', code: 'limite' });
+      return;
+    }
+
+    const corps = (req.body ?? {}) as { messages?: unknown; langue?: unknown };
+    const verif = validerMessages(corps.messages);
+    if (!verif.ok) {
+      res.status(400).json({ error: 'Conversation invalide.', code: 'validation' });
+      return;
+    }
+
+    try {
+      const langue = corps.langue === 'en' ? 'en' : 'fr';
+      const { texte, modele } = await appelerGemini(verif.messages, langue);
+      res.json({ reponse: texte, modele });
+    } catch (e) {
+      if (e instanceof ErreurModele) {
+        res.status(e.statut).json({ error: e.message, code: e.code });
+        return;
+      }
+      res.status(502).json({ error: 'Le modèle ne répond pas.', code: 'modele-indisponible' });
+    }
   });
 
   return api;

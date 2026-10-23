@@ -28,6 +28,9 @@ export const SiteNav: React.FC = () => {
         </Link>
         <ul className="nav-liens">
           <li>
+            <Link to="/chat">{t.nav.chat}</Link>
+          </li>
+          <li>
             {accueil ? <a href="#galerie">{t.nav.galerie}</a> : <Link to="/#galerie">{t.nav.galerie}</Link>}
           </li>
           <li>
