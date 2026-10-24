@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { SiteNav, SiteFooter } from '../components/layout/SiteChrome';
-import { WorkspaceNav } from '../components/layout/WorkspaceNav';
 import { useT } from '../app/prefs';
 import { MISSIONS_INITIALES, simulationActivee, type MissionSimulee } from '../app/simulation';
 
@@ -34,10 +32,7 @@ export const MissionsPage: React.FC = () => {
 
   return (
     <div className="module-page">
-      <SiteNav />
-      <WorkspaceNav />
-
-      <main className="module wrap">
+      <section className="module wrap">
         <header className="module-entete">
           <span className="kicker">{t.missions.kicker}</span>
           <h1 className="display-xl">
@@ -99,9 +94,8 @@ export const MissionsPage: React.FC = () => {
         </section>
 
         <p className="module-note">{t.missions.note}</p>
-      </main>
+      </section>
 
-      <SiteFooter />
     </div>
   );
 };

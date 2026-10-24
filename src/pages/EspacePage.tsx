@@ -1,267 +1,303 @@
-import React, { useEffect, useState } from 'react';
-import { Link, Navigate } from 'react-router-dom';
-import { SiteNav, SiteFooter } from '../components/layout/SiteChrome';
-import { WorkspaceNav } from '../components/layout/WorkspaceNav';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useSession, appelerAuth } from '../app/session';
-import { useT } from '../app/prefs';
-import { simulationActivee } from '../app/simulation';
+import { useT, usePrefs } from '../app/prefs';
+import { simulationActivee, RECENTS_DEMO, type RecentDemo } from '../app/simulation';
+import { listerFils, ilYATexte, type FilLocal } from '../app/historique';
+
+type ActionRapide = {
+  titre: string;
+  desc: string;
+  icone: string;
+  prompt: string;
+};
 
 /**
- * Espace personnel — accessible uniquement avec une session réelle.
- * Le premier lancement guidé (onboarding) enregistre un objectif
- * sur le compte. Les modules du moteur en reconstruction sont
- * annoncés comme tels, jamais simulés.
+ * Accueil du workspace — salutation, composeur, actions rapides,
+ * activité récente. Tout ce qui est simulé porte son badge ; le
+ * composeur mène au vrai chat (réponse simulée ou moteur réel).
  */
 export const EspacePage: React.FC = () => {
   const t = useT();
+  const { lang } = usePrefs();
   const { statut, compte, rafraichir, deconnecter } = useSession();
+  const navigate = useNavigate();
+  const sim = simulationActivee();
+
+  const [saisie, setSaisie] = useState('');
   const [objectif, setObjectif] = useState('');
   const [sauvegarde, setSauvegarde] = useState<'idle' | 'envoi' | 'fait' | 'erreur'>('idle');
   const [erreur, setErreur] = useState<string | null>(null);
-  const [modules, setModules] = useState<Record<string, string>>({});
+  const [fils, setFils] = useState<FilLocal[]>([]);
+  const [modele, setModele] = useState<string | null>(null);
 
-  // État réel des modules (jamais supposé).
+  // Historique local réel (cet appareil).
   useEffect(() => {
+    setFils(listerFils());
+  }, []);
+
+  // Nom du moteur réellement configuré (jamais supposé).
+  useEffect(() => {
+    if (sim) return;
     fetch('/api/status')
       .then((r) => r.json())
-      .then((d: { features?: Record<string, string> }) => {
-        if (d.features) setModules(d.features);
+      .then((d: { config?: { modele?: string } }) => {
+        setModele(d.config?.modele ?? null);
       })
-      .catch(() => setModules({}));
-  }, []);
+      .catch(() => setModele(null));
+  }, [sim]);
+
+  const actions: ActionRapide[] = useMemo(
+    () => [
+      {
+        titre: t.accueil.action1Titre,
+        desc: t.accueil.action1Desc,
+        icone: 'fa-wand-magic-sparkles',
+        prompt: t.accueil.action1Prompt,
+      },
+      {
+        titre: t.accueil.action2Titre,
+        desc: t.accueil.action2Desc,
+        icone: 'fa-file-lines',
+        prompt: t.accueil.action2Prompt,
+      },
+      {
+        titre: t.accueil.action3Titre,
+        desc: t.accueil.action3Desc,
+        icone: 'fa-code',
+        prompt: t.accueil.action3Prompt,
+      },
+      {
+        titre: t.accueil.action4Titre,
+        desc: t.accueil.action4Desc,
+        icone: 'fa-graduation-cap',
+        prompt: t.accueil.action4Prompt,
+      },
+    ],
+    [t],
+  );
 
   if (statut === 'chargement') {
     return (
-      <div className="espace">
-        <SiteNav />
-        <main className="section">
-          <div className="wrap">
-            <p className="corps" role="status">
-              {t.espace.chargement}
-            </p>
-          </div>
-        </main>
-        <SiteFooter />
+      <div className="accueil accueil-chargement">
+        <p className="corps" role="status">
+          {t.espace.chargement}
+        </p>
       </div>
     );
   }
-
-  if (statut === 'anonyme' || !compte) {
+  if (statut === 'anonyme' && !sim) {
     return <Navigate to="/login" replace />;
   }
 
-  const enregistrer = async (e: React.FormEvent) => {
+  const prenom = (compte?.nom ?? '').trim().split(' ')[0] || t.accueil.prenomDefaut;
+
+  const lancer = (texte: string) => {
+    const contenu = texte.trim();
+    if (!contenu) return;
+    navigate('/chat', { state: { promptInitial: contenu } });
+  };
+
+  const envoyerObjectif = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!objectif.trim() || sauvegarde === 'envoi') return;
     setSauvegarde('envoi');
     setErreur(null);
-    const res = await appelerAuth(
-      '/me/onboarding',
-      { fait: true, objectif: objectif || compte.onboarding.objectif || '' },
-      'PATCH',
-    );
-    if (res.ok && res.compte) {
+    const r = await appelerAuth('/me/onboarding', { fait: true, objectif: objectif.trim() });
+    if (r.ok) {
       setSauvegarde('fait');
       await rafraichir();
     } else {
       setSauvegarde('erreur');
-      setErreur(res.erreur ?? t.auth.errServeur);
+      setErreur(r.erreur ?? t.accueil.erreurGenerique);
     }
   };
 
+  // Activité récente : vrais fils locaux + démos badgées en simulation.
+  const recents: Array<{
+    genre: 'local' | 'demo';
+    id: string;
+    titre: string;
+    quand: string;
+    type: RecentDemo['type'];
+  }> = [
+    ...fils.slice(0, sim ? 2 : 4).map((f) => ({
+      genre: 'local' as const,
+      id: f.id,
+      titre: f.titre,
+      quand: ilYATexte(f.date, lang),
+      type: 'conversation' as const,
+    })),
+    ...(sim
+      ? RECENTS_DEMO.slice(0, 4 - Math.min(fils.length, 2)).map((r) => ({
+          genre: 'demo' as const,
+          id: r.titre,
+          titre: lang === 'en' ? r.titreEn : r.titre,
+          quand: lang === 'en' ? r.quandEn : r.quandFr,
+          type: r.type,
+        }))
+      : []),
+  ];
+  const typeLabel: Record<RecentDemo['type'], string> = {
+    conversation: t.accueil.typeConversation,
+    projet: t.accueil.typeProjet,
+    mission: t.accueil.typeMission,
+  };
+
   return (
-    <div className="espace">
-      <SiteNav />
-      <WorkspaceNav />
+    <div className="accueil">
+      {/* Filigrane de marque */}
+      <div className="accueil-filigrane" aria-hidden="true">
+        <span>{t.accueil.mot1}</span>
+        <span>{t.accueil.mot2}</span>
+        <span>{t.accueil.mot3}</span>
+      </div>
 
-      <header className="section espace-entete">
-        <div className="wrap">
-          <span className="kicker">{t.espace.kicker}</span>
-          <h1 className="display-xl">
-            {t.espace.titre1} <em className="italique-vif">{t.espace.titre2}</em>.
-          </h1>
-          <p className="sous-titre">{t.espace.sous}</p>
+      <section className="accueil-hero">
+        <div className="accueil-logo">
+          <img
+            src="/assets/aura-symbol.png"
+            alt="Aura"
+            width={148}
+            height={148}
+          />
         </div>
-      </header>
+        <h1 className="accueil-salut">
+          {t.accueil.bonjour} {prenom} !
+        </h1>
+        <p className="accueil-tagline">
+          {t.accueil.tagline1} <em className="italique-vif">{t.accueil.taglineAccent1}</em>{' '}
+          {t.accueil.tagline2} <em className="italique-vif accent2">{t.accueil.taglineAccent2}</em>
+        </p>
+        <p className="accueil-sous">{t.accueil.sousTitre}</p>
 
-      <main className="section espace-grille-section">
-        <div className="wrap espace-grille">
-          {/* ── Compte ── */}
-          <section className="espace-carte" aria-labelledby="espace-compte">
-            <h2 id="espace-compte" className="display-md">
-              {t.espace.carteCompte}
-            </h2>
-            <dl className="espace-liste">
-              <div>
-                <dt>{t.auth.email}</dt>
-                <dd>{compte.email}</dd>
-              </div>
-              <div>
-                <dt>{t.auth.nom}</dt>
-                <dd>{compte.nom || '—'}</dd>
-              </div>
-              <div>
-                <dt>{t.espace.membre}</dt>
-                <dd>{new Date(compte.cree).toLocaleDateString()}</dd>
-              </div>
-            </dl>
-            <button
-              type="button"
-              className="btn btn-ligne"
-              onClick={() => void deconnecter()}
-            >
-              <i className="fa-solid fa-right-from-bracket" aria-hidden />
-              <span>{t.espace.deconnecter}</span>
-            </button>
-          </section>
-
-          {/* ── Onboarding ── */}
-          <section className="espace-carte espace-onboarding" aria-labelledby="espace-onb">
-            <h2 id="espace-onb" className="display-md">
-              {compte.onboarding.fait ? t.espace.onbFaitTitre : t.espace.onbTitre}
-            </h2>
-            {compte.onboarding.fait ? (
-              <>
-                <p className="corps">
-                  {t.espace.onbObjectif} : <strong>{compte.onboarding.objectif || '—'}</strong>
-                </p>
-                <button
-                  type="button"
-                  className="btn btn-ligne"
-                  onClick={() => {
-                    setObjectif(compte.onboarding.objectif ?? '');
-                    void rafraichir();
-                    // repli du panneau vers le formulaire
-                    document.getElementById('onb-form')?.classList.remove('invisible');
-                    setSauvegarde('idle');
-                  }}
-                >
-                  <span>{t.espace.onbModifier}</span>
-                </button>
-                <form id="onb-form" className="invisible" onSubmit={enregistrer}>
-                  <ChampObjectif t={t} objectif={objectif} setObjectif={setObjectif} />
-                  <BoutonEnvoi t={t} etat={sauvegarde} />
-                </form>
-              </>
-            ) : (
-              <form id="onb-form" onSubmit={enregistrer}>
-                <p className="corps">{t.espace.onbSous}</p>
-                <ChampObjectif t={t} objectif={objectif} setObjectif={setObjectif} />
-                <BoutonEnvoi t={t} etat={sauvegarde} />
-              </form>
-            )}
-            {erreur && (
-              <p className="form-erreur" role="alert">
-                {erreur}
-              </p>
-            )}
-            {sauvegarde === 'fait' && !erreur && (
-              <p className="form-note" role="status">
-                {t.espace.onbEnregistre}
-              </p>
-            )}
-          </section>
-
-          {/* ── Les modules de l'espace de travail ── */}
-          <section className="espace-carte espace-modules" aria-labelledby="espace-modules">
-            <h2 id="espace-modules" className="display-md">
-              {t.espace.modulesTitre}
-            </h2>
-            <div className="modules-grille">
-              {t.modulesCartes.map((m, i) => {
-                const idModule = ['chat', 'explore', 'studio', 'missions'][i];
-                const href = ['/chat', '/explore', '/studio', '/missions'][i];
-                const etatModule = simulationActivee() ? 'demo' : (modules[idModule] ?? 'rebuilding');
-                const ouvrable = etatModule === 'demo' || etatModule === 'live';
-                return (
-                  <Link
-                    to={ouvrable ? href : '#'}
-                    className={`module-carte${ouvrable ? '' : ' inactif'}`}
-                    key={m.nom}
-                    aria-disabled={!ouvrable}
-                  >
-                    <i className={`fa-solid ${m.icone}`} aria-hidden />
-                    <span className="module-carte-nom">{m.nom}</span>
-                    <span className="module-carte-sous">{m.sous}</span>
-                    <span className="module-carte-etat">
-                      {etatModule === 'demo' ? (
-                        <>
-                          <i className="fa-solid fa-flask" aria-hidden /> {t.simulation.badge}
-                        </>
-                      ) : etatModule === 'live' ? (
-                        <>
-                          <i className="fa-solid fa-circle-check" aria-hidden /> {t.espace.dispo}
-                        </>
-                      ) : etatModule === 'setup-required' ? (
-                        <>
-                          <i className="fa-solid fa-screwdriver-wrench" aria-hidden />{' '}
-                          {t.espace.aConfigurer}
-                        </>
-                      ) : (
-                        <>
-                          <i className="fa-solid fa-hammer" aria-hidden /> {t.espace.attente}
-                        </>
-                      )}
-                    </span>
-                  </Link>
-                );
-              })}
+        {/* Composeur — mène au vrai chat */}
+        <form
+          className="accueil-composeur"
+          onSubmit={(e) => {
+            e.preventDefault();
+            lancer(saisie);
+          }}
+        >
+          <textarea
+            className="accueil-saisie"
+            rows={2}
+            placeholder={t.accueil.placeholder}
+            value={saisie}
+            onChange={(e) => setSaisie(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                lancer(saisie);
+              }
+            }}
+            aria-label={t.accueil.placeholder}
+          />
+          <div className="accueil-composeur-bas">
+            <span className="accueil-moteur" title={t.accueil.moteurTitre}>
+              <i className="fa-solid fa-bolt" />
+              {sim ? t.accueil.moteurSim : (modele ?? t.accueil.moteurNon)}
+            </span>
+            <div className="accueil-pastilles">
+              <Link to="/explore" className="accueil-pastille">
+                <i className="fa-solid fa-magnifying-glass" /> {t.accueil.chipRecherche}
+              </Link>
+              <button
+                type="button"
+                className="accueil-pastille"
+                onClick={() => setSaisie(t.accueil.action3Prompt)}
+              >
+                <i className="fa-solid fa-code" /> {t.accueil.chipCode}
+              </button>
+              <Link to="/missions" className="accueil-pastille">
+                <i className="fa-solid fa-list-check" /> {t.accueil.chipMissions}
+              </Link>
+              <button
+                type="submit"
+                className="accueil-envoi"
+                aria-label={t.accueil.envoyer}
+                disabled={!saisie.trim()}
+              >
+                <i className="fa-solid fa-arrow-right" />
+              </button>
             </div>
-            <ul className="espace-modules-liste">
-              <li>
-                <span className="etat-live">
-                  <i className="fa-solid fa-circle-check" aria-hidden /> {t.espace.dispo}
-                </span>
-                <Link to="/documentation">{t.espace.lienDocs}</Link>
-              </li>
-              <li>
-                <span className="etat-live">
-                  <i className="fa-solid fa-circle-check" aria-hidden /> {t.espace.dispo}
-                </span>
-                <Link to="/">{t.espace.sitePublic}</Link>
-              </li>
-            </ul>
-          </section>
-        </div>
-      </main>
+          </div>
+        </form>
+      </section>
 
-      <SiteFooter />
+      {/* Actions rapides */}
+      <section className="accueil-actions" aria-label={t.accueil.actionsTitre}>
+        {actions.map((a) => (
+          <button key={a.titre} type="button" className="accueil-action" onClick={() => setSaisie(a.prompt)}>
+            <span className="accueil-action-haut">
+              <i className={`fa-solid ${a.icone}`} />
+              <i className="fa-solid fa-arrow-right accueil-action-fleche" />
+            </span>
+            <strong>{a.titre}</strong>
+            <span>{a.desc}</span>
+          </button>
+        ))}
+      </section>
+
+      {/* Premier lancement guidé (réel) */}
+      {compte && !compte.onboarding.fait && (
+        <section className="accueil-onboarding">
+          <div>
+            <h2>{t.espace.onbTitre}</h2>
+            <p className="corps">{t.espace.onbSous}</p>
+          </div>
+          <form onSubmit={envoyerObjectif} className="accueil-onb-form">
+            <input
+              type="text"
+              className="champ"
+              placeholder={t.espace.onbObjectif}
+              value={objectif}
+              onChange={(e) => setObjectif(e.target.value)}
+              maxLength={160}
+            />
+            <button type="submit" className="btn-primaire" disabled={sauvegarde === 'envoi'}>
+              {sauvegarde === 'envoi' ? t.espace.onbEnvoi : t.espace.onbEnregistrer}
+            </button>
+          </form>
+          {erreur && <p className="form-erreur">{erreur}</p>}
+        </section>
+      )}
+
+      {/* Vos récents */}
+      <section className="accueil-recents">
+        <header className="accueil-recents-haut">
+          <h2>
+            <i className="fa-solid fa-clock" /> {t.accueil.recentsTitre}
+          </h2>
+          <Link to="/historique" className="accueil-voir-tout">
+            {t.accueil.voirTout} <i className="fa-solid fa-arrow-right" />
+          </Link>
+        </header>
+        {recents.length === 0 ? (
+          <p className="accueil-recents-vide">{t.accueil.recentsVides}</p>
+        ) : (
+          <div className="accueil-recents-liste">
+            {recents.map((r) => (
+              <Link key={r.genre + r.id} to="/historique" className="accueil-recent">
+                <span className="accueil-recent-icone">
+                  <i className="fa-solid fa-comment-dots" />
+                </span>
+                <span className="accueil-recent-texte">
+                  <strong>{r.titre}</strong>
+                  <em>
+                    {typeLabel[r.type]} · {r.quand}
+                  </em>
+                </span>
+                {r.genre === 'demo' && <span className="badge-sim">{t.simulation.badge}</span>}
+                <i className="fa-solid fa-chevron-right accueil-recent-fleche" />
+              </Link>
+            ))}
+          </div>
+        )}
+        {!sim && fils.length === 0 && (
+          <p className="module-note">{t.accueil.recentsNote}</p>
+        )}
+      </section>
     </div>
   );
 };
-
-const ChampObjectif: React.FC<{
-  t: ReturnType<typeof useT>;
-  objectif: string;
-  setObjectif: (v: string) => void;
-}> = ({ t, objectif, setObjectif }) => (
-  <fieldset className="espace-objectifs">
-    <legend className="form-groupe" style={{ border: 0, padding: 0 }}>
-      {t.espace.objectifLabel}
-    </legend>
-    <div className="espace-objectifs-liste">
-      {t.espace.objectifs.map((o) => (
-        <label key={o} className={objectif === o ? 'choisi' : ''}>
-          <input
-            type="radio"
-            name="objectif"
-            value={o}
-            checked={objectif === o}
-            onChange={() => setObjectif(o)}
-          />
-          <span>{o}</span>
-        </label>
-      ))}
-    </div>
-  </fieldset>
-);
-
-const BoutonEnvoi: React.FC<{ t: ReturnType<typeof useT>; etat: string }> = ({ t, etat }) => (
-  <button
-    type="submit"
-    className="btn btn-ruban"
-    disabled={etat === 'envoi'}
-    style={{ marginTop: '1.2rem' }}
-  >
-    <span>{etat === 'envoi' ? t.espace.onbEnvoi : t.espace.onbEnregistrer}</span>
-  </button>
-);

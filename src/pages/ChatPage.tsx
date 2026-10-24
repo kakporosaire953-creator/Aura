@@ -1,28 +1,39 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { SiteNav, SiteFooter } from '../components/layout/SiteChrome';
-import { WorkspaceNav } from '../components/layout/WorkspaceNav';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useSession } from '../app/session';
 import { useT, usePrefs } from '../app/prefs';
 import { simulationActivee, reponseSimulee } from '../app/simulation';
-
-type MessageChat = { role: 'user' | 'assistant'; content: string };
+import {
+  type MessageChat,
+  nouvelIdFil,
+  sauverFil,
+  filParId,
+} from '../app/historique';
 
 /**
  * Chat — conversation réelle avec le moteur Gemini côté serveur.
  * États honnêtes : connexion requise, configuration manquante,
- * erreurs du modèle affichées telles quelles. Jamais de réponse simulée.
+ * erreurs du modèle affichées telles quelles. En simulation, les
+ * réponses portent leur badge. Chaque échange est archivé dans
+ * l'historique local de l'appareil.
  */
 export const ChatPage: React.FC = () => {
   const t = useT();
   const { lang } = usePrefs();
   const { statut, compte } = useSession();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const etatNav = location.state as
+    | { promptInitial?: string; fil?: { id: string; titre: string; messages: MessageChat[] }; nouveau?: boolean }
+    | undefined;
   const [messages, setMessages] = useState<MessageChat[]>([]);
   const [saisie, setSaisie] = useState('');
   const [etat, setEtat] = useState<'idle' | 'envoi'>('idle');
   const [erreur, setErreur] = useState<string | null>(null);
   const [config, setConfig] = useState<'inconnu' | 'ok' | 'manquante'>('inconnu');
   const finRef = useRef<HTMLDivElement | null>(null);
+  const filIdRef = useRef<string>(nouvelIdFil());
+  const envoyerRef = useRef<(texte: string) => void>(() => {});
 
   // État réel du service de chat (clé serveur présente ou non).
   useEffect(() => {
@@ -38,6 +49,27 @@ export const ChatPage: React.FC = () => {
       .catch(() => setConfig('inconnu'));
   }, []);
 
+  // Arrivée avec un fil (historique), un prompt (accueil) ou « nouveau ».
+  useEffect(() => {
+    if (etatNav?.fil) {
+      filIdRef.current = etatNav.fil.id;
+      setMessages(etatNav.fil.messages);
+      return;
+    }
+    if (etatNav?.nouveau) {
+      filIdRef.current = nouvelIdFil();
+      setMessages([]);
+      navigate(location.pathname, { replace: true, state: null });
+      return;
+    }
+    if (etatNav?.promptInitial) {
+      const prompt = etatNav.promptInitial;
+      navigate(location.pathname, { replace: true, state: null });
+      envoyerRef.current(prompt);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.key]);
+
   useEffect(() => {
     finRef.current?.scrollIntoView({ block: 'nearest' });
   }, [messages, etat]);
@@ -51,10 +83,21 @@ export const ChatPage: React.FC = () => {
     setMessages(suite);
     setEtat('envoi');
 
+    const archiver = (liste: MessageChat[]) => {
+      if (liste.some((m) => m.role === 'assistant')) {
+        sauverFil(filIdRef.current, liste);
+      }
+    };
+
     // Mode simulation : réponse de démonstration, étiquetée comme telle.
     if (simulationActivee()) {
       await new Promise((r) => setTimeout(r, 700));
-      setMessages((m) => [...m, { role: 'assistant', content: reponseSimulee(m.length, lang) }]);
+      const reponse = reponseSimulee(suite.length, lang);
+      setMessages((m) => {
+        const maj = [...m, { role: 'assistant', content: reponse } as MessageChat];
+        archiver(maj);
+        return maj;
+      });
       setEtat('idle');
       return;
     }
@@ -72,7 +115,11 @@ export const ChatPage: React.FC = () => {
         code?: string;
       };
       if (r.ok && d.reponse) {
-        setMessages((m) => [...m, { role: 'assistant', content: d.reponse! }]);
+        setMessages((m) => {
+          const maj = [...m, { role: 'assistant', content: d.reponse! } as MessageChat];
+          archiver(maj);
+          return maj;
+        });
       } else {
         setErreur(
           d.code === 'chat-indisponible'
@@ -86,13 +133,11 @@ export const ChatPage: React.FC = () => {
       setEtat('idle');
     }
   };
+  envoyerRef.current = envoyer;
 
   return (
     <div className="chat-page">
-      <SiteNav />
-      <WorkspaceNav />
-
-      <main className="chat">
+      <section className="chat">
         <header className="chat-entete">
           <span className="kicker">{t.chat.kicker}</span>
           <h1 className="display-lg">
@@ -108,7 +153,7 @@ export const ChatPage: React.FC = () => {
           </div>
         )}
 
-        {statut === 'anonyme' ? (
+        {statut === 'anonyme' && !simulationActivee() ? (
           <div className="chat-connexion">
             <p className="corps">{t.chat.connexionSous}</p>
             <Link to="/login" className="btn btn-ruban">
@@ -192,9 +237,7 @@ export const ChatPage: React.FC = () => {
             {t.chat.connecte} <strong>{compte?.email}</strong>
           </p>
         )}
-      </main>
-
-      <SiteFooter />
+      </section>
     </div>
   );
 };

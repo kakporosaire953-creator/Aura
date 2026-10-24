@@ -194,11 +194,29 @@ export interface Content {
     badge: string;
   };
   workspace: {
+    accueil: string;
     espace: string;
     chat: string;
+    nouveauChat: string;
+    historique: string;
     explore: string;
     studio: string;
     missions: string;
+    parametres: string;
+    menu: string;
+    fermer: string;
+    replier: string;
+    planGratuit: string;
+    notifications: string;
+    aucuneNotif: string;
+    deconnexion: string;
+    seConnecter: string;
+    nonConnecte: string;
+    plus: string;
+    plusSous: string;
+    plusBtn: string;
+    modeClair: string;
+    modeSombre: string;
   };
   modulesCartes: Array<{ nom: string; sous: string; icone: string }>;
   explore: {
@@ -243,6 +261,86 @@ export interface Content {
     colonnes: string[];
     vide: string;
     note: string;
+  };
+  accueil: {
+    bonjour: string;
+    prenomDefaut: string;
+    tagline1: string;
+    taglineAccent1: string;
+    tagline2: string;
+    taglineAccent2: string;
+    sousTitre: string;
+    placeholder: string;
+    envoyer: string;
+    moteurTitre: string;
+    moteurSim: string;
+    moteurNon: string;
+    chipRecherche: string;
+    chipCode: string;
+    chipMissions: string;
+    actionsTitre: string;
+    action1Titre: string;
+    action1Desc: string;
+    action1Prompt: string;
+    action2Titre: string;
+    action2Desc: string;
+    action2Prompt: string;
+    action3Titre: string;
+    action3Desc: string;
+    action3Prompt: string;
+    action4Titre: string;
+    action4Desc: string;
+    action4Prompt: string;
+    recentsTitre: string;
+    voirTout: string;
+    recentsVides: string;
+    recentsNote: string;
+    typeConversation: string;
+    typeProjet: string;
+    typeMission: string;
+    mot1: string;
+    mot2: string;
+    mot3: string;
+    erreurGenerique: string;
+  };
+  historique: {
+    kicker: string;
+    titre1: string;
+    titre2: string;
+    sous: string;
+    recherchePlaceholder: string;
+    sectionDemo: string;
+    sectionLocal: string;
+    vide: string;
+    ouvrir: string;
+    supprimer: string;
+    messages: string;
+    note: string;
+  };
+  parametres: {
+    kicker: string;
+    titre1: string;
+    titre2: string;
+    sous: string;
+    compte: string;
+    compteNom: string;
+    compteEmail: string;
+    apparence: string;
+    themeLabel: string;
+    themeClair: string;
+    themeSombre: string;
+    langue: string;
+    simulation: string;
+    simulationSous: string;
+    simulationEtat: string;
+    simActive: string;
+    simInactive: string;
+    session: string;
+    deconnexion: string;
+    aPropos: string;
+    aProposTexte: string;
+    docs: string;
+    tarifs: string;
   };
   oops: {
     kicker: string;
@@ -677,11 +775,29 @@ const contentFr: Content = {
     badge: 'Simulé',
   },
   workspace: {
+    accueil: 'Accueil',
     espace: 'Espace',
     chat: 'Chat',
+    nouveauChat: 'Nouveau chat',
+    historique: 'Historique',
     explore: 'Explore',
     studio: 'Studio',
     missions: 'Missions',
+    parametres: 'Paramètres',
+    menu: 'Menu',
+    fermer: 'Fermer',
+    replier: 'Réduire la barre latérale',
+    planGratuit: 'Plan gratuit',
+    notifications: 'Notifications',
+    aucuneNotif: 'Aucune notification pour l’instant.',
+    deconnexion: 'Se déconnecter',
+    seConnecter: 'Se connecter',
+    nonConnecte: 'Non connecté',
+    plus: 'Passez à Aura Plus',
+    plusSous: 'Plus de puissance, plus de possibilités.',
+    plusBtn: 'Découvrir',
+    modeClair: 'Mode clair',
+    modeSombre: 'Mode sombre',
   },
   modulesCartes: [
     {
@@ -753,6 +869,92 @@ const contentFr: Content = {
     vide: 'Rien pour l’instant.',
     note:
       'Interface de démonstration : le tableau est local à votre navigateur. La synchronisation réelle arrivera avec les missions du moteur.',
+  },
+  accueil: {
+    bonjour: 'Bonjour',
+    prenomDefaut: 'à vous',
+    tagline1: 'De',
+    taglineAccent1: 'l’idée',
+    tagline2: 'au',
+    taglineAccent2: 'résultat.',
+    sousTitre:
+      'Je suis Aura, ton assistant IA polyvalent. Je peux t’aider à réfléchir, rechercher, créer, coder et bien plus encore.',
+    placeholder: 'Pose-moi une question, demande une création, ou lance une mission…',
+    envoyer: 'Envoyer',
+    moteurTitre: 'Moteur de conversation',
+    moteurSim: 'Mode simulation',
+    moteurNon: 'Moteur non configuré',
+    chipRecherche: 'Recherche',
+    chipCode: 'Code',
+    chipMissions: 'Missions',
+    actionsTitre: 'Actions rapides',
+    action1Titre: 'Créer un site web',
+    action1Desc: 'Un site moderne et responsive pour mon projet.',
+    action1Prompt: 'Aide-moi à créer un site web moderne et responsive pour mon projet : ',
+    action2Titre: 'Analyser un document',
+    action2Desc: 'Résume et extrait les infos importantes.',
+    action2Prompt: 'Analyse ce document et résume les informations importantes : ',
+    action3Titre: 'M’aider à coder',
+    action3Desc: 'Corrige, explique ou génère du code.',
+    action3Prompt: 'Aide-moi à coder : ',
+    action4Titre: 'M’aider à apprendre',
+    action4Desc: 'Une explication claire sur un sujet.',
+    action4Prompt: 'Explique-moi clairement ce sujet : ',
+    recentsTitre: 'Vos récents',
+    voirTout: 'Voir tout',
+    recentsVides: 'Aucune activité pour l’instant — démarrez une conversation.',
+    recentsNote:
+      'Vos conversations réelles apparaîtront ici, conservées sur cet appareil.',
+    typeConversation: 'Conversation',
+    typeProjet: 'Projet',
+    typeMission: 'Mission',
+    mot1: 'PLUS D’IDÉES',
+    mot2: 'PLUS D’ACTION',
+    mot3: 'PLUS D’AURA',
+    erreurGenerique: 'Une erreur est survenue. Réessayez.',
+  },
+  historique: {
+    kicker: 'Historique',
+    titre1: 'Le fil',
+    titre2: 'de vos idées',
+    sous:
+      'Retrouvez vos conversations passées — conservées sur cet appareil, prêtes à être reprises.',
+    recherchePlaceholder: 'Rechercher dans l’historique…',
+    sectionDemo: 'Conversations de démonstration',
+    sectionLocal: 'Sur cet appareil',
+    vide: 'Aucune conversation pour l’instant.',
+    ouvrir: 'Reprendre',
+    supprimer: 'Supprimer',
+    messages: 'messages',
+    note:
+      'Historique local : rien n’est envoyé sur un serveur. La synchronisation des comptes arrivera avec le stockage cloud.',
+  },
+  parametres: {
+    kicker: 'Paramètres',
+    titre1: 'À votre',
+    titre2: 'mesure',
+    sous: 'Langue, thème, simulation : tout ce qui règle vraiment l’application.',
+    compte: 'Compte',
+    compteNom: 'Nom',
+    compteEmail: 'E-mail',
+    apparence: 'Apparence',
+    themeLabel: 'Thème',
+    themeClair: 'Clair',
+    themeSombre: 'Sombre',
+    langue: 'Langue',
+    simulation: 'Simulation',
+    simulationSous:
+      'Le mode simulation montre les interfaces avec des données locales. Rien de simulé n’est présenté comme réel.',
+    simulationEtat: 'État',
+    simActive: 'Simulation active',
+    simInactive: 'Simulation désactivée',
+    session: 'Session',
+    deconnexion: 'Se déconnecter',
+    aPropos: 'À propos',
+    aProposTexte:
+      'AURA — De l’idée au résultat. Les tarifs seront annoncés bientôt, sans engagement avant leur publication.',
+    docs: 'Documentation',
+    tarifs: 'Tarifs',
   },
   oops: {
     kicker: 'Perdu dans les rubans',
@@ -1116,11 +1318,29 @@ const contentEn: Content = {
     badge: 'Simulated',
   },
   workspace: {
+    accueil: 'Home',
     espace: 'Space',
     chat: 'Chat',
+    nouveauChat: 'New chat',
+    historique: 'History',
     explore: 'Explore',
     studio: 'Studio',
     missions: 'Missions',
+    parametres: 'Settings',
+    menu: 'Menu',
+    fermer: 'Close',
+    replier: 'Collapse sidebar',
+    planGratuit: 'Free plan',
+    notifications: 'Notifications',
+    aucuneNotif: 'No notifications yet.',
+    deconnexion: 'Sign out',
+    seConnecter: 'Sign in',
+    nonConnecte: 'Not signed in',
+    plus: 'Upgrade to Aura Plus',
+    plusSous: 'More power, more possibilities.',
+    plusBtn: 'Discover',
+    modeClair: 'Light mode',
+    modeSombre: 'Dark mode',
   },
   modulesCartes: [
     {
@@ -1192,6 +1412,90 @@ const contentEn: Content = {
     vide: 'Nothing for now.',
     note:
       'Demo interface: the board is local to your browser. Real sync will arrive with the engine missions.',
+  },
+  accueil: {
+    bonjour: 'Hello',
+    prenomDefaut: 'there',
+    tagline1: 'From',
+    taglineAccent1: 'idea',
+    tagline2: 'to',
+    taglineAccent2: 'result.',
+    sousTitre:
+      'I’m Aura, your versatile AI assistant. I can help you think, research, create, code and much more.',
+    placeholder: 'Ask me a question, request a creation, or start a mission…',
+    envoyer: 'Send',
+    moteurTitre: 'Conversation engine',
+    moteurSim: 'Simulation mode',
+    moteurNon: 'Engine not configured',
+    chipRecherche: 'Research',
+    chipCode: 'Code',
+    chipMissions: 'Missions',
+    actionsTitre: 'Quick actions',
+    action1Titre: 'Create a website',
+    action1Desc: 'A modern, responsive site for my project.',
+    action1Prompt: 'Help me create a modern, responsive website for my project: ',
+    action2Titre: 'Analyze a document',
+    action2Desc: 'Summarize and extract key information.',
+    action2Prompt: 'Analyze this document and summarize the key information: ',
+    action3Titre: 'Help me code',
+    action3Desc: 'Fix, explain or generate code.',
+    action3Prompt: 'Help me code: ',
+    action4Titre: 'Help me learn',
+    action4Desc: 'A clear explanation of any topic.',
+    action4Prompt: 'Explain this topic clearly: ',
+    recentsTitre: 'Your recents',
+    voirTout: 'See all',
+    recentsVides: 'No activity yet — start a conversation.',
+    recentsNote: 'Your real conversations will appear here, kept on this device.',
+    typeConversation: 'Conversation',
+    typeProjet: 'Project',
+    typeMission: 'Mission',
+    mot1: 'MORE IDEAS',
+    mot2: 'MORE ACTION',
+    mot3: 'MORE AURA',
+    erreurGenerique: 'Something went wrong. Please try again.',
+  },
+  historique: {
+    kicker: 'History',
+    titre1: 'The thread',
+    titre2: 'of your ideas',
+    sous: 'Find your past conversations — kept on this device, ready to resume.',
+    recherchePlaceholder: 'Search history…',
+    sectionDemo: 'Demo conversations',
+    sectionLocal: 'On this device',
+    vide: 'No conversations yet.',
+    ouvrir: 'Resume',
+    supprimer: 'Delete',
+    messages: 'messages',
+    note:
+      'Local history: nothing is sent to a server. Account sync will arrive with cloud storage.',
+  },
+  parametres: {
+    kicker: 'Settings',
+    titre1: 'Made',
+    titre2: 'for you',
+    sous: 'Language, theme, simulation: everything that truly configures the app.',
+    compte: 'Account',
+    compteNom: 'Name',
+    compteEmail: 'Email',
+    apparence: 'Appearance',
+    themeLabel: 'Theme',
+    themeClair: 'Light',
+    themeSombre: 'Dark',
+    langue: 'Language',
+    simulation: 'Simulation',
+    simulationSous:
+      'Simulation mode shows the interfaces with local data. Nothing simulated is presented as real.',
+    simulationEtat: 'State',
+    simActive: 'Simulation on',
+    simInactive: 'Simulation off',
+    session: 'Session',
+    deconnexion: 'Sign out',
+    aPropos: 'About',
+    aProposTexte:
+      'AURA — From idea to result. Pricing will be announced soon, with no commitment before publication.',
+    docs: 'Documentation',
+    tarifs: 'Pricing',
   },
   oops: {
     kicker: 'Lost in the ribbons',
