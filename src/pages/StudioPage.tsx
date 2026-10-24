@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { SiteNav, SiteFooter } from '../components/layout/SiteChrome';
-import { WorkspaceNav } from '../components/layout/WorkspaceNav';
 import { useT } from '../app/prefs';
 import { simulationActivee } from '../app/simulation';
 
@@ -46,10 +44,7 @@ export const StudioPage: React.FC = () => {
 
   return (
     <div className="module-page">
-      <SiteNav />
-      <WorkspaceNav />
-
-      <main className="module wrap">
+      <section className="module wrap">
         <header className="module-entete">
           <span className="kicker">{t.studio.kicker}</span>
           <h1 className="display-xl">
@@ -139,9 +134,8 @@ export const StudioPage: React.FC = () => {
         )}
 
         <p className="module-note">{t.studio.note}</p>
-      </main>
+      </section>
 
-      <SiteFooter />
     </div>
   );
 };

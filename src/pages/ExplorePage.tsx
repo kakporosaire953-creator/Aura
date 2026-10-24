@@ -1,6 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import { SiteNav, SiteFooter } from '../components/layout/SiteChrome';
-import { WorkspaceNav } from '../components/layout/WorkspaceNav';
 import { useT } from '../app/prefs';
 import { RESULTATS_EXPLORE, simulationActivee } from '../app/simulation';
 
@@ -30,10 +28,7 @@ export const ExplorePage: React.FC = () => {
 
   return (
     <div className="module-page">
-      <SiteNav />
-      <WorkspaceNav />
-
-      <main className="module wrap">
+      <section className="module wrap">
         <header className="module-entete">
           <span className="kicker">{t.explore.kicker}</span>
           <h1 className="display-xl">
@@ -107,9 +102,8 @@ export const ExplorePage: React.FC = () => {
         </section>
 
         <p className="module-note">{t.explore.note}</p>
-      </main>
+      </section>
 
-      <SiteFooter />
     </div>
   );
 };

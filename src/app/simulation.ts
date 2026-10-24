@@ -256,3 +256,86 @@ export const MISSIONS_INITIALES: MissionSimulee[] = [
     progression: 0,
   },
 ];
+
+// Récents de démonstration (affichés uniquement en simulation, badgés).
+export type RecentDemo = {
+  titre: string;
+  titreEn: string;
+  type: 'conversation' | 'projet' | 'mission';
+  quandFr: string;
+  quandEn: string;
+  enCours?: boolean;
+};
+
+export const RECENTS_DEMO: RecentDemo[] = [
+  {
+    titre: 'Site vitrine E-commerce',
+    titreEn: 'E-commerce showcase site',
+    type: 'projet',
+    quandFr: 'il y a 2 jours',
+    quandEn: '2 days ago',
+  },
+  {
+    titre: "Analyse d'un document PDF",
+    titreEn: 'PDF document analysis',
+    type: 'conversation',
+    quandFr: 'il y a 3 jours',
+    quandEn: '3 days ago',
+  },
+  {
+    titre: 'Application mobile',
+    titreEn: 'Mobile application',
+    type: 'mission',
+    quandFr: 'En cours',
+    quandEn: 'In progress',
+    enCours: true,
+  },
+  {
+    titre: 'Stratégie marketing',
+    titreEn: 'Marketing strategy',
+    type: 'projet',
+    quandFr: 'il y a 5 jours',
+    quandEn: '5 days ago',
+  },
+];
+
+// Conversations de démonstration (onglet Historique, badgées).
+export type FilDemo = {
+  id: string;
+  titre: string;
+  titreEn: string;
+  quandFr: string;
+  quandEn: string;
+  apercu: string;
+  apercuEn: string;
+};
+
+export const FILS_DEMO: FilDemo[] = [
+  {
+    id: 'demo-1',
+    titre: 'Site vitrine E-commerce',
+    titreEn: 'E-commerce showcase site',
+    quandFr: 'il y a 2 jours',
+    quandEn: '2 days ago',
+    apercu: 'Structure des pages, ton visuel et parcours d’achat proposés…',
+    apercuEn: 'Page structure, visual tone and suggested purchase journey…',
+  },
+  {
+    id: 'demo-2',
+    titre: "Analyse d'un document PDF",
+    titreEn: 'PDF document analysis',
+    quandFr: 'il y a 3 jours',
+    quandEn: '3 days ago',
+    apercu: 'Résumé des points clés et extraction des informations utiles…',
+    apercuEn: 'Summary of key points and extracted useful information…',
+  },
+  {
+    id: 'demo-3',
+    titre: 'Idées de contenus pour le lancement',
+    titreEn: 'Launch content ideas',
+    quandFr: 'il y a 6 jours',
+    quandEn: '6 days ago',
+    apercu: 'Une grille éditoriale de 12 idées classées par intention…',
+    apercuEn: 'An editorial grid of 12 ideas sorted by intent…',
+  },
+];
