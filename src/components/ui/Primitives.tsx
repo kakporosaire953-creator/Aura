@@ -16,23 +16,29 @@ export const Dialogue: React.FC<{
 }> = ({ ouvert, onFermer, titre, children, pied, large }) => {
   const ref = useRef<HTMLDivElement | null>(null);
   const precedent = useRef<Element | null>(null);
+  // onFermer en ref : l'effet ne se relance pas à chaque rendu (sinon le
+  // focus est volé en pleine saisie — et la barre d'espace activait le
+  // bouton de fermeture, ce qui refermait le dialogue).
+  const fermerRef = useRef(onFermer);
+  fermerRef.current = onFermer;
 
   useEffect(() => {
     if (!ouvert) return;
     precedent.current = document.activeElement;
     const auClavier = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onFermer();
+      if (e.key === 'Escape') fermerRef.current();
     };
     document.addEventListener('keydown', auClavier);
+    // Focus initial sur le premier CHAMP du formulaire, jamais sur un bouton.
     const t = setTimeout(() => {
-      ref.current?.querySelector<HTMLElement>('input, textarea, select, button')?.focus();
+      ref.current?.querySelector<HTMLElement>('input, textarea, select')?.focus();
     }, 30);
     return () => {
       document.removeEventListener('keydown', auClavier);
       clearTimeout(t);
       (precedent.current as HTMLElement | null)?.focus?.();
     };
-  }, [ouvert, onFermer]);
+  }, [ouvert]);
 
   if (!ouvert) return null;
   return (

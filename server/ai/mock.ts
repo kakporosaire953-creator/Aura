@@ -49,9 +49,37 @@ export class FournisseurMock implements FournisseurAi {
   }
 
   async generateStructuredOutput<T>(req: RequeteStructuree): Promise<T> {
-    // Le mock renvoie une structure vide du bon genre : les tests fournissent
-    // leurs propres valeurs via req.schema.mock.
+    // Valeur explicite fournie par le test via schema.mock.
     const mock = (req.schema as { mock?: unknown }).mock;
-    return (mock ?? {}) as T;
+    if (mock !== undefined) return mock as T;
+    // Sinon : structure minimaliste du genre attendu (jamais utilisée en
+    // production — le fournisseur mock est réservé aux tests).
+    const schema = req.schema as {
+      properties?: Record<string, { type?: string; items?: { properties?: Record<string, unknown> } }>;
+    };
+    const dernier = [...req.messages].reverse().find((m) => m.role === 'user');
+    const sujet = (dernier?.content ?? '').slice(0, 80);
+    const out: Record<string, unknown> = {};
+    for (const [cle, def] of Object.entries(schema.properties ?? {})) {
+      if (def?.type === 'array') out[cle] = [
+        {
+          titre: `[mock] Étape 1 pour « ${sujet} »`,
+          description: 'Proposition simulée (fournisseur de test).',
+          priorite: 'haute',
+          echeance: null,
+          sousTaches: ['Préparer', 'Réaliser', 'Vérifier'],
+        },
+        {
+          titre: `[mock] Étape 2 pour « ${sujet} »`,
+          description: 'Proposition simulée (fournisseur de test).',
+          priorite: 'moyenne',
+          echeance: null,
+          sousTaches: ['Réaliser'],
+        },
+      ];
+      else if (def?.type === 'string') out[cle] = `[mock] ${sujet}`;
+      else out[cle] = null;
+    }
+    return out as T;
   }
 }

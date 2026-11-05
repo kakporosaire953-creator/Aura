@@ -49,6 +49,8 @@ export const StudioPage: React.FC = () => {
   const [versionVue, setVersionVue] = useState<number | null>(null);
   const [revision, setRevision] = useState('');
   const [dispo, setDispo] = useState<{ ok: boolean; raison?: string } | null>(null);
+  const [projets, setProjets] = useState<Array<{ id: string; nom: string }>>([]);
+  const [projectId, setProjectId] = useState('');
 
   const rafraichir = useCallback(async () => {
     const r = await api.listerCreations();
@@ -60,6 +62,8 @@ export const StudioPage: React.FC = () => {
     void (async () => {
       const caps = await api.lireCapabilities();
       if (caps.ok) setDispo(caps.donnees.studio);
+      const p = await api.listerProjets();
+      if (p.ok) setProjets(p.donnees.projets.map((x) => ({ id: x.id, nom: x.nom })));
     })();
   }, [rafraichir]);
 
@@ -77,7 +81,11 @@ export const StudioPage: React.FC = () => {
     if (!instruction.trim() || enCours) return;
     setEnCours(true);
     setErreur(null);
-    const r = await api.creerCreation({ type, instruction: instruction.trim() });
+    const r = await api.creerCreation({
+      type,
+      instruction: instruction.trim(),
+      projectId: projectId || null,
+    });
     setEnCours(false);
     if (r.ok) {
       setActive(r.donnees.job);
@@ -152,6 +160,19 @@ export const StudioPage: React.FC = () => {
             onChange={(e) => setInstruction(e.target.value)}
           />
         </label>
+        {projets.length > 0 && (
+          <label className="champ">
+            <span>{t.ws.enregistrerProjet}</span>
+            <select value={projectId} onChange={(e) => setProjectId(e.target.value)}>
+              <option value="">—</option>
+              {projets.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.nom}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <button
           type="button"
           className="btn-principal"

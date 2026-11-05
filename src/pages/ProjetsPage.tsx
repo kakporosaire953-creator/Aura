@@ -373,7 +373,7 @@ export const ProjetDetailPage: React.FC = () => {
           <button
             type="button"
             className="btn-principal"
-            onClick={() => navigate('/chat', { state: { nouveau: true } })}
+            onClick={() => navigate('/chat', { state: { nouveau: true, projectId: projet.id } })}
           >
             <i className="fa-solid fa-plus" /> {t.ws.nouvelleConv}
           </button>

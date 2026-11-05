@@ -108,6 +108,7 @@ export const ChatPage: React.FC = () => {
         promptInitial?: string;
         fil?: { id: string; titre: string; messages: MessageChat[] };
         nouveau?: boolean;
+        projectId?: string | null;
       }
     | undefined;
 
@@ -122,6 +123,7 @@ export const ChatPage: React.FC = () => {
   const [renommage, setRenommage] = useState<{ id: string; titre: string } | null>(null);
   const [streamActif, setStreamActif] = useState('');
   const [dictatee, setDictatee] = useState(false);
+  const projectIdInitial = useRef<string | null>(null);
 
   const finRef = useRef<HTMLDivElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -192,6 +194,7 @@ export const ChatPage: React.FC = () => {
     if (etatNav?.nouveau || etatNav?.promptInitial) {
       setConvActive(null);
       setMessages([]);
+      projectIdInitial.current = (etatNav as { projectId?: string | null })?.projectId ?? null;
       if (etatNav.promptInitial) {
         const prompt = etatNav.promptInitial;
         navigate(location.pathname, { replace: true, state: null });
@@ -220,7 +223,10 @@ export const ChatPage: React.FC = () => {
 
     let convId = convActive?.id ?? null;
     if (!convId) {
-      const r = await api.creerConversation({ titre: contenu.slice(0, 80) });
+      const r = await api.creerConversation({
+        titre: contenu.slice(0, 80),
+        projectId: projectIdInitial.current,
+      });
       if (!r.ok) {
         setErreur(r.erreur);
         setEtat('idle');
@@ -228,6 +234,7 @@ export const ChatPage: React.FC = () => {
       }
       convId = r.donnees.conversation.id;
       setConvActive(r.donnees.conversation);
+      projectIdInitial.current = null;
       navigate(`/chat/${convId}`, { replace: true });
       void rafraichirListe();
     }
