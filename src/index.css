@@ -4057,6 +4057,14 @@ button {
   padding: clamp(1.15rem, 3vw, 2.15rem) clamp(1rem, 3.5vw, 2.5rem) 4.5rem;
 }
 
+/* C1 : dans le workspace, .wrap doit se caler sur le conteneur réel.
+   La sidebar réduit la largeur disponible : la référence au viewport
+   (92vw) débordait et le contenu était coupé. La landing, elle, garde
+   le comportement de .wrap (elle n'est jamais dans .ws-main). */
+.ws-main .wrap {
+  width: min(1240px, 100%);
+}
+
 .ws-main > .module,
 .ws-main > .accueil,
 .ws-main > .chat-page {
