@@ -42,6 +42,10 @@ export interface Content {
     commencer: string;
     themeClair: string;
     themeSombre: string;
+    ariaLabel: string;
+    menuOuvrir: string;
+    menuFermer: string;
+    contenu: string;
   };
   intro: {
     tagline: string;
@@ -108,6 +112,7 @@ export interface Content {
     titre1: string;
     titre2: string;
     sous: string;
+    sommaireLabel: string;
     items: Doc[];
     appel: { titre: string; texte: string; btn: string };
   };
@@ -231,6 +236,7 @@ export interface Content {
     filtres: string[];
     vide: string;
     ouvrir: string;
+    sourceIndispo: string;
     note: string;
   };
   studio: {
@@ -258,6 +264,9 @@ export interface Content {
     nouvellePlaceholder: string;
     nouvelleEtiquette: string;
     ajouter: string;
+    deplacer: string;
+    supprimer: string;
+    progression: string;
     colonnes: string[];
     vide: string;
     note: string;
@@ -432,6 +441,10 @@ const contentFr: Content = {
     commencer: 'Commencer',
     themeClair: 'Passer en thème clair',
     themeSombre: 'Passer en thème sombre',
+    ariaLabel: 'Navigation principale',
+    menuOuvrir: 'Ouvrir le menu',
+    menuFermer: 'Fermer le menu',
+    contenu: 'Aller au contenu principal',
   },
   intro: {
     tagline: "DE L'IDÉE AU RÉSULTAT",
@@ -617,6 +630,7 @@ const contentFr: Content = {
     titre2: 'écrit au fil du chantier',
     sous:
       "Guides, réflexes, références : la documentation d'Aura grandit en même temps que le produit — avec la même honnêteté. Les chapitres s'ouvrent au fur et à mesure de leur rédaction.",
+    sommaireLabel: 'Sommaire de la documentation',
     items: [
       {
         num: '01',
@@ -834,6 +848,7 @@ const contentFr: Content = {
     filtres: ['Cadrage', 'Produit', 'Design', 'Automatisation', 'Missions'],
     vide: 'Aucun résultat pour cette recherche.',
     ouvrir: 'Ouvrir la source',
+    sourceIndispo: 'Source de démonstration indisponible',
     note:
       'Interface de démonstration : les résultats sont des contenus de démo badgés. La recherche sourcée réelle arrivera avec son API dédiée.',
   },
@@ -854,7 +869,7 @@ const contentFr: Content = {
     apercuTitre: 'Aperçus',
     badge: 'Démonstration',
     note:
-      'Interface de démonstration : les aperçus sont des visuels de démo. La génération réelle arrivera avec son API dédiée.',
+      'Démonstration : aucun modèle de génération n’est encore connecté. L’affichage simule une génération avec des visuels prédéfinis, clairement badgés — aucune image n’est créée par une IA.',
   },
   missions: {
     kicker: 'Missions',
@@ -865,10 +880,13 @@ const contentFr: Content = {
     nouvellePlaceholder: 'Titre de la nouvelle mission…',
     nouvelleEtiquette: 'Nouveau',
     ajouter: 'Ajouter',
+    deplacer: 'Déplacer dans la colonne suivante',
+    supprimer: 'Supprimer la mission',
+    progression: 'Progression',
     colonnes: ['À faire', 'En cours', 'Livré'],
     vide: 'Rien pour l’instant.',
     note:
-      'Interface de démonstration : le tableau est local à votre navigateur. La synchronisation réelle arrivera avec les missions du moteur.',
+      'Vos missions sont conservées localement dans ce navigateur uniquement, sans compte ni serveur : elles ne suivent pas d’un appareil à l’autre et disparaissent si vous effacez les données du site.',
   },
   accueil: {
     bonjour: 'Bonjour',
@@ -976,6 +994,10 @@ const contentEn: Content = {
     commencer: 'Get started',
     themeClair: 'Switch to light theme',
     themeSombre: 'Switch to dark theme',
+    ariaLabel: 'Main navigation',
+    menuOuvrir: 'Open menu',
+    menuFermer: 'Close menu',
+    contenu: 'Skip to main content',
   },
   intro: {
     tagline: 'FROM IDEA TO RESULT',
@@ -1160,6 +1182,7 @@ const contentEn: Content = {
     titre2: 'written as the work progresses',
     sous:
       'Guides, habits, references: Aura’s documentation grows alongside the product — with the same honesty. Chapters open as they are written.',
+    sommaireLabel: 'Documentation summary',
     items: [
       {
         num: '01',
@@ -1377,6 +1400,7 @@ const contentEn: Content = {
     filtres: ['Framing', 'Product', 'Design', 'Automation', 'Missions'],
     vide: 'No results for this search.',
     ouvrir: 'Open the source',
+    sourceIndispo: 'Demo source unavailable',
     note:
       'Demo interface: results are badged demo content. Real sourced research will arrive with its dedicated API.',
   },
@@ -1397,7 +1421,7 @@ const contentEn: Content = {
     apercuTitre: 'Previews',
     badge: 'Demo',
     note:
-      'Demo interface: previews are demo visuals. Real generation will arrive with its dedicated API.',
+      'Demo: no generation model is connected yet. The display simulates a generation with clearly badged predefined visuals — no image is created by AI.',
   },
   missions: {
     kicker: 'Missions',
@@ -1408,10 +1432,13 @@ const contentEn: Content = {
     nouvellePlaceholder: 'Title of the new mission…',
     nouvelleEtiquette: 'New',
     ajouter: 'Add',
+    deplacer: 'Move to the next column',
+    supprimer: 'Delete the mission',
+    progression: 'Progress',
     colonnes: ['To do', 'In progress', 'Shipped'],
     vide: 'Nothing for now.',
     note:
-      'Demo interface: the board is local to your browser. Real sync will arrive with the engine missions.',
+      'Your missions are kept locally in this browser only, with no account or server: they do not follow you across devices and disappear if you clear site data.',
   },
   accueil: {
     bonjour: 'Hello',

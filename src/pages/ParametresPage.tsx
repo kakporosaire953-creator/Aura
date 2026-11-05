@@ -126,7 +126,7 @@ export const ParametresPage: React.FC = () => {
           <Link to="/documentation" className="btn-ligne">
             {t.parametres.docs}
           </Link>
-          <Link to="/tarifs" className="btn-ligne">
+          <Link to="/#tarifs" className="btn-ligne">
             {t.parametres.tarifs}
           </Link>
         </div>

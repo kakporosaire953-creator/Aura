@@ -24,6 +24,9 @@ export const BandeauSimulation: React.FC = () => {
 /** Navigation légère partagée — jamais surchargée. */
 export const SiteNav: React.FC = () => {
   const [scrolled, setScrolled] = React.useState(false);
+  const [menuOuvert, setMenuOuvert] = React.useState(false);
+  const burgerRef = React.useRef<HTMLButtonElement | null>(null);
+  const menuRef = React.useRef<HTMLDivElement | null>(null);
   const { pathname } = useLocation();
   const { t, theme, toggleTheme, lang, setLang } = usePrefs();
   const { statut } = useSession();
@@ -36,10 +39,32 @@ export const SiteNav: React.FC = () => {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  // Menu mobile : Échap referme et rend le focus au bouton ; le premier
+  // lien reçoit le focus à l'ouverture ; changement de page → fermeture.
+  React.useEffect(() => {
+    if (!menuOuvert) return;
+    const onTouche = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setMenuOuvert(false);
+        burgerRef.current?.focus();
+      }
+    };
+    document.addEventListener('keydown', onTouche);
+    menuRef.current?.querySelector<HTMLElement>('a, button')?.focus();
+    return () => document.removeEventListener('keydown', onTouche);
+  }, [menuOuvert]);
+
+  React.useEffect(() => {
+    setMenuOuvert(false);
+  }, [pathname]);
+
   const accueil = pathname === '/';
 
   return (
-    <nav className={`nav${scrolled ? ' scrolled' : ''}`} aria-label={t.nav.documentation}>
+    <nav className={`nav${scrolled ? ' scrolled' : ''}`} aria-label={t.nav.ariaLabel}>
+      <a href="#contenu" className="lien-evitement">
+        {t.nav.contenu}
+      </a>
       <BandeauSimulation />
       <div className="wrap nav-interieur">
         <Link to="/" aria-label="AURA — accueil">
@@ -59,6 +84,17 @@ export const SiteNav: React.FC = () => {
             {accueil ? <a href="#tarifs">{t.nav.tarifs}</a> : <Link to="/#tarifs">{t.nav.tarifs}</Link>}
           </li>
         </ul>
+        <button
+          ref={burgerRef}
+          type="button"
+          className="nav-burger"
+          aria-expanded={menuOuvert}
+          aria-controls="nav-menu-mobile"
+          aria-label={menuOuvert ? t.nav.menuFermer : t.nav.menuOuvrir}
+          onClick={() => setMenuOuvert((o) => !o)}
+        >
+          <i className={`fa-solid ${menuOuvert ? 'fa-xmark' : 'fa-bars'}`} aria-hidden />
+        </button>
         <div className="nav-cta">
           <div className="nav-outils">
             <div className="bascule-langue" role="group" aria-label="Langue / Language">
@@ -113,6 +149,47 @@ export const SiteNav: React.FC = () => {
             </>
           )}
         </div>
+      </div>
+
+      {/* Menu mobile : mêmes destinations que la navigation desktop. */}
+      <div
+        id="nav-menu-mobile"
+        ref={menuRef}
+        className={`nav-mobile${menuOuvert ? ' ouvert' : ''}`}
+      >
+        <ul>
+          <li>
+            <Link to="/chat" onClick={() => setMenuOuvert(false)}>
+              {t.nav.chat}
+            </Link>
+          </li>
+          <li>
+            <Link to="/#galerie" onClick={() => setMenuOuvert(false)}>
+              {t.nav.galerie}
+            </Link>
+          </li>
+          <li>
+            <Link to="/documentation" onClick={() => setMenuOuvert(false)}>
+              {t.nav.documentation}
+            </Link>
+          </li>
+          <li>
+            <Link to="/#tarifs" onClick={() => setMenuOuvert(false)}>
+              {t.nav.tarifs}
+            </Link>
+          </li>
+          <li>
+            {statut === 'connecte' ? (
+              <Link to="/app" className="btn btn-encre" onClick={() => setMenuOuvert(false)}>
+                {t.espace.kicker}
+              </Link>
+            ) : (
+              <Link to="/login" className="btn btn-encre" onClick={() => setMenuOuvert(false)}>
+                {t.nav.connexion}
+              </Link>
+            )}
+          </li>
+        </ul>
       </div>
     </nav>
   );

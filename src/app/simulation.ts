@@ -20,10 +20,14 @@ const CLE_ONBOARDING = 'aura_sim_onboarding';
 export function simulationActivee(): boolean {
   try {
     const v = localStorage.getItem(CLE_MODE);
-    return v !== '0'; // activée par défaut pendant la phase de démonstration
+    if (v === '0') return false;
+    if (v === '1') return true;
   } catch {
-    return true;
+    /* stockage indisponible */
   }
+  // Par défaut : simulation en développement seulement. En production,
+  // l'entrée en démonstration est volontaire (bouton dédié ou bascule).
+  return import.meta.env.DEV;
 }
 
 export function definirSimulation(active: boolean): void {
@@ -37,23 +41,30 @@ export function definirSimulation(active: boolean): void {
 
 /* ── Comptes simulés (localStorage uniquement) ── */
 
-type CompteSimule = Compte & { motDePasse: string };
+/* ── Comptes simulés (localStorage uniquement, SANS mot de passe) ── */
+// Aucun secret n'est stocké : le mode démonstration est un habillage local,
+// jamais une protection. La vraie authentification (scrypt, côté serveur)
+// reste la seule à vérifier un mot de passe.
 
-function lireComptes(): CompteSimule[] {
+function lireComptes(): Compte[] {
   try {
-    return JSON.parse(localStorage.getItem(CLE_COMPTES) ?? '[]') as CompteSimule[];
+    const brut: unknown = JSON.parse(localStorage.getItem(CLE_COMPTES) ?? '[]');
+    if (!Array.isArray(brut)) return [];
+    const comptes: Compte[] = [];
+    for (const c of brut) {
+      if (!c || typeof c !== 'object') continue;
+      const { motDePasse: _jete, ...compte } = c as Record<string, unknown>;
+      if (typeof compte.email !== 'string' || !compte.email) continue; // stockage corrompu → ignoré
+      comptes.push(compte as unknown as Compte);
+    }
+    return comptes;
   } catch {
     return [];
   }
 }
 
-function ecrireComptes(comptes: CompteSimule[]): void {
+function ecrireComptes(comptes: Compte[]): void {
   localStorage.setItem(CLE_COMPTES, JSON.stringify(comptes));
-}
-
-function versPublicSimule(c: CompteSimule): Compte {
-  const { motDePasse: _ignore, ...compte } = c;
-  return compte;
 }
 
 export type ResultatSimule = {
@@ -76,27 +87,31 @@ export function inscrireSimule(email: string, password: string, nom: string): Re
   if (comptes.some((c) => c.email === adresse)) {
     return { ok: false, erreur: 'Un compte existe déjà avec cette adresse.', code: 'existe' };
   }
-  const compte: CompteSimule = {
+  const compte: Compte = {
     email: adresse,
     nom: nom.trim(),
     cree: new Date().toISOString(),
     onboarding: { fait: false, objectif: null },
-    motDePasse: password,
   };
   comptes.push(compte);
   ecrireComptes(comptes);
   localStorage.setItem(CLE_SESSION, adresse);
-  return { ok: true, compte: versPublicSimule(compte) };
+  return { ok: true, compte };
 }
 
 export function connecterSimule(email: string, password: string): ResultatSimule {
   const adresse = email.trim().toLowerCase();
-  const compte = lireComptes().find((c) => c.email === adresse && c.motDePasse === password);
+  if (password.length < 8) {
+    return { ok: false, erreur: 'Saisie invalide.', code: 'validation', detail: { password: 'court' } };
+  }
+  // En démonstration, le mot de passe n'est ni stocké ni vérifié : seule
+  // l'existence locale du compte compte. Ce n'est pas une protection.
+  const compte = lireComptes().find((c) => c.email === adresse);
   if (!compte) {
     return { ok: false, erreur: 'Identifiants incorrects.', code: 'identifiants' };
   }
   localStorage.setItem(CLE_SESSION, adresse);
-  return { ok: true, compte: versPublicSimule(compte) };
+  return { ok: true, compte };
 }
 
 export function deconnecterSimule(): void {
@@ -106,8 +121,7 @@ export function deconnecterSimule(): void {
 export function compteCourantSimule(): Compte | null {
   const adresse = localStorage.getItem(CLE_SESSION);
   if (!adresse) return null;
-  const compte = lireComptes().find((c) => c.email === adresse);
-  return compte ? versPublicSimule(compte) : null;
+  return lireComptes().find((c) => c.email === adresse) ?? null;
 }
 
 export function onboardingSimule(fait: boolean, objectif: string): ResultatSimule {
@@ -117,11 +131,17 @@ export function onboardingSimule(fait: boolean, objectif: string): ResultatSimul
   if (!compte) return { ok: false, erreur: 'non connecté', code: 'anonyme' };
   compte.onboarding = { fait, objectif: objectif || null };
   ecrireComptes(comptes);
-  return { ok: true, compte: versPublicSimule(compte) };
+  return { ok: true, compte };
 }
 
-/** Ouvre instantanément une session de démonstration (bouton « Voir la démonstration »). */
+/** Entrée volontaire en démonstration (bouton « Voir la démonstration ») :
+ *  active explicitement le mode simulation, puis ouvre la session démo. */
 export function ouvrirDemo(): void {
+  try {
+    localStorage.setItem(CLE_MODE, '1');
+  } catch {
+    /* stockage indisponible */
+  }
   const adresse = 'demo@aura.local';
   const comptes = lireComptes();
   if (!comptes.some((c) => c.email === adresse)) {
@@ -130,7 +150,6 @@ export function ouvrirDemo(): void {
       nom: 'Compte de démonstration',
       cree: new Date().toISOString(),
       onboarding: { fait: true, objectif: 'Créer des visuels' },
-      motDePasse: 'demonstration',
     });
     ecrireComptes(comptes);
   }
@@ -218,6 +237,7 @@ export const RESULTATS_EXPLORE: ResultatExplore[] = [
 /* ── Missions : tableau de démonstration ── */
 
 export type MissionSimulee = {
+  id?: string;
   titre: string;
   colonne: 0 | 1 | 2;
   etiquettes: string[];

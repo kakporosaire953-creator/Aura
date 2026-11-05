@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 import { useT } from '../app/prefs';
-import { simulationActivee } from '../app/simulation';
-
 import imgTelephones from '../assets/galerie/boutique-telephones.jpg';
 import imgPhoto from '../assets/galerie/studio-photo.jpg';
 import imgChef from '../assets/galerie/chef-cuisinier.jpg';
@@ -18,7 +16,6 @@ const APERCUS = [imgTelephones, imgPhoto, imgChef, imgFintech, imgVoyage, imgFes
  */
 export const StudioPage: React.FC = () => {
   const t = useT();
-  const sim = simulationActivee();
   const [consigne, setConsigne] = useState('');
   const [style, setStyle] = useState(0);
   const [format, setFormat] = useState(0);
@@ -109,7 +106,9 @@ export const StudioPage: React.FC = () => {
         {etat !== 'idle' && (
           <section className="studio-apercus" aria-label={t.studio.apercuTitre}>
             <h2 className="display-md">
-              {t.studio.apercuTitre} {sim && <span className="badge-sim">{t.simulation.badge}</span>}
+              {/* Toujours badgé : les aperçus sont prédéfinis, que le mode
+                  simulation soit actif ou non. */}
+              {t.studio.apercuTitre} <span className="badge-sim">{t.simulation.badge}</span>
             </h2>
             {etat === 'generation' ? (
               <div className="studio-progression" role="status">

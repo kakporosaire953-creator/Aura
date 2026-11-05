@@ -92,9 +92,11 @@ export const ExplorePage: React.FC = () => {
                 <p className="corps">{r.extrait}</p>
                 <div className="explore-pied">
                   <span className="explore-pastille">{r.motCle}</span>
-                  <a href="#explore" className="explore-lien" aria-disabled="true">
-                    {t.explore.ouvrir} <i className="fa-solid fa-arrow-up-right-from-square" aria-hidden />
-                  </a>
+                  {/* Pas de lien artificiel : les résultats de démonstration
+                      n'ont pas de source réelle à ouvrir. */}
+                  <span className="explore-indispo">
+                    <i className="fa-solid fa-circle-info" aria-hidden /> {t.explore.sourceIndispo}
+                  </span>
                 </div>
               </article>
             ))

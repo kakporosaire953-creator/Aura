@@ -6,6 +6,24 @@
     <meta name="theme-color" content="#fbfaf5" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0d1712" media="(prefers-color-scheme: dark)" />
     <link rel="icon" type="image/png" href="/assets/aura-favicon.png" />
+    <script>
+      // Garde-fou des révélations : le contenu est visible par défaut ;
+      // le masquage animé n'attend que si JavaScript démarre vraiment.
+      document.documentElement.classList.add('js');
+      setTimeout(function () {
+        if (!document.documentElement.classList.contains('reveal-on')) {
+          document.documentElement.classList.add('reveal-off');
+        }
+      }, 2500);
+    </script>
+    <noscript>
+      <style>
+        [data-reveal] {
+          opacity: 1 !important;
+          transform: none !important;
+        }
+      </style>
+    </noscript>
     <title>AURA — De l'idée au résultat.</title>
     <meta
       name="description"
@@ -38,6 +56,12 @@
       } catch (e) {}
     </script>
     <div id="root"></div>
+    <noscript>
+      <p style="padding: 2rem; font-family: sans-serif; text-align: center">
+        AURA est une application interactive qui nécessite JavaScript.
+        Activez JavaScript dans votre navigateur pour l'utiliser.
+      </p>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

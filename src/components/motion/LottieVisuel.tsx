@@ -24,6 +24,7 @@ export const LottieVisuel: React.FC<{ src: string; className?: string; label: st
       window.matchMedia('(prefers-reduced-motion: reduce)').matches,
   );
   const [instance, setInstance] = useState<DotLottie | null>(null);
+  const [charge, setCharge] = useState(false);
 
   // Montage différé : on ne charge l'animation qu'à l'approche du viewport.
   useEffect(() => {
@@ -50,9 +51,23 @@ export const LottieVisuel: React.FC<{ src: string; className?: string; label: st
   useEffect(() => {
     if (!instance) return;
     const onErreur = () => setEchec(true);
+    const onCharge = () => setCharge(true);
     instance.addEventListener('loadError', onErreur);
-    return () => instance.removeEventListener('loadError', onErreur);
+    instance.addEventListener('load', onCharge);
+    return () => {
+      instance.removeEventListener('loadError', onErreur);
+      instance.removeEventListener('load', onCharge);
+    };
   }, [instance]);
+
+  // Filet de sécurité : si rien n'est chargé après 8 s (réseau coupé,
+  // CDN indisponible), on bascule sur le repli statique au lieu d'une
+  // zone vide.
+  useEffect(() => {
+    if (!visible || charge || echec) return;
+    const minuteur = window.setTimeout(() => setEchec(true), 8000);
+    return () => window.clearTimeout(minuteur);
+  }, [visible, charge, echec]);
 
   return (
     <div ref={hote} className={className} data-lottie="">
@@ -68,6 +83,9 @@ export const LottieVisuel: React.FC<{ src: string; className?: string; label: st
           style={{ width: '100%', height: '100%' }}
         />
       )}
+      {/* Repli statique si le Lottie distant n'arrive jamais :
+          jamais de zone vide, jamais de faux rendu animé. */}
+      {echec && <div className="lottie-repli" aria-hidden />}
     </div>
   );
 };

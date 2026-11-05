@@ -13,7 +13,7 @@ export const DocumentationPage: React.FC = () => {
     <>
       <SiteNav />
 
-      <main>
+      <main id="contenu">
         <section className="section docs-page-hero">
           <div className="wrap">
             <span className="kicker" data-reveal>
@@ -30,6 +30,18 @@ export const DocumentationPage: React.FC = () => {
 
         <section className="section docs" style={{ paddingTop: 0, border: 'none' }}>
           <div className="wrap">
+            <nav className="docs-sommaire" aria-label={t.docs.sommaireLabel}>
+              <ul>
+                {t.docs.items.map((d) => (
+                  <li key={d.num}>
+                    <a href={`#doc-${d.num}`}>
+                      <span aria-hidden>§ {d.num}</span> {d.titre}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+
             <div className="docs-grille" ref={reveal}>
               {t.docs.items.map((d) => (
                 <Tilt className="doc-carte" key={d.num} data-reveal="">
@@ -39,7 +51,7 @@ export const DocumentationPage: React.FC = () => {
                     </span>
                     <span className="doc-num">§ {d.num}</span>
                   </div>
-                  <h3>{d.titre}</h3>
+                  <h3 id={`doc-${d.num}`}>{d.titre}</h3>
                   <p>{d.texte}</p>
                   <span className="doc-statut">{d.label}</span>
                 </Tilt>

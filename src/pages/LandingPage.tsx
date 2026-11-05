@@ -1,5 +1,5 @@
-import React, { useRef } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useRef } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
@@ -93,9 +93,25 @@ const BandeauLogos: React.FC<{ titre: string }> = ({ titre }) => (
 
 export const LandingPage: React.FC = () => {
   const t = useT();
+  const location = useLocation();
   const racine = useRef<HTMLDivElement | null>(null);
   const bandeauRef = useRef<HTMLDivElement | null>(null);
   const filRef = useRef<HTMLDivElement | null>(null);
+
+  // Navigation vers les ancres (/#galerie, /#tarifs…) : défilement fiable
+  // après le rendu, que l'on vienne d'une autre page ou d'une URL directe.
+  // Sans ancre dans l'URL, aucun défilement intempestif.
+  useEffect(() => {
+    const ancre = location.hash;
+    if (!ancre || ancre.length < 2) return;
+    const cible = document.getElementById(ancre.slice(1));
+    if (!cible) return;
+    const reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const minuteur = window.setTimeout(() => {
+      cible.scrollIntoView({ behavior: reduit ? 'auto' : 'smooth', block: 'start' });
+    }, 120);
+    return () => window.clearTimeout(minuteur);
+  }, [location.pathname, location.hash, location.key]);
   const declRef = useRef<HTMLDivElement | null>(null);
   const galerieRef = useRef<HTMLDivElement | null>(null);
   const stGalerie = useRef<ScrollTrigger | null>(null);
@@ -358,7 +374,7 @@ export const LandingPage: React.FC = () => {
       <SiteNav />
 
       {/* ================= HERO ================= */}
-      <header className="hero">
+      <header className="hero" id="contenu">
         <div className="hero-lueur" aria-hidden />
         <div className="hero-traits" aria-hidden>
           <svg viewBox="0 0 1400 260" fill="none">
@@ -626,7 +642,7 @@ export const LandingPage: React.FC = () => {
                   <i className={`fa-solid ${c.icone} capacite-icone`} aria-hidden />
                   <h3 className="display-md">{c.titre}</h3>
                 </div>
-                <div>
+                <div className="capacite-texte">
                   <p className="corps">{c.texte}</p>
                   <div className="capacite-mots">
                     {c.mots.map((m) => (
