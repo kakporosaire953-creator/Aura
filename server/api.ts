@@ -2,11 +2,15 @@
  * API Aura partagée — utilisée par server.ts (dev / auto-hébergement)
  * et par api/index.ts (fonction serverless Vercel). Une seule source
  * de vérité pour l'état honnête du produit et l'authentification.
+ *
+ * - Routes historiques (/status, /auth/*, /me, /chat) : contrat conservé.
+ * - API v1 (/v1/...) : conversations, projets, missions, mémoire, recherche,
+ *   studio — voir server/v1/. Authentification et isolation par compte
+ *   appliquées systématiquement côté serveur.
  */
 import express, { type NextFunction, type Request, type Response } from 'express';
 import {
   COOKIE_SESSION,
-  choisirMagasin,
   creerSession,
   empreinteJeton,
   hacherMotDePasse,
@@ -14,41 +18,44 @@ import {
   serialiserCookie,
   validerInscription,
   verifierMotDePasse,
-  versPublic,
   DUREE_SESSION_MS,
-  type ComptePublic,
-  type Utilisateur,
 } from './accounts';
-import { appelerGemini, validerMessages, ErreurModele } from './chat';
+import {
+  entrepotComptes,
+  nouvelId,
+  preferencesParDefaut,
+  profilParDefaut,
+} from './db/entrepots';
+import type { Compte, ComptePublic } from './db/types';
+import { validerMessages } from './chat';
+import * as ia from './ai/registre';
+import { ErreurAi } from './ai/types';
+import { createApiV1 } from './v1/routes';
+import { tropDeTentatives } from './v1/middlewares';
 
-const magasin = choisirMagasin();
+const comptes = entrepotComptes();
 
-/* ── Limitation de débit mémoire (best-effort par instance) ── */
-const tentatives = new Map<string, number[]>();
-function tropDeTentatives(ip: string, max = 25, fenetreMs = 10 * 60 * 1000): boolean {
-  const maintenant = Date.now();
-  const fenetre = (tentatives.get(ip) ?? []).filter((t) => maintenant - t < fenetreMs);
-  if (fenetre.length >= max) {
-    tentatives.set(ip, fenetre);
-    return true;
-  }
-  fenetre.push(maintenant);
-  tentatives.set(ip, fenetre);
-  return false;
+type ReqAuth = Request & { compte?: { utilisateur: Compte } };
+
+function versPublic(u: Compte): ComptePublic {
+  return {
+    id: u.id,
+    email: u.email,
+    nom: u.nom,
+    cree: u.cree,
+    onboarding: u.onboarding,
+    profil: u.profil,
+    preferences: u.preferences,
+  };
 }
-
-type ReqAuth = Request & { compte?: { utilisateur: Utilisateur } };
 
 async function attacherCompte(req: ReqAuth, _res: Response, next: NextFunction) {
   const jeton = lireCookie(req, COOKIE_SESSION);
   if (jeton) {
     try {
-      const donnees = await magasin.lire();
-      const session = donnees.sessions.find(
-        (s) => s.id === empreinteJeton(jeton) && s.expire > Date.now(),
-      );
+      const session = await comptes.sessionParEmpreinte(empreinteJeton(jeton));
       if (session) {
-        const utilisateur = donnees.utilisateurs.find((u) => u.id === session.userId);
+        const utilisateur = await comptes.parId(session.userId);
         if (utilisateur) req.compte = { utilisateur };
       }
     } catch {
@@ -65,40 +72,43 @@ function definirSession(res: Response, jeton: string) {
   );
 }
 
-function profilCourant(req: ReqAuth): { compte: ComptePublic } | { error: string } {
-  if (!req.compte) return { error: 'non connecté' };
-  return { compte: versPublic(req.compte.utilisateur) };
-}
-
 export function createApiApp(): express.Router {
   const api = express.Router();
   api.use(express.json({ limit: '32kb' }));
   api.use(attacherCompte);
 
+  // API v1 — modules fonctionnels du workspace.
+  api.use('/v1', createApiV1());
+
   // État réel du produit — jamais de fausse fonctionnalité.
-  api.get('/status', (_req, res) => {
-    const comptesActifs = magasin.mode !== 'indisponible';
-    const chatActif = Boolean(process.env.GEMINI_API_KEY);
+  api.get('/status', async (_req, res) => {
+    const comptesActifs = comptes.mode !== 'indisponible';
+    const etatIa = await ia.etatFournisseurs();
+    const chatActif = Boolean(etatIa.fournisseur);
     res.json({
       name: 'Aura',
-      phase: 'renaissance',
+      phase: 'workspace',
       tagline: "De l'idée au résultat.",
+      config: {
+        // État technique minimal pour l'UI (jamais de stratégie commerciale).
+        modele: etatIa.modele,
+      },
       features: {
         publicSite: 'live',
         intro: 'live',
         sculpture3d: 'live',
         accounts: comptesActifs ? 'live' : 'setup-required',
         chat: chatActif ? 'live' : 'setup-required',
-        explore: 'rebuilding',
-        studio: 'rebuilding',
-        missions: 'rebuilding',
+        explore: chatActif ? 'live' : 'setup-required',
+        studio: chatActif ? 'live' : 'setup-required',
+        missions: comptesActifs ? 'live' : 'setup-required',
       },
       setup: {
-        ...(comptesActifs ? {} : { accounts: magasin.raison }),
+        ...(comptesActifs ? {} : { accounts: comptes.raison }),
         ...(chatActif
           ? {}
           : {
-              chat: 'Chat non configuré sur cet environnement : ajoutez GEMINI_API_KEY (clé serveur uniquement). Modèle par défaut gemini-3.8-flash, surchargeable par AURA_MODELE.',
+              chat: 'Assistant non configuré sur cet environnement : ajoutez GEMINI_API_KEY (clé serveur uniquement).',
             }),
       },
     });
@@ -111,8 +121,8 @@ export function createApiApp(): express.Router {
       res.status(429).json({ error: 'Trop de tentatives. Réessayez plus tard.', code: 'limite' });
       return;
     }
-    if (magasin.mode === 'indisponible') {
-      res.status(503).json({ error: magasin.raison, code: 'stockage-indisponible' });
+    if (comptes.mode === 'indisponible') {
+      res.status(503).json({ error: comptes.raison, code: 'stockage-indisponible' });
       return;
     }
 
@@ -124,27 +134,27 @@ export function createApiApp(): express.Router {
     }
 
     const email = corps.email!.trim().toLowerCase();
-    const donnees = await magasin.lire();
-    if (donnees.utilisateurs.some((u) => u.email === email)) {
+    if (await comptes.parEmail(email)) {
       res.status(409).json({ error: 'Un compte existe déjà avec cette adresse.', code: 'existe' });
       return;
     }
 
     const { hash, sel } = await hacherMotDePasse(corps.password!);
-    const utilisateur: Utilisateur = {
-      id: Math.random().toString(36).slice(2) + Date.now().toString(36),
+    const utilisateur: Compte = {
+      id: nouvelId('usr'),
       email,
       nom: (corps.nom ?? '').trim(),
       hash,
       sel,
       cree: new Date().toISOString(),
       onboarding: { fait: false, objectif: null },
+      profil: profilParDefaut(),
+      preferences: preferencesParDefaut(),
     };
     const { jeton, session } = creerSession();
     session.userId = utilisateur.id;
-    donnees.utilisateurs.push(utilisateur);
-    donnees.sessions.push(session);
-    await magasin.ecrire(donnees);
+    await comptes.creer(utilisateur);
+    await comptes.creerSession(session);
 
     definirSession(res, jeton);
     res.status(201).json({ compte: versPublic(utilisateur) });
@@ -157,8 +167,8 @@ export function createApiApp(): express.Router {
       res.status(429).json({ error: 'Trop de tentatives. Réessayez plus tard.', code: 'limite' });
       return;
     }
-    if (magasin.mode === 'indisponible') {
-      res.status(503).json({ error: magasin.raison, code: 'stockage-indisponible' });
+    if (comptes.mode === 'indisponible') {
+      res.status(503).json({ error: comptes.raison, code: 'stockage-indisponible' });
       return;
     }
 
@@ -170,8 +180,7 @@ export function createApiApp(): express.Router {
       return;
     }
 
-    const donnees = await magasin.lire();
-    const utilisateur = donnees.utilisateurs.find((u) => u.email === email);
+    const utilisateur = await comptes.parEmail(email);
     // Message unique : pas d'énumération de comptes.
     const refus = () =>
       res.status(401).json({ error: 'Identifiants incorrects.', code: 'identifiants' });
@@ -188,8 +197,7 @@ export function createApiApp(): express.Router {
 
     const { jeton, session } = creerSession();
     session.userId = utilisateur.id;
-    donnees.sessions.push(session);
-    await magasin.ecrire(donnees);
+    await comptes.creerSession(session);
 
     definirSession(res, jeton);
     res.json({ compte: versPublic(utilisateur) });
@@ -198,11 +206,9 @@ export function createApiApp(): express.Router {
   /* ── Déconnexion ── */
   api.post('/auth/logout', async (req, res) => {
     const jeton = lireCookie(req, COOKIE_SESSION);
-    if (jeton && magasin.mode !== 'indisponible') {
+    if (jeton && comptes.mode !== 'indisponible') {
       try {
-        const donnees = await magasin.lire();
-        donnees.sessions = donnees.sessions.filter((s) => s.id !== empreinteJeton(jeton));
-        await magasin.ecrire(donnees);
+        await comptes.supprimerSession(empreinteJeton(jeton));
       } catch {
         /* le cookie est de toute façon effacé */
       }
@@ -213,12 +219,12 @@ export function createApiApp(): express.Router {
 
   /* ── Compte courant ── */
   api.get('/me', (req, res) => {
-    const p = profilCourant(req as ReqAuth);
-    if ('error' in p) {
-      res.status(401).json({ error: p.error, code: 'anonyme' });
+    const reqAuth = req as ReqAuth;
+    if (!reqAuth.compte) {
+      res.status(401).json({ error: 'non connecté', code: 'anonyme' });
       return;
     }
-    res.json(p);
+    res.json({ compte: versPublic(reqAuth.compte.utilisateur) });
   });
 
   /* ── Onboarding ── */
@@ -232,26 +238,26 @@ export function createApiApp(): express.Router {
     const objectif = typeof corps.objectif === 'string' ? corps.objectif.trim().slice(0, 120) : null;
     const fait = corps.fait === true;
 
-    const donnees = await magasin.lire();
-    const u = donnees.utilisateurs.find((x) => x.id === reqAuth.compte!.utilisateur.id);
+    const u = await comptes.parId(reqAuth.compte.utilisateur.id);
     if (!u) {
       res.status(401).json({ error: 'non connecté', code: 'anonyme' });
       return;
     }
     u.onboarding = { fait, objectif: objectif || null };
+    await comptes.enregistrer(u);
     reqAuth.compte.utilisateur = u;
-    await magasin.ecrire(donnees);
     res.json({ compte: versPublic(u) });
   });
 
-  /* ── Chat (modèle Gemini côté serveur) ── */
+  /* ── Chat (contrat historique ; le flux principal passe par /v1) ── */
   api.post('/chat', async (req, res) => {
     const reqAuth = req as ReqAuth;
     if (!reqAuth.compte) {
       res.status(401).json({ error: 'non connecté', code: 'anonyme' });
       return;
     }
-    if (!process.env.GEMINI_API_KEY) {
+    const etatIa = await ia.etatFournisseurs();
+    if (!etatIa.fournisseur) {
       res.status(503).json({
         error:
           'Chat non configuré sur cet environnement : la clé GEMINI_API_KEY manque côté serveur.',
@@ -274,10 +280,20 @@ export function createApiApp(): express.Router {
 
     try {
       const langue = corps.langue === 'en' ? 'en' : 'fr';
-      const { texte, modele } = await appelerGemini(verif.messages, langue);
-      res.json({ reponse: texte, modele });
+      const rep = await ia.generateResponse(
+        { capacites: ['texte'], usage: 'chat' },
+        {
+          messages: verif.messages,
+          langue,
+          system:
+            langue === 'en'
+              ? "You are Aura, the assistant of the Aura platform. Answer in the user's language, clearly and honestly. Never invent facts, sources, prices, or features. If you don't know, say so. Keep answers useful and concise."
+              : 'Tu es Aura, l\'assistant de la plateforme Aura. Réponds dans la langue de l\'utilisateur, clairement et honnêtement. N\'invente jamais de faits, de sources, de prix ou de fonctionnalités. Si tu ne sais pas, dis-le. Des réponses utiles et concises.',
+        },
+      );
+      res.json({ reponse: rep.texte, modele: rep.modele });
     } catch (e) {
-      if (e instanceof ErreurModele) {
+      if (e instanceof ErreurAi) {
         res.status(e.statut).json({ error: e.message, code: e.code });
         return;
       }
