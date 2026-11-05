@@ -84,6 +84,9 @@ export const WorkspaceLayout: React.FC = () => {
 
   return (
     <div className={`ws${repliee ? ' ws-repliee' : ''}`}>
+      <a href="#contenu" className="lien-evitement">
+        {t.nav.contenu}
+      </a>
       <BandeauSimulation />
 
       {/* — Barre haute — */}
@@ -236,7 +239,7 @@ export const WorkspaceLayout: React.FC = () => {
         </nav>
 
         <div className="ws-sidebar-bas">
-          <Link to="/tarifs" className="ws-plus">
+          <Link to="/#tarifs" className="ws-plus">
             <i className="fa-solid fa-crown" />
             <strong>{t.workspace.plus}</strong>
             <span>{t.workspace.plusSous}</span>
@@ -272,7 +275,7 @@ export const WorkspaceLayout: React.FC = () => {
       )}
 
       {/* — Contenu — */}
-      <main className="ws-main">
+        <main className="ws-main" id="contenu">
         <Outlet />
       </main>
 

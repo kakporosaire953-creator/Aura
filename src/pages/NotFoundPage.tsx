@@ -6,7 +6,7 @@ import { useT } from '../app/prefs';
 export const NotFoundPage: React.FC = () => {
   const t = useT();
   return (
-    <main className="oops">
+    <main className="oops" id="contenu">
       <div className="wrap-etroit">
         <img src="/assets/aura-symbol-white.jpg" alt="" aria-hidden />
         <span className="kicker" style={{ justifyContent: 'center' }}>

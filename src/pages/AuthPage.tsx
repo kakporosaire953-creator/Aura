@@ -4,7 +4,7 @@ import gsap from 'gsap';
 import { AuraLogo } from '../components/brand/AuraLogo';
 import { useT } from '../app/prefs';
 import { useSession, appelerAuth } from '../app/session';
-import { simulationActivee, ouvrirDemo } from '../app/simulation';
+import { ouvrirDemo } from '../app/simulation';
 
 /** Traduction des codes d'erreur de l'API en messages locaux (fr/en). */
 function messageErreur(
@@ -158,7 +158,7 @@ export const AuthPage: React.FC = () => {
         </div>
       </aside>
 
-      <main className="auth-formulaire">
+      <main className="auth-formulaire" id="contenu">
         <div className="auth-boite">
           <Link to="/" aria-label="AURA">
             <AuraLogo taille="sm" />
@@ -235,20 +235,20 @@ export const AuthPage: React.FC = () => {
             {t.auth.note}
           </p>
 
-          {simulationActivee() && (
-            <button
-              type="button"
-              className="btn btn-ligne auth-demo"
-              onClick={() => {
-                ouvrirDemo();
-                void rafraichir();
-                navigate('/app', { replace: true });
-              }}
-            >
-              <i className="fa-solid fa-flask" aria-hidden />
-              <span>{t.simulation.demoBtn}</span>
-            </button>
-          )}
+          {/* Entrée volontaire en démonstration : toujours proposée,
+              y compris en production où la simulation est désactivée par défaut. */}
+          <button
+            type="button"
+            className="btn btn-ligne auth-demo"
+            onClick={() => {
+              ouvrirDemo();
+              void rafraichir();
+              navigate('/app', { replace: true });
+            }}
+          >
+            <i className="fa-solid fa-flask" aria-hidden />
+            <span>{t.simulation.demoBtn}</span>
+          </button>
 
           <p className="auth-bascule">
             {inscription ? t.auth.basculeLogin : t.auth.basculeRegister}{' '}

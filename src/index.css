@@ -33,11 +33,12 @@
 
   --ombre-douce: 0 24px 60px -28px rgba(18, 33, 27, 0.22);
   --ombre-flottante: 0 40px 90px -30px rgba(18, 33, 27, 0.32);
-  --rayon: 22px;
   --rayon-l: 32px;
 
   --font-titre: 'Fraunces', 'Georgia', serif;
   --font-texte: 'Manrope', 'Helvetica Neue', sans-serif;
+  /* Alias attendu par de nombreuses règles de composants : */
+  --font-corps: var(--font-texte);
 }
 
 /* ---------- Base ---------- */
@@ -1862,26 +1863,35 @@ button {
   filter: drop-shadow(0 30px 60px rgba(234, 203, 55, 0.35));
 }
 
-/* ---------- Révélations (soie) ---------- */
-[data-reveal] {
+/* ---------- Révélations (soie) ----------
+   Visible par défaut. Le masquage n'est actif que si JavaScript est
+   démarré (classe « js » posée tôt par un script en ligne) ; si le
+   paquet ne s'initialise pas, « reveal-off » (déclenché par minuteur)
+   rend tout visible. Aucune zone ne reste invisible en cas d'échec. */
+.js [data-reveal] {
   opacity: 0;
   transform: translateY(30px);
   transition: opacity 1s var(--soie), transform 1s var(--soie);
   transition-delay: var(--delai, 0ms);
 }
 
-[data-reveal='in'] {
+.js [data-reveal='in'] {
   opacity: 1;
   transform: none;
 }
 
-[data-reveal='tourne'] {
+.js [data-reveal='tourne'] {
   transform: translateY(34px) rotate(-1.6deg);
 }
 
-[data-reveal='tourne'][data-reveal='in'],
-.is-in[data-reveal='tourne'] {
+.js [data-reveal='tourne'][data-reveal='in'],
+.js .is-in[data-reveal='tourne'] {
   transform: none;
+}
+
+.reveal-off [data-reveal] {
+  opacity: 1 !important;
+  transform: none !important;
 }
 
 /* ligne masquée pour les titres hero — marges symétriques :
@@ -1931,7 +1941,10 @@ button {
     grid-template-columns: 60px 1fr;
   }
 
-  .capacite > .corps {
+  /* C2 : le texte descriptif reprend toute la largeur sous 1024px
+     (avant, le sélecteur .capacite > .corps ne correspondait à rien et
+     le bloc restait coincé dans la colonne de 60px). */
+  .capacite > .capacite-texte {
     grid-column: 1 / -1;
   }
 
@@ -3113,42 +3126,6 @@ button {
   margin: 0 0 0.45rem;
 }
 
-/* — Onglets du workspace — */
-.ws-nav {
-  position: sticky;
-  top: 78px;
-  z-index: 50;
-  display: flex;
-  justify-content: center;
-  gap: 0.45rem;
-  padding: 0.65rem 1rem;
-  background: var(--verre-tint-plein);
-  -webkit-backdrop-filter: var(--verre-flou);
-  backdrop-filter: var(--verre-flou);
-  border-bottom: 1px solid var(--brume);
-  overflow-x: auto;
-}
-
-.ws-nav a {
-  flex-shrink: 0;
-  padding: 0.5em 1.15em;
-  border-radius: 999px;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--encre-2);
-  transition: all 0.3s ease;
-}
-
-.ws-nav a:hover {
-  color: var(--encre);
-  background: rgba(234, 203, 55, 0.16);
-}
-
-.ws-nav a.active {
-  background: var(--encre);
-  color: var(--ivoire);
-}
-
 /* — Pages des modules — */
 .module-page {
   display: flex;
@@ -3285,11 +3262,16 @@ button {
   padding: 0.35em 0.9em;
 }
 
-.explore-lien {
+/* Indication honnête : les résultats de démonstration n'ont pas de
+   source réelle à ouvrir — pas de lien artificiel. */
+.explore-indispo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  font-size: 0.82rem;
   font-weight: 700;
-  color: var(--vert-profond);
-  pointer-events: none;
-  opacity: 0.75;
+  color: var(--encre-2);
+  opacity: 0.85;
 }
 
 .explore-vide {
@@ -3567,11 +3549,6 @@ button {
   .explore-barre,
   .missions-barre {
     flex-direction: column;
-  }
-
-  .ws-nav {
-    top: 78px;
-    justify-content: flex-start;
   }
 }
 
@@ -4014,7 +3991,7 @@ button {
 .ws-user-texte em {
   font-style: normal;
   font-size: 0.72rem;
-  opacity: 0.65;
+  opacity: 0.8;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -4514,7 +4491,7 @@ button {
 .accueil-recent-texte em {
   font-style: normal;
   font-size: 0.73rem;
-  opacity: 0.62;
+  opacity: 0.8;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -4627,7 +4604,7 @@ button {
 
 .historique-quand {
   font-size: 0.78rem;
-  opacity: 0.6;
+  opacity: 0.8;
   white-space: nowrap;
 }
 
@@ -5054,4 +5031,223 @@ img {
   .module-carte {
     transition: none;
   }
+}
+
+/* ═══════════════════════════════════════════
+   CONSOLIDATION — navigation, accessibilité,
+   états interactifs, composants corrigés
+   ═══════════════════════════════════════════ */
+
+/* — Focus visible général (navigation clavier) — */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--vert-profond);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+button:disabled,
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* — Lien d'évitement (skip to content) — */
+.lien-evitement {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 200;
+  padding: 0.85em 1.35em;
+  background: var(--encre);
+  color: var(--ivoire);
+  font-weight: 800;
+  border-radius: 0 0 12px 0;
+}
+
+.lien-evitement:focus-visible {
+  left: 0;
+  outline-offset: -3px;
+}
+
+/* — C3 : les badges de démonstration posés en enfant direct d'une
+   colonne flex (.module) ne s'étirent plus sur toute la largeur. — */
+.module > .badge-sim,
+.missions-tableau > .badge-sim {
+  align-self: flex-start;
+}
+
+/* — Navigation mobile publique (< 720px) — */
+.nav-burger {
+  display: none;
+  cursor: pointer;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--brume);
+  background: var(--papier);
+  color: var(--encre);
+  font-size: 1.12rem;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.nav-burger:hover {
+  border-color: var(--or);
+}
+
+.nav-mobile {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--papier);
+  border-bottom: 1px solid var(--brume);
+  box-shadow: var(--ombre-douce);
+  padding: 0.85rem clamp(1rem, 4vw, 1.75rem) 1.15rem;
+}
+
+.nav-mobile ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-mobile a {
+  display: block;
+  padding: 0.85em 0.95em;
+  border-radius: 12px;
+  color: var(--encre);
+  font-weight: 700;
+  min-height: 46px;
+  box-sizing: border-box;
+}
+
+.nav-mobile a:hover {
+  background: rgba(234, 203, 55, 0.16);
+}
+
+.nav-mobile .btn-encre {
+  margin-top: 0.45rem;
+  text-align: center;
+}
+
+@media (max-width: 720px) {
+  .nav-burger {
+    display: inline-flex;
+  }
+
+  .nav-mobile.ouvert {
+    display: block;
+    animation: fondu-menu 0.28s var(--soie);
+  }
+}
+
+/* — Missions : contrôles de modification — */
+.mission-range {
+  width: 100%;
+  margin: 0.35rem 0 0.15rem;
+  accent-color: var(--vert-profond);
+  cursor: pointer;
+  height: 22px;
+}
+
+.mission-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  margin-top: 0.35rem;
+}
+
+.mission-boutons {
+  display: inline-flex;
+  gap: 0.45rem;
+}
+
+.mission-action {
+  cursor: pointer;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid var(--brume);
+  background: var(--papier);
+  color: var(--encre-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.82rem;
+  transition: all 0.28s ease;
+}
+
+.mission-action:hover {
+  border-color: var(--or);
+  color: var(--encre);
+}
+
+.mission-supprimer:hover {
+  border-color: var(--feu);
+  color: var(--feu);
+}
+
+/* — Documentation : sommaire cliquable — */
+.docs-sommaire {
+  margin: 0 0 2.25rem;
+  padding: 1.15rem 1.35rem;
+  border: 1px solid var(--brume);
+  border-radius: 18px;
+  background: var(--papier);
+}
+
+.docs-sommaire ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem 1.35rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.docs-sommaire a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55em;
+  padding: 0.45em 0.75em;
+  border-radius: 10px;
+  color: var(--encre-2);
+  font-size: 0.88rem;
+  font-weight: 700;
+  min-height: 40px;
+  transition: all 0.25s ease;
+}
+
+.docs-sommaire a:hover {
+  background: rgba(234, 203, 55, 0.16);
+  color: var(--encre);
+}
+
+.docs-sommaire a span {
+  font-family: var(--font-titre);
+  font-style: italic;
+  opacity: 0.75;
+}
+
+/* — Repli statique du visuel Lottie — */
+.lottie-repli {
+  width: 100%;
+  height: 100%;
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 32% 30%, rgba(234, 203, 55, 0.35), transparent 55%),
+    radial-gradient(circle at 70% 68%, rgba(255, 121, 13, 0.22), transparent 52%),
+    radial-gradient(circle at 50% 50%, rgba(165, 232, 56, 0.18), transparent 70%);
 }

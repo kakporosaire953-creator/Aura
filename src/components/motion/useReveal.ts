@@ -1,5 +1,12 @@
 import { useEffect, useRef } from 'react';
 
+// Système de révélations initialisé : le masquage CSS (« .js [data-reveal] »)
+// peut s'appliquer. Sans cette marque (script non chargé), un minuteur
+// bascule en « reveal-off » et le contenu reste visible.
+if (typeof document !== 'undefined') {
+  document.documentElement.classList.add('reveal-on');
+}
+
 /**
  * Révélation soie : observe l'élément et ajoute `.is-in`
  * quand il entre dans la fenêtre. Respecte prefers-reduced-motion.
