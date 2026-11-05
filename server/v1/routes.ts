@@ -282,8 +282,9 @@ export function createApiV1(): express.Router {
         return;
       }
       const corps = (req.body ?? {}) as Record<string, unknown>;
-      const contenu = chaine(corps.contenu, { min: 1, max: LIMITE_CONTENU });
-      if (contenu === undefined || contenu === null) {
+      const estRegeneration = corps.regenerer === true;
+      const contenu = estRegeneration ? '' : chaine(corps.contenu, { min: 1, max: LIMITE_CONTENU });
+      if (!estRegeneration && (contenu === undefined || contenu === null)) {
         invalide(res, { contenu: 'invalide' });
         return;
       }
@@ -301,21 +302,38 @@ export function createApiV1(): express.Router {
       }
 
       const maintenant = new Date().toISOString();
-      const messageUser = await r.donnees!.ajouterMessage({
-        id: nouvelId('msg'),
-        conversationId: conv.id,
-        role: 'user',
-        contenu,
-        statut: 'envoye',
-        cree: maintenant,
-        meta: null,
-      });
+      let messageUser!: Message;
 
-      // Titre auto à partir du premier message.
-      if (conv.titre === 'Nouvelle conversation') {
-        await r.donnees!.majConversation(conv.id, {
-          titre: contenu.slice(0, 80),
+      if (estRegeneration) {
+        // Régénération : reprendre le dernier message utilisateur et
+        // remplacer la réponse — aucun nouveau message utilisateur.
+        const historiqueExistant = await r.donnees!.messages(conv.id, { limite: 40 });
+        const dernierUser = [...historiqueExistant].reverse().find((m) => m.role === 'user');
+        if (!dernierUser) {
+          invalide(res, { conversation: 'vide' });
+          return;
+        }
+        messageUser = dernierUser;
+        for (const m of historiqueExistant) {
+          if (m.role === 'assistant') await r.donnees!.supprimerMessage(conv.id, m.id);
+        }
+      } else {
+        messageUser = await r.donnees!.ajouterMessage({
+          id: nouvelId('msg'),
+          conversationId: conv.id,
+          role: 'user',
+          contenu: contenu!,
+          statut: 'envoye',
+          cree: maintenant,
+          meta: null,
         });
+
+        // Titre auto à partir du premier message.
+        if (conv.titre === 'Nouvelle conversation') {
+          await r.donnees!.majConversation(conv.id, {
+            titre: contenu!.slice(0, 80),
+          });
+        }
       }
 
       // Contexte : conversation + projet + mémoires autorisées (sélection).

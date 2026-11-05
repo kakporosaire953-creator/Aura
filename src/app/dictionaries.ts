@@ -358,6 +358,146 @@ export interface Content {
     sous: string;
     btn: string;
   };
+  ws: {
+    navPrincipal: string;
+    navPersonnel: string;
+    vueEnsemble: string;
+    assistant: string;
+    projetsNav: string;
+    explorerNav: string;
+    missionsNav: string;
+    studioNav: string;
+    historiqueNav: string;
+    memoireNav: string;
+    parametresNav: string;
+    nouvelleConv: string;
+    nouveauProjet: string;
+    bonjour: string;
+    bonjourDefaut: string;
+    introAide: string;
+    continuTitre: string;
+    continuVide: string;
+    reprendre: string;
+    enCoursTitre: string;
+    actionsRapides: string;
+    actionQuestion: string;
+    actionProjet: string;
+    actionMission: string;
+    actionDocument: string;
+    conversationsTitre: string;
+    renommer: string;
+    supprimerConfirme: string;
+    convVide: string;
+    arreter: string;
+    regenerer: string;
+    copier: string;
+    copie: string;
+    streamEnCours: string;
+    interrompuNote: string;
+    contexteUtilise: string;
+    memoiresUtilisees: string;
+    projetsTitre: string;
+    projetNouveau: string;
+    nomLabel: string;
+    descriptionLabel: string;
+    objectifLabel: string;
+    categorieLabel: string;
+    instructionsLabel: string;
+    instructionsAide: string;
+    archiver: string;
+    desarchiver: string;
+    confirmerSuppr: string;
+    ongletApercu: string;
+    ongletConvs: string;
+    ongletMissions: string;
+    ongletCreations: string;
+    ongletMemoire: string;
+    ongletRecherches: string;
+    vueListe: string;
+    vueKanban: string;
+    vueEcheances: string;
+    nouvelleMission: string;
+    prioriteLabel: string;
+    echeanceLabel: string;
+    sousTachesLabel: string;
+    ajouterSousTache: string;
+    notesLabel: string;
+    aideIa: string;
+    aideIaPlaceholder: string;
+    aideIaNote: string;
+    propositionTitre: string;
+    validerProposition: string;
+    statutAFaire: string;
+    statutEnCours: string;
+    statutEnAttente: string;
+    statutTerminee: string;
+    statutArchivee: string;
+    prioBasse: string;
+    prioMoyenne: string;
+    prioHaute: string;
+    prioUrgente: string;
+    memoireTitre: string;
+    memoireSous: string;
+    ajouterMemoire: string;
+    typeMemoireLabel: string;
+    memoireActive: string;
+    memoireInactive: string;
+    toutEffacer: string;
+    confirmerVider: string;
+    memoireVide: string;
+    noteConfidentialite: string;
+    recherchePlaceholder: string;
+    lancer: string;
+    sourcesTitre: string;
+    aucuneSource: string;
+    sansResultat: string;
+    enregistrerProjet: string;
+    devenirMission: string;
+    devenirDocument: string;
+    historiqueRecherches: string;
+    typeCreationLabel: string;
+    instructionLabel: string;
+    generer: string;
+    versionsTitre: string;
+    versionNumero: string;
+    exporter: string;
+    reviser: string;
+    revisionPlaceholder: string;
+    aucuneCreation: string;
+    profilContextuel: string;
+    profilSous: string;
+    paysLabel: string;
+    villeLabel: string;
+    deviseLabel: string;
+    fuseauLabel: string;
+    unitesLabel: string;
+    metriques: string;
+    imperiales: string;
+    domaineLabel: string;
+    languePrincipaleLabel: string;
+    languesSecondairesLabel: string;
+    preferencesTitre: string;
+    tonLabel: string;
+    tonConcis: string;
+    tonDetaille: string;
+    tonPedagogique: string;
+    utiliserMemoireLabel: string;
+    langueReponseLabel: string;
+    langueAuto: string;
+    enregistrer: string;
+    enregistre: string;
+    localNote: string;
+    localNoteTitre: string;
+    dicter: string;
+    lireVoix: string;
+    arreterLecture: string;
+    confirmer: string;
+    annuler: string;
+    reessayer: string;
+    retour: string;
+    indisponible: string;
+    configRequise: string;
+  };
 }
 
 const etapesFr: Etape[] = [
@@ -981,6 +1121,151 @@ const contentFr: Content = {
     sous: 'Le fil se rompt ici — reprenons-le au commencement.',
     btn: "Revenir à l'accueil",
   },
+  ws: {
+    navPrincipal: 'Principal',
+    navPersonnel: 'Personnel',
+    vueEnsemble: 'Vue d’ensemble',
+    assistant: 'Assistant',
+    projetsNav: 'Projets',
+    explorerNav: 'Explorer',
+    missionsNav: 'Missions',
+    studioNav: 'Studio',
+    historiqueNav: 'Historique',
+    memoireNav: 'Mémoire AURA',
+    parametresNav: 'Paramètres',
+    nouvelleConv: 'Nouvelle conversation',
+    nouveauProjet: 'Nouveau projet',
+    bonjour: 'Bonjour',
+    bonjourDefaut: 'et bienvenue',
+    introAide: 'Que puis-je accomplir pour vous aujourd’hui ?',
+    continuTitre: 'Reprendre le travail',
+    continuVide: 'Rien à reprendre pour l’instant — commencez par une conversation ou un projet.',
+    reprendre: 'Reprendre',
+    enCoursTitre: 'En cours',
+    actionsRapides: 'Actions rapides',
+    actionQuestion: 'Poser une question',
+    actionProjet: 'Créer un projet',
+    actionMission: 'Créer une mission',
+    actionDocument: 'Générer un document',
+    conversationsTitre: 'Conversations',
+    renommer: 'Renommer',
+    supprimerConfirme: 'Supprimer définitivement ? Cette action est irréversible.',
+    convVide: 'Aucune conversation.',
+    arreter: 'Arrêter la génération',
+    regenerer: 'Régénérer',
+    copier: 'Copier',
+    copie: 'Copié',
+    streamEnCours: 'Aura rédige…',
+    interrompuNote: 'Réponse interrompue',
+    contexteUtilise: 'Contexte utilisé',
+    memoiresUtilisees: 'mémoires',
+    projetsTitre: 'Projets',
+    projetNouveau: 'Nouveau projet',
+    nomLabel: 'Nom',
+    descriptionLabel: 'Description',
+    objectifLabel: 'Objectif',
+    categorieLabel: 'Catégorie',
+    instructionsLabel: 'Instructions du projet',
+    instructionsAide:
+      'Ces instructions sont transmises à l’assistant lorsque vous travaillez dans ce projet.',
+    archiver: 'Archiver',
+    desarchiver: 'Désarchiver',
+    confirmerSuppr: 'Supprimer cet élément ? Cette action est irréversible.',
+    ongletApercu: 'Aperçu',
+    ongletConvs: 'Conversations',
+    ongletMissions: 'Missions',
+    ongletCreations: 'Créations',
+    ongletMemoire: 'Mémoire',
+    ongletRecherches: 'Recherches',
+    vueListe: 'Liste',
+    vueKanban: 'Tableau',
+    vueEcheances: 'Échéances',
+    nouvelleMission: 'Nouvelle mission',
+    prioriteLabel: 'Priorité',
+    echeanceLabel: 'Échéance',
+    sousTachesLabel: 'Sous-tâches',
+    ajouterSousTache: 'Ajouter une sous-tâche',
+    notesLabel: 'Notes',
+    aideIa: 'Décomposer avec AURA',
+    aideIaPlaceholder: 'Décrivez votre objectif…',
+    aideIaNote: 'AURA propose un plan — vous validez ou modifiez avant tout enregistrement.',
+    propositionTitre: 'Proposition de missions',
+    validerProposition: 'Valider et créer',
+    statutAFaire: 'À faire',
+    statutEnCours: 'En cours',
+    statutEnAttente: 'En attente',
+    statutTerminee: 'Terminée',
+    statutArchivee: 'Archivée',
+    prioBasse: 'Basse',
+    prioMoyenne: 'Moyenne',
+    prioHaute: 'Haute',
+    prioUrgente: 'Urgente',
+    memoireTitre: 'Mémoire AURA',
+    memoireSous:
+      'Les informations qu’AURA peut utiliser pour vous servir. Vous gardez le contrôle : ajoutez, modifiez, désactivez, effacez.',
+    ajouterMemoire: 'Mémoriser une information',
+    typeMemoireLabel: 'Type',
+    memoireActive: 'Active',
+    memoireInactive: 'Désactivée',
+    toutEffacer: 'Tout effacer',
+    confirmerVider: 'Effacer toute la mémoire ? Cette action est irréversible.',
+    memoireVide: 'Aucune information mémorisée.',
+    noteConfidentialite:
+      'La mémoire ne contient jamais vos mots de passe. Elle est propre à votre compte et n’est jamais partagée.',
+    recherchePlaceholder: 'Rechercher une information vérifiée…',
+    lancer: 'Rechercher',
+    sourcesTitre: 'Sources',
+    aucuneSource: 'Aucune source vérifiable trouvée.',
+    sansResultat: 'Aucun résultat exploitable pour cette recherche.',
+    enregistrerProjet: 'Associer à un projet',
+    devenirMission: 'Devenir une mission',
+    devenirDocument: 'Devenir un document',
+    historiqueRecherches: 'Recherches sauvegardées',
+    typeCreationLabel: 'Type de création',
+    instructionLabel: 'Instruction',
+    generer: 'Générer',
+    versionsTitre: 'Versions',
+    versionNumero: 'Version',
+    exporter: 'Exporter (Markdown)',
+    reviser: 'Réviser',
+    revisionPlaceholder: 'Décrivez la révision souhaitée…',
+    aucuneCreation: 'Aucune création pour l’instant.',
+    profilContextuel: 'Profil contextuel (AURA Local)',
+    profilSous:
+      'Ces informations aident AURA à adapter ses réponses (devise, unités, langue, contexte). Elles restent privées et modifiables à tout moment.',
+    paysLabel: 'Pays',
+    villeLabel: 'Région ou ville',
+    deviseLabel: 'Devise préférée',
+    fuseauLabel: 'Fuseau horaire',
+    unitesLabel: 'Unités de mesure',
+    metriques: 'Métriques',
+    imperiales: 'Impériales',
+    domaineLabel: 'Domaine d’activité',
+    languePrincipaleLabel: 'Langue principale',
+    languesSecondairesLabel: 'Langues secondaires',
+    preferencesTitre: 'Préférences de réponse',
+    tonLabel: 'Ton des réponses',
+    tonConcis: 'Concis',
+    tonDetaille: 'Détaillé',
+    tonPedagogique: 'Pédagogique',
+    utiliserMemoireLabel: 'Autoriser l’usage de la mémoire dans les réponses',
+    langueReponseLabel: 'Langue des réponses',
+    langueAuto: 'Suivre la conversation',
+    enregistrer: 'Enregistrer',
+    enregistre: 'Enregistré',
+    localNoteTitre: 'AURA Local',
+    localNote:
+      'AURA n’invente pas de faits locaux : le contexte que vous renseignez sert uniquement à adapter les exemples, et les informations non vérifiées sont signalées comme telles.',
+    dicter: 'Dicter',
+    lireVoix: 'Lire à voix haute',
+    arreterLecture: 'Arrêter la lecture',
+    confirmer: 'Confirmer',
+    annuler: 'Annuler',
+    reessayer: 'Réessayer',
+    retour: 'Retour',
+    indisponible: 'Indisponible',
+    configRequise: 'Configuration requise',
+  },
 };
 
 const contentEn: Content = {
@@ -1530,6 +1815,151 @@ const contentEn: Content = {
     titre2: 'evaporated',
     sous: 'The thread breaks here — let’s pick it up at the beginning.',
     btn: 'Back to home',
+  },
+  ws: {
+    navPrincipal: 'Main',
+    navPersonnel: 'Personal',
+    vueEnsemble: 'Overview',
+    assistant: 'Assistant',
+    projetsNav: 'Projects',
+    explorerNav: 'Explorer',
+    missionsNav: 'Missions',
+    studioNav: 'Studio',
+    historiqueNav: 'History',
+    memoireNav: 'AURA Memory',
+    parametresNav: 'Settings',
+    nouvelleConv: 'New conversation',
+    nouveauProjet: 'New project',
+    bonjour: 'Hello',
+    bonjourDefaut: 'and welcome',
+    introAide: 'What can I accomplish for you today?',
+    continuTitre: 'Continue your work',
+    continuVide: 'Nothing to resume yet — start with a conversation or a project.',
+    reprendre: 'Resume',
+    enCoursTitre: 'In progress',
+    actionsRapides: 'Quick actions',
+    actionQuestion: 'Ask a question',
+    actionProjet: 'Create a project',
+    actionMission: 'Create a mission',
+    actionDocument: 'Generate a document',
+    conversationsTitre: 'Conversations',
+    renommer: 'Rename',
+    supprimerConfirme: 'Delete permanently? This cannot be undone.',
+    convVide: 'No conversations.',
+    arreter: 'Stop generation',
+    regenerer: 'Regenerate',
+    copier: 'Copy',
+    copie: 'Copied',
+    streamEnCours: 'Aura is writing…',
+    interrompuNote: 'Answer interrupted',
+    contexteUtilise: 'Context used',
+    memoiresUtilisees: 'memories',
+    projetsTitre: 'Projects',
+    projetNouveau: 'New project',
+    nomLabel: 'Name',
+    descriptionLabel: 'Description',
+    objectifLabel: 'Objective',
+    categorieLabel: 'Category',
+    instructionsLabel: 'Project instructions',
+    instructionsAide:
+      'These instructions are sent to the assistant when you work within this project.',
+    archiver: 'Archive',
+    desarchiver: 'Unarchive',
+    confirmerSuppr: 'Delete this item? This cannot be undone.',
+    ongletApercu: 'Overview',
+    ongletConvs: 'Conversations',
+    ongletMissions: 'Missions',
+    ongletCreations: 'Creations',
+    ongletMemoire: 'Memory',
+    ongletRecherches: 'Searches',
+    vueListe: 'List',
+    vueKanban: 'Board',
+    vueEcheances: 'Due dates',
+    nouvelleMission: 'New mission',
+    prioriteLabel: 'Priority',
+    echeanceLabel: 'Due date',
+    sousTachesLabel: 'Subtasks',
+    ajouterSousTache: 'Add a subtask',
+    notesLabel: 'Notes',
+    aideIa: 'Break down with AURA',
+    aideIaPlaceholder: 'Describe your goal…',
+    aideIaNote: 'AURA suggests a plan — you validate or edit before anything is saved.',
+    propositionTitre: 'Proposed missions',
+    validerProposition: 'Validate and create',
+    statutAFaire: 'To do',
+    statutEnCours: 'In progress',
+    statutEnAttente: 'On hold',
+    statutTerminee: 'Done',
+    statutArchivee: 'Archived',
+    prioBasse: 'Low',
+    prioMoyenne: 'Medium',
+    prioHaute: 'High',
+    prioUrgente: 'Urgent',
+    memoireTitre: 'AURA Memory',
+    memoireSous:
+      'The information AURA may use to serve you. You stay in control: add, edit, disable, erase.',
+    ajouterMemoire: 'Memorize a piece of information',
+    typeMemoireLabel: 'Type',
+    memoireActive: 'Active',
+    memoireInactive: 'Disabled',
+    toutEffacer: 'Erase everything',
+    confirmerVider: 'Erase the whole memory? This cannot be undone.',
+    memoireVide: 'Nothing memorized yet.',
+    noteConfidentialite:
+      'Memory never stores your passwords. It belongs to your account and is never shared.',
+    recherchePlaceholder: 'Search for verified information…',
+    lancer: 'Search',
+    sourcesTitre: 'Sources',
+    aucuneSource: 'No verifiable source found.',
+    sansResultat: 'No usable result for this search.',
+    enregistrerProjet: 'Link to a project',
+    devenirMission: 'Become a mission',
+    devenirDocument: 'Become a document',
+    historiqueRecherches: 'Saved searches',
+    typeCreationLabel: 'Creation type',
+    instructionLabel: 'Instruction',
+    generer: 'Generate',
+    versionsTitre: 'Versions',
+    versionNumero: 'Version',
+    exporter: 'Export (Markdown)',
+    reviser: 'Revise',
+    revisionPlaceholder: 'Describe the desired revision…',
+    aucuneCreation: 'No creations yet.',
+    profilContextuel: 'Contextual profile (AURA Local)',
+    profilSous:
+      'This information helps AURA adapt its answers (currency, units, language, context). It stays private and editable at any time.',
+    paysLabel: 'Country',
+    villeLabel: 'Region or city',
+    deviseLabel: 'Preferred currency',
+    fuseauLabel: 'Time zone',
+    unitesLabel: 'Measurement units',
+    metriques: 'Metric',
+    imperiales: 'Imperial',
+    domaineLabel: 'Field of work',
+    languePrincipaleLabel: 'Main language',
+    languesSecondairesLabel: 'Secondary languages',
+    preferencesTitre: 'Answer preferences',
+    tonLabel: 'Answer tone',
+    tonConcis: 'Concise',
+    tonDetaille: 'Detailed',
+    tonPedagogique: 'Pedagogical',
+    utiliserMemoireLabel: 'Allow memory usage in answers',
+    langueReponseLabel: 'Answer language',
+    langueAuto: 'Follow the conversation',
+    enregistrer: 'Save',
+    enregistre: 'Saved',
+    localNoteTitre: 'AURA Local',
+    localNote:
+      'AURA does not invent local facts: the context you provide only adapts examples, and unverified information is flagged as such.',
+    dicter: 'Dictate',
+    lireVoix: 'Read aloud',
+    arreterLecture: 'Stop reading',
+    confirmer: 'Confirm',
+    annuler: 'Cancel',
+    reessayer: 'Try again',
+    retour: 'Back',
+    indisponible: 'Unavailable',
+    configRequise: 'Setup required',
   },
 };
 

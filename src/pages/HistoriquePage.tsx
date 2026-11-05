@@ -1,125 +1,109 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useT, usePrefs } from '../app/prefs';
-import { simulationActivee, FILS_DEMO } from '../app/simulation';
-import { listerFils, supprimerFil, ilYATexte, type FilLocal } from '../app/historique';
+import { useT } from '../app/prefs';
+import { EtatChargement, EtatVide, EtatErreur } from '../components/ui/Primitives';
+import * as api from '../services/api';
+import type { Conversation } from '../services/types';
 
 /**
- * Historique — vrais fils stockés sur l'appareil, plus les
- * conversations de démonstration badgées en simulation.
- * Aucun envoi réseau : tout est local, et l'interface le dit.
+ * Historique — toutes les conversations persistées du compte, avec
+ * recherche, ouverture et suppression. Données serveur (API v1) ;
+ * plus de silo localStorage comme source de vérité.
  */
 export const HistoriquePage: React.FC = () => {
   const t = useT();
-  const { lang } = usePrefs();
   const navigate = useNavigate();
-  const sim = simulationActivee();
-  const [fils, setFils] = useState<FilLocal[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [recherche, setRecherche] = useState('');
+  const [chargement, setChargement] = useState(true);
+  const [erreur, setErreur] = useState<string | null>(null);
 
-  useEffect(() => {
-    setFils(listerFils());
+  const rafraichir = useCallback(async (q?: string) => {
+    const r = await api.listerConversations({ q });
+    if (r.ok) setConversations(r.donnees.conversations);
+    else setErreur(r.erreur);
+    setChargement(false);
   }, []);
 
-  const filtres = fils.filter((f) =>
-    f.titre.toLowerCase().includes(recherche.trim().toLowerCase()),
-  );
-  const demos = FILS_DEMO.filter((f) =>
-    (lang === 'en' ? f.titreEn : f.titre).toLowerCase().includes(recherche.trim().toLowerCase()),
-  );
+  useEffect(() => {
+    void rafraichir();
+  }, [rafraichir]);
 
-  const supprimer = (id: string) => {
-    supprimerFil(id);
-    setFils(listerFils());
-  };
+  useEffect(() => {
+    const timer = setTimeout(() => void rafraichir(recherche || undefined), 250);
+    return () => clearTimeout(timer);
+  }, [recherche, rafraichir]);
 
   return (
-    <div className="module-page-historique module">
-      <header className="module-entete">
-        <p className="kicker">{t.historique.kicker}</p>
-        <h1 className="titre-section">
-          {t.historique.titre1} <em className="italique-vif">{t.historique.titre2}</em>
-        </h1>
-        <p className="sous-titre">{t.historique.sous}</p>
+    <div className="page-module">
+      <header className="page-module-haut">
+        <div>
+          <h1 className="page-module-titre">{t.ws.historiqueNav}</h1>
+          <p className="page-module-sous">{t.historique.sous}</p>
+        </div>
+        <button
+          type="button"
+          className="btn-principal"
+          onClick={() => navigate('/chat', { state: { nouveau: true } })}
+        >
+          <i className="fa-solid fa-plus" /> {t.ws.nouvelleConv}
+        </button>
       </header>
 
-      <div className="explore-barre">
-        <input
-          type="search"
-          className="champ"
-          placeholder={t.historique.recherchePlaceholder}
-          value={recherche}
-          onChange={(e) => setRecherche(e.target.value)}
-          aria-label={t.historique.recherchePlaceholder}
+      <input
+        type="search"
+        className="champ champ-recherche"
+        placeholder={t.historique.recherchePlaceholder}
+        value={recherche}
+        onChange={(e) => setRecherche(e.target.value)}
+        aria-label={t.historique.recherchePlaceholder}
+      />
+
+      {erreur && <EtatErreur message={erreur} />}
+
+      {chargement ? (
+        <EtatChargement />
+      ) : conversations.length === 0 ? (
+        <EtatVide
+          icone="fa-clock-rotate-left"
+          titre={t.historique.vide}
+          action={
+            <button
+              type="button"
+              className="btn-principal"
+              onClick={() => navigate('/chat', { state: { nouveau: true } })}
+            >
+              {t.ws.nouvelleConv}
+            </button>
+          }
         />
-      </div>
-
-      {sim && (
-        <section className="historique-section">
-          <h2 className="historique-section-titre">
-            {t.historique.sectionDemo} <span className="badge-sim">{t.simulation.badge}</span>
-          </h2>
-          <div className="historique-liste">
-            {demos.map((f) => (
-              <div key={f.id} className="historique-carte demo">
-                <div className="historique-carte-texte">
-                  <strong>{lang === 'en' ? f.titreEn : f.titre}</strong>
-                  <em>{lang === 'en' ? f.apercuEn : f.apercu}</em>
-                </div>
-                <span className="historique-quand">{lang === 'en' ? f.quandEn : f.quandFr}</span>
-              </div>
-            ))}
-          </div>
-        </section>
+      ) : (
+        <div className="liste-simple">
+          {conversations.map((c) => (
+            <div key={c.id} className="ligne-simple">
+              <Link to={`/chat/${c.id}`} className="ligne-ouvrir">
+                <i className="fa-solid fa-comment-dots" />
+                <strong>{c.titre}</strong>
+                <em>
+                  {new Date(c.maj).toLocaleDateString()} · {new Date(c.maj).toLocaleTimeString()}
+                </em>
+              </Link>
+              <button
+                type="button"
+                className="btn-danger-simple"
+                aria-label={t.historique.supprimer}
+                onClick={async () => {
+                  if (!window.confirm(t.ws.supprimerConfirme)) return;
+                  await api.supprimerConversation(c.id);
+                  void rafraichir();
+                }}
+              >
+                <i className="fa-solid fa-trash" />
+              </button>
+            </div>
+          ))}
+        </div>
       )}
-
-      <section className="historique-section">
-        <h2 className="historique-section-titre">{t.historique.sectionLocal}</h2>
-        {filtres.length === 0 ? (
-          <p className="explore-vide">{t.historique.vide}</p>
-        ) : (
-          <div className="historique-liste">
-            {filtres.map((f) => (
-              <div key={f.id} className="historique-carte">
-                <button
-                  type="button"
-                  className="historique-carte-texte"
-                  onClick={() => navigate('/chat', { state: { fil: f } })}
-                >
-                  <strong>{f.titre}</strong>
-                  <em>
-                    {f.messages.length} {t.historique.messages} · {ilYATexte(f.date, lang)}
-                  </em>
-                </button>
-                <div className="historique-actions">
-                  <button
-                    type="button"
-                    className="historique-ouvrir"
-                    onClick={() => navigate('/chat', { state: { fil: f } })}
-                  >
-                    {t.historique.ouvrir}
-                  </button>
-                  <button
-                    type="button"
-                    className="historique-supprimer"
-                    aria-label={t.historique.supprimer}
-                    onClick={() => supprimer(f.id)}
-                  >
-                    <i className="fa-solid fa-trash-can" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-        <p className="module-note">{t.historique.note}</p>
-      </section>
-
-      <p className="module-note">
-        <Link to="/chat" className="btn-ligne">
-          {t.workspace.nouveauChat} <i className="fa-solid fa-arrow-right" />
-        </Link>
-      </p>
     </div>
   );
 };

@@ -317,6 +317,16 @@ export class EntrepotDonnees {
     return message;
   }
 
+  async supprimerMessage(conversationId: string, messageId: string): Promise<boolean> {
+    let trouve = false;
+    await this.maj((d) => {
+      const avant = d.messages.length;
+      d.messages = d.messages.filter((m) => !(m.id === messageId && m.conversationId === conversationId));
+      trouve = d.messages.length < avant;
+    });
+    return trouve;
+  }
+
   async majMessage(conversationId: string, messageId: string, patch: Partial<Message>): Promise<Message | null> {
     let resultat: Message | null = null;
     await this.maj((d) => {
