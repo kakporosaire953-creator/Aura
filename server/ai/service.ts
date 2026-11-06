@@ -14,7 +14,7 @@
 import { maxReplis } from './config';
 import { ErreurAi, erreurAucunFournisseur, natureDe } from './errors';
 import { executerAvecRepli } from './fallback';
-import { candidatsPour, desactiverFournisseur } from './registre';
+import { candidatsPour, desactiverFournisseur, signalerQuota } from './registre';
 import { capacitesPour } from './router';
 import type {
   ReponseAi,
@@ -32,6 +32,8 @@ export type Journalisation = {
     mode: 'generation' | 'stream' | 'structure' | 'recherche' | 'repli';
     caracteres?: number;
     erreur?: string;
+    dureeMs?: number;
+    bascules?: number;
   }) => void;
 };
 
@@ -40,15 +42,26 @@ function maxTentatives(): number {
 }
 
 function rejets(journal?: Journalisation) {
+  let bascules = 0;
   return {
     maxTentatives: maxTentatives(),
+    getBascules: () => bascules,
     onEchec: (f: { id: string; modele: string }, e: unknown, tentative: number) => {
       const code = e instanceof ErreurAi ? e.code : 'inconnu';
+      bascules++;
       console.warn(`[ia] tentative ${tentative} échouée (${f.id}, ${code}) — bascule éventuelle`);
-      journal?.noter?.({ fournisseur: f.id, modele: f.modele, mode: 'repli', erreur: code });
+      void journal?.noter?.({ fournisseur: f.id, modele: f.modele, mode: 'repli', erreur: code });
     },
     onDesactiver: (f: { id: string }) => desactiverFournisseur(f.id),
+    onQuota: (f: { id: string }) => signalerQuota(f.id),
   };
+}
+
+/** Journalise un succès (observabilité : fournisseur, modèle, durée, bascules). */
+function tracerSucces(rep: ReponseAi, mode: string, dureeMs: number, bascules: number): void {
+  console.log(
+    `[ia] ${mode} → ${rep.fournisseur}/${rep.modele} en ${dureeMs} ms (${bascules} bascule(s))`,
+  );
 }
 
 /** Génération de texte (synchrone). */
@@ -58,12 +71,18 @@ export async function generer(
   journal?: Journalisation,
 ): Promise<ReponseAi> {
   const liste = await candidatsPour(capacitesPour(tache));
-  const rep = await executerAvecRepli(liste, (f) => f.generateResponse(req), rejets(journal));
-  journal?.noter?.({
+  const debut = Date.now();
+  const r = rejets(journal);
+  const rep = await executerAvecRepli(liste, (f) => f.generateResponse(req), r);
+  const dureeMs = Date.now() - debut;
+  tracerSucces(rep, `generation(${tache})`, dureeMs, r.getBascules());
+  await journal?.noter?.({
     fournisseur: rep.fournisseur,
     modele: rep.modele,
     mode: 'generation',
     caracteres: rep.texte.length,
+    dureeMs,
+    bascules: r.getBascules(),
   });
   return rep;
 }
@@ -81,6 +100,8 @@ export async function genererEnStream(
 ): Promise<ReponseAi> {
   const liste = await candidatsPour(capacitesPour(tache, { streaming: true }));
   let emis = false;
+  const debut = Date.now();
+  const r = rejets(journal);
   const rep = await executerAvecRepli(
     liste,
     (f) =>
@@ -92,13 +113,17 @@ export async function genererEnStream(
         },
         signal,
       ),
-    { ...rejets(journal), peutBasculer: () => !emis },
+    { ...r, peutBasculer: () => !emis },
   );
-  journal?.noter?.({
+  const dureeMs = Date.now() - debut;
+  tracerSucces(rep, `stream(${tache})`, dureeMs, r.getBascules());
+  await journal?.noter?.({
     fournisseur: rep.fournisseur,
     modele: rep.modele,
     mode: 'stream',
     caracteres: rep.texte.length,
+    dureeMs,
+    bascules: r.getBascules(),
   });
   return rep;
 }
@@ -111,19 +136,25 @@ export async function genererStructure<T>(
 ): Promise<T> {
   const liste = await candidatsPour(capacitesPour(tache, { structuree: true }));
   let utilise: { id: string; modele: string } | null = null;
+  const debut = Date.now();
+  const r = rejets(journal);
   const out = await executerAvecRepli(
     liste,
     (f) => {
       utilise = f;
       return f.generateStructuredOutput<T>(req);
     },
-    rejets(journal),
+    r,
   );
+  const dureeMs = Date.now() - debut;
   if (utilise) {
-    journal?.noter?.({
+    console.log(`[ia] structure(${tache}) → ${(utilise as { id: string }).id}/${(utilise as { modele: string }).modele} en ${dureeMs} ms (${r.getBascules()} bascule(s))`);
+    await journal?.noter?.({
       fournisseur: (utilise as { id: string }).id,
       modele: (utilise as { modele: string }).modele,
       mode: 'structure',
+      dureeMs,
+      bascules: r.getBascules(),
     });
   }
   return out;
@@ -142,19 +173,25 @@ export async function rechercherAvecSources(
   const liste = await candidatsPour(capacitesPour('recherche'));
   const dispo = liste.filter((f) => typeof f.rechercherAvecSources === 'function');
   let utilise: { id: string; modele: string } | null = null;
+  const debut = Date.now();
+  const r = rejets(journal);
   const rep = await executerAvecRepli(
     dispo,
     (f) => {
       utilise = f;
       return f.rechercherAvecSources!(question, system);
     },
-    rejets(journal),
+    r,
   );
+  const dureeMs = Date.now() - debut;
   if (utilise) {
-    journal?.noter?.({
+    console.log(`[ia] recherche → ${(utilise as { id: string }).id}/${(utilise as { modele: string }).modele} en ${dureeMs} ms (${r.getBascules()} bascule(s))`);
+    await journal?.noter?.({
       fournisseur: (utilise as { id: string }).id,
       modele: (utilise as { modele: string }).modele,
       mode: 'recherche',
+      dureeMs,
+      bascules: r.getBascules(),
     });
   }
   return rep;

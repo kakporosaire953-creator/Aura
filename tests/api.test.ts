@@ -483,3 +483,45 @@ describe('Suppression de compte (§16)', () => {
     );
   });
 });
+
+describe('Observabilité IA (mission 02)', () => {
+  test('le suivi de consommation est persisté et consultable par le compte', async () => {
+    const c = client();
+    await c('POST', '/auth/register', {
+      email: 'obs@test.dev',
+      password: 'motdepasse123',
+      nom: 'Obs',
+    });
+    const conv = await c('POST', '/v1/conversations', { titre: 'Obs' });
+    await c('POST', `/v1/conversations/${(conv.json.conversation as Json).id}/messages`, {
+      contenu: 'Un message.',
+      stream: false,
+    });
+    const usage = await c('GET', '/v1/ai/usage');
+    assert.equal(usage.statut, 200);
+    const consommation = usage.json.consommation as Record<
+      string,
+      { appels: number; caracteres: number; dureeMoyenneMs: number }
+    >;
+    const entrees = Object.keys(consommation);
+    assert.ok(entrees.length >= 1, 'au moins un fournisseur tracé');
+    assert.ok(consommation[entrees[0]].appels >= 1, 'appel comptabilisé');
+    assert.ok(consommation[entrees[0]].caracteres > 0, 'caractères comptabilisés');
+    assert.ok(typeof consommation[entrees[0]].dureeMoyenneMs === 'number', 'durée tracée');
+  });
+
+  test('aucune clé ni contenu utilisateur dans le suivi de consommation', async () => {
+    const c = client();
+    await c('POST', '/auth/register', {
+      email: 'obs2@test.dev',
+      password: 'motdepasse123',
+      nom: 'Obs2',
+    });
+    const usage = await c('GET', '/v1/ai/usage');
+    const brut = JSON.stringify(usage.json);
+    assert.ok(!brut.includes('gsk_'), 'jamais de clé Groq');
+    assert.ok(!brut.includes('sk-or-'), 'jamais de clé OpenRouter');
+    assert.ok(!/AQ\.[A-Za-z0-9_-]{10}/.test(brut), 'jamais de clé Gemini');
+    assert.ok(!brut.includes('motdepasse123'), 'jamais de mot de passe');
+  });
+});

@@ -27,7 +27,7 @@ import type { Message, PreferencesUtilisateur, ProfilContextuel, StatutMessage }
 import { construireContexte, versMessagesModele } from '../services/contexte';
 import * as serviceIa from '../ai/service';
 import { ErreurAi } from '../ai/errors';
-import { enregistrerUsage } from '../ai/usage';
+import { enregistrerUsage, consommationParFournisseur } from '../ai/usage';
 import type { MessageAi } from '../ai/types';
 import { createRoutesTravail } from './routesTravail';
 import { createRoutesCreation } from './routesCreation';
@@ -175,6 +175,15 @@ export function createApiV1(): express.Router {
         raison: 'Stockage objet non configuré : les pièces jointes restent désactivées.',
       },
     });
+  }));
+
+  /* ── Tableau de bord technique interne : consommation IA du compte
+        (par fournisseur, sans secret ni contenu utilisateur) ── */
+
+  v1.get('/ai/usage', authRequise, asyncRoute(async (req, res) => {
+    const r = req as ReqV1;
+    const consommation = await consommationParFournisseur(r.donnees!);
+    res.json({ consommation });
   }));
 
   /* ── Suppression de compte (§16) — confirmation par mot de passe ── */

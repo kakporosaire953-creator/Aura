@@ -5,7 +5,8 @@
  * → persistance après actualisation → retour ultérieur.
  *
  * Serveur : API réelle + persistance réelle (pilote fichier), moteur IA
- * simulé (AURA_AI_PROVIDER=mock) — aucun appel payant.
+ * simulé (AI_DEFAULT_PROVIDER=mock — alias AURA_AI_PROVIDER accepté) —
+ * aucun appel payant.
  */
 const fs = require('fs');
 const path = require('path');
