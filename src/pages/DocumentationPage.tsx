@@ -2,11 +2,13 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { SiteNav, SiteFooter } from '../components/layout/SiteChrome';
 import { useRevealAll } from '../components/motion/useReveal';
-import { Tilt } from '../components/motion/Tilt';
-import { useT } from '../app/prefs';
+import { usePrefs } from '../app/prefs';
+import { DOCS } from '../app/docs';
 
+/** Hub de la documentation : guides réellement rédigés. */
 export const DocumentationPage: React.FC = () => {
-  const t = useT();
+  const { lang } = usePrefs();
+  const d = DOCS[lang];
   const reveal = useRevealAll<HTMLDivElement>();
 
   return (
@@ -14,61 +16,64 @@ export const DocumentationPage: React.FC = () => {
       <SiteNav />
 
       <main id="contenu">
-        <section className="section docs-page-hero">
-          <div className="wrap">
-            <span className="kicker" data-reveal>
-              {t.docs.kicker}
-            </span>
-            <h1 className="display-xl" data-reveal>
-              {t.docs.titre1} <em className="italique-vif">{t.docs.titre2}</em>.
-            </h1>
-            <p className="sous-titre" data-reveal>
-              {t.docs.sous}
-            </p>
-          </div>
-        </section>
+        <div ref={reveal}>
+          <section className="section docs-page-hero">
+            <div className="wrap">
+              <span className="kicker" data-reveal>
+                {d.hub.kicker}
+              </span>
+              <h1 className="display-xl" data-reveal>
+                {d.hub.titre1} <em className="italique-vif">{d.hub.titre2}</em>.
+              </h1>
+              <p className="sous-titre" data-reveal>
+                {d.hub.sous}
+              </p>
+            </div>
+          </section>
 
-        <section className="section docs" style={{ paddingTop: 0, border: 'none' }}>
-          <div className="wrap">
-            <nav className="docs-sommaire" aria-label={t.docs.sommaireLabel}>
-              <ul>
-                {t.docs.items.map((d) => (
-                  <li key={d.num}>
-                    <a href={`#doc-${d.num}`}>
-                      <span aria-hidden>§ {d.num}</span> {d.titre}
-                    </a>
-                  </li>
+          <section className="section docs-page-liste" aria-labelledby="docs-titre-liste">
+            <div className="wrap">
+              <h2 id="docs-titre-liste" className="sr-only">
+                {d.hub.sommaireLabel}
+              </h2>
+              <nav className="docs-sommaire" aria-label={d.hub.sommaireLabel} data-reveal>
+                <ul>
+                  {d.articles.map((a) => (
+                    <li key={a.slug}>
+                      <Link to={`/documentation/${a.slug}`}>
+                        <i className={`fa-solid ${a.icone}`} aria-hidden /> {a.titre}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+
+              <div className="docs-grille">
+                {d.articles.map((a) => (
+                  <article className="doc-carte" key={a.slug} data-reveal>
+                    <div className="doc-carte-haut">
+                      <span className="doc-icone" aria-hidden>
+                        <i className={`fa-solid ${a.icone}`} />
+                      </span>
+                      <span className="doc-num">
+                        {d.article.duree} : {a.duree}
+                      </span>
+                    </div>
+                    <h3>
+                      <Link to={`/documentation/${a.slug}`}>{a.titre}</Link>
+                    </h3>
+                    <p>{a.resume}</p>
+                    <Link to={`/documentation/${a.slug}`} className="doc-lire">
+                      {d.hub.lire} <i className="fa-solid fa-arrow-right" aria-hidden />
+                    </Link>
+                  </article>
                 ))}
-              </ul>
-            </nav>
-
-            <div className="docs-grille" ref={reveal}>
-              {t.docs.items.map((d) => (
-                <Tilt className="doc-carte" key={d.num} data-reveal="">
-                  <div className="doc-carte-haut">
-                    <span className="doc-icone" aria-hidden>
-                      <i className={`fa-solid ${d.icone}`} />
-                    </span>
-                    <span className="doc-num">§ {d.num}</span>
-                  </div>
-                  <h3 id={`doc-${d.num}`}>{d.titre}</h3>
-                  <p>{d.texte}</p>
-                  <span className="doc-statut">{d.label}</span>
-                </Tilt>
-              ))}
-            </div>
-
-            <div className="docs-appel" data-reveal>
-              <div>
-                <h2 className="display-md">{t.docs.appel.titre}</h2>
-                <p className="corps">{t.docs.appel.texte}</p>
               </div>
-              <Link to="/" className="btn btn-encre">
-                <span>{t.docs.appel.btn}</span>
-              </Link>
+
+              <p className="docs-note">{d.hub.note}</p>
             </div>
-          </div>
-        </section>
+          </section>
+        </div>
       </main>
 
       <SiteFooter />

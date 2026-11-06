@@ -75,12 +75,22 @@ async function nouvellePage(browser, largeur = 1440, hauteur = 900) {
     return req.abort();
   });
   const erreurs = [];
-  page.on('pageerror', (e) => erreurs.push(String(e.message)));
-  page.on('console', (m) => {
-    if (m.type() === 'error' && !/net::|Failed to load resource/.test(m.text())) {
-      erreurs.push(m.text());
-    }
+  // Bruit d'infrastructure de développement (WebSocket HMR de Vite) exclu :
+  // ce n'est pas une erreur applicative et il dépend du port du serveur.
+  const bruitInfra = (m) =>
+    /WebSocket closed without opened|failed to connect to websocket|\[vite\]|net::|Failed to load resource/i.test(
+      m,
+    );
+  page.on('pageerror', (e) => {
+    const m = String(e.message);
+    if (!bruitInfra(m)) erreurs.push(m);
   });
+  page.on('console', (msg) => {
+    if (msg.type() !== 'error') return;
+    const m = msg.text();
+    if (!bruitInfra(m)) erreurs.push(m);
+  });
+  // (doublon fusionné : filtre unique ci-dessus, bruit d'infra compris)
   page.erreursJS = erreurs;
   return page;
 }

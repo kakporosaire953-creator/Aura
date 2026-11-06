@@ -39,26 +39,79 @@ export const SiteNav: React.FC = () => {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Menu mobile : Échap referme et rend le focus au bouton ; le premier
-  // lien reçoit le focus à l'ouverture ; changement de page → fermeture.
+  // Menu mobile : Échap referme et rend le focus ; piège à focus dans le
+  // panneau ; verrouillage du défilement d'arrière-plan ; fermeture après
+  // sélection ; fermeture au second clic du burger (bascule).
   React.useEffect(() => {
     if (!menuOuvert) return;
+    const precedent = document.activeElement as HTMLElement | null;
     const onTouche = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setMenuOuvert(false);
         burgerRef.current?.focus();
+        return;
+      }
+      if (e.key === 'Tab' && menuRef.current) {
+        const elements = Array.from(
+          menuRef.current.querySelectorAll<HTMLElement>('a[href], button:not([disabled])'),
+        );
+        if (!elements.length) return;
+        const premier = elements[0];
+        const dernier = elements[elements.length - 1];
+        if (e.shiftKey && document.activeElement === premier) {
+          e.preventDefault();
+          dernier.focus();
+        } else if (!e.shiftKey && document.activeElement === dernier) {
+          e.preventDefault();
+          premier.focus();
+        }
       }
     };
     document.addEventListener('keydown', onTouche);
+    const verrou = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     menuRef.current?.querySelector<HTMLElement>('a, button')?.focus();
-    return () => document.removeEventListener('keydown', onTouche);
+    return () => {
+      document.removeEventListener('keydown', onTouche);
+      document.body.style.overflow = verrou;
+      precedent?.focus?.();
+    };
   }, [menuOuvert]);
 
   React.useEffect(() => {
     setMenuOuvert(false);
   }, [pathname]);
 
-  const accueil = pathname === '/';
+  const basculeLangue = (
+    <div className="bascule-langue" role="group" aria-label="Langue / Language">
+      <button
+        type="button"
+        className={lang === 'fr' ? 'actif' : ''}
+        aria-pressed={lang === 'fr'}
+        onClick={() => setLang('fr')}
+      >
+        FR
+      </button>
+      <button
+        type="button"
+        className={lang === 'en' ? 'actif' : ''}
+        aria-pressed={lang === 'en'}
+        onClick={() => setLang('en')}
+      >
+        EN
+      </button>
+    </div>
+  );
+  const basculeTheme = (
+    <button
+      type="button"
+      className="nav-icone"
+      onClick={toggleTheme}
+      aria-label={theme === 'dark' ? t.nav.themeClair : t.nav.themeSombre}
+    >
+      <i className={`fa-solid ${theme === 'dark' ? 'fa-sun' : 'fa-moon'}`} aria-hidden />
+    </button>
+  );
 
   return (
     <nav className={`nav${scrolled ? ' scrolled' : ''}`} aria-label={t.nav.ariaLabel}>
@@ -70,59 +123,26 @@ export const SiteNav: React.FC = () => {
         <Link to="/" aria-label="AURA — accueil">
           <AuraLogo taille="sm" />
         </Link>
+
         <ul className="nav-liens">
           <li>
             <Link to="/chat">{t.nav.chat}</Link>
           </li>
           <li>
-            {accueil ? <a href="#galerie">{t.nav.galerie}</a> : <Link to="/#galerie">{t.nav.galerie}</Link>}
+            <Link to="/#galerie">{t.nav.galerie}</Link>
           </li>
           <li>
             <Link to="/documentation">{t.nav.documentation}</Link>
           </li>
           <li>
-            {accueil ? <a href="#tarifs">{t.nav.tarifs}</a> : <Link to="/#tarifs">{t.nav.tarifs}</Link>}
+            <Link to="/#tarifs">{t.nav.tarifs}</Link>
           </li>
         </ul>
-        <button
-          ref={burgerRef}
-          type="button"
-          className="nav-burger"
-          aria-expanded={menuOuvert}
-          aria-controls="nav-menu-mobile"
-          aria-label={menuOuvert ? t.nav.menuFermer : t.nav.menuOuvrir}
-          onClick={() => setMenuOuvert((o) => !o)}
-        >
-          <i className={`fa-solid ${menuOuvert ? 'fa-xmark' : 'fa-bars'}`} aria-hidden />
-        </button>
+
         <div className="nav-cta">
           <div className="nav-outils">
-            <div className="bascule-langue" role="group" aria-label="Langue / Language">
-              <button
-                type="button"
-                className={lang === 'fr' ? 'actif' : ''}
-                aria-pressed={lang === 'fr'}
-                onClick={() => setLang('fr')}
-              >
-                FR
-              </button>
-              <button
-                type="button"
-                className={lang === 'en' ? 'actif' : ''}
-                aria-pressed={lang === 'en'}
-                onClick={() => setLang('en')}
-              >
-                EN
-              </button>
-            </div>
-            <button
-              type="button"
-              className="bascule-theme"
-              onClick={toggleTheme}
-              aria-label={theme === 'dark' ? t.nav.themeClair : t.nav.themeSombre}
-            >
-              <i className={`fa-solid ${theme === 'dark' ? 'fa-sun' : 'fa-moon'}`} aria-hidden />
-            </button>
+            {basculeLangue}
+            {basculeTheme}
             <button
               type="button"
               className={`bascule-sim${sim ? ' actif' : ''}`}
@@ -149,15 +169,38 @@ export const SiteNav: React.FC = () => {
             </>
           )}
         </div>
+
+        {/* Burger mobile : bascule ouverture/fermeture (second clic = ferme). */}
+        <button
+          type="button"
+          ref={burgerRef}
+          className={`nav-burger${menuOuvert ? ' actif' : ''}`}
+          aria-expanded={menuOuvert}
+          aria-controls="nav-menu-mobile"
+          aria-label={menuOuvert ? t.nav.menuFermer : t.nav.menuOuvrir}
+          onClick={() => setMenuOuvert((o) => !o)}
+        >
+          <i className={`fa-solid ${menuOuvert ? 'fa-xmark' : 'fa-bars'}`} aria-hidden />
+        </button>
       </div>
 
-      {/* Menu mobile : mêmes destinations que la navigation desktop. */}
+      {/* Menu mobile plein écran : navigation, langue, thème, actions. */}
+      {menuOuvert && (
+        <div
+          className="nav-mobile-fond visible"
+          aria-hidden
+          onMouseDown={() => setMenuOuvert(false)}
+        />
+      )}
       <div
         id="nav-menu-mobile"
         ref={menuRef}
         className={`nav-mobile${menuOuvert ? ' ouvert' : ''}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label={t.nav.menuOuvrir}
       >
-        <ul>
+        <ul className="nav-mobile-liens">
           <li>
             <Link to="/chat" onClick={() => setMenuOuvert(false)}>
               {t.nav.chat}
@@ -178,18 +221,30 @@ export const SiteNav: React.FC = () => {
               {t.nav.tarifs}
             </Link>
           </li>
-          <li>
-            {statut === 'connecte' ? (
-              <Link to="/app" className="btn btn-encre" onClick={() => setMenuOuvert(false)}>
-                {t.espace.kicker}
-              </Link>
-            ) : (
-              <Link to="/login" className="btn btn-encre" onClick={() => setMenuOuvert(false)}>
+        </ul>
+
+        <div className="nav-mobile-outils">
+          {basculeLangue}
+          {basculeTheme}
+        </div>
+
+        <div className="nav-mobile-actions">
+          {statut === 'connecte' ? (
+            <Link to="/app" className="btn btn-encre" onClick={() => setMenuOuvert(false)}>
+              <i className="fa-solid fa-user" aria-hidden />
+              <span>{t.espace.kicker}</span>
+            </Link>
+          ) : (
+            <>
+              <Link to="/login" className="btn btn-ligne" onClick={() => setMenuOuvert(false)}>
                 {t.nav.connexion}
               </Link>
-            )}
-          </li>
-        </ul>
+              <Link to="/register" className="btn btn-encre" onClick={() => setMenuOuvert(false)}>
+                <span>{t.nav.commencer}</span>
+              </Link>
+            </>
+          )}
+        </div>
       </div>
     </nav>
   );

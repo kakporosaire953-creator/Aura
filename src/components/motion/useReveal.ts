@@ -84,3 +84,70 @@ export function useRevealAll<T extends HTMLElement = HTMLDivElement>() {
 
   return ref;
 }
+
+/**
+ * Observateur global : garantit que TOUT élément [data-reveal] finit par
+ * apparaître, y compris ceux qui ne sont pas dans un conteneur géré par
+ * useRevealAll (en-têtes de sections, pages d'articles…). Corrige un défaut
+ * réel : ces blocs restaient invisibles (opacité 0) hors conteneur observé.
+ */
+export function useRevealGlobal(): void {
+  useEffect(() => {
+    const reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const tous = () =>
+      Array.from(document.querySelectorAll<HTMLElement>('[data-reveal]:not(.is-in)'));
+
+    if (reduit) {
+      tous().forEach((el) => {
+        el.classList.add('is-in');
+        el.setAttribute('data-reveal', 'in');
+      });
+      return;
+    }
+
+    const obs = new IntersectionObserver(
+      (entrees) => {
+        for (const e of entrees) {
+          if (e.isIntersecting) {
+            e.target.classList.add('is-in');
+            e.target.setAttribute('data-reveal', 'in');
+            obs.unobserve(e.target);
+          }
+        }
+      },
+      { threshold: 0.08, rootMargin: '0px 0px -4% 0px' },
+    );
+
+    const observes = new WeakSet<Element>();
+    const analyser = () => {
+      tous().forEach((el) => {
+        if (observes.has(el)) return;
+        observes.add(el);
+        obs.observe(el);
+      });
+    };
+
+    analyser();
+    const mo = new MutationObserver(analyser);
+    mo.observe(document.body, { childList: true, subtree: true });
+
+    // Filet de sécurité : après chargement complet, tout élément encore hors
+    // écran mais présent dans le document est rendu visible.
+    const secours = window.setTimeout(() => {
+      tous().forEach((el) => {
+        const r = el.getBoundingClientRect();
+        if (r.bottom < 0) {
+          el.classList.add('is-in');
+          el.setAttribute('data-reveal', 'in');
+        }
+      });
+    }, 4000);
+
+    return () => {
+      obs.disconnect();
+      mo.disconnect();
+      window.clearTimeout(secours);
+    };
+  }, []);
+}
+

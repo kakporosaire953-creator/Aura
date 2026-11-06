@@ -5,7 +5,23 @@ import { SessionProvider } from './app/session';
 import { AuraIntro, shouldShowIntro } from './components/intro/AuraIntro';
 import { LandingPage } from './pages/LandingPage';
 import { AuthPage } from './pages/AuthPage';
-import { DocumentationPage } from './pages/DocumentationPage';
+import { useRevealGlobal } from './components/motion/useReveal';
+import { lazy, Suspense } from 'react';
+
+/** Attente visible pendant le chargement d'un module de page. */
+const ChargementPage: React.FC = () => (
+  <div className="page-chargement" role="status" aria-live="polite">
+    <span className="etat-spinner" aria-hidden />
+    <span className="sr-only">Chargement…</span>
+  </div>
+);
+
+const DocumentationPage = lazy(() =>
+  import('./pages/DocumentationPage').then((m) => ({ default: m.DocumentationPage })),
+);
+const DocumentationArticlePage = lazy(() =>
+  import('./pages/DocumentationArticlePage').then((m) => ({ default: m.DocumentationArticlePage })),
+);
 import { EspacePage } from './pages/EspacePage';
 import { ChatPage } from './pages/ChatPage';
 import { ExplorePage } from './pages/ExplorePage';
@@ -34,6 +50,7 @@ const ScrollToTop: React.FC = () => {
 };
 
 export const App: React.FC = () => {
+  useRevealGlobal();
   const [showIntro, setShowIntro] = useState(() => shouldShowIntro());
 
   return (
@@ -46,7 +63,8 @@ export const App: React.FC = () => {
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<AuthPage />} />
             <Route path="/register" element={<AuthPage />} />
-            <Route path="/documentation" element={<DocumentationPage />} />
+            <Route path="/documentation" element={<Suspense fallback={<ChargementPage />}><DocumentationPage /></Suspense>} />
+            <Route path="/documentation/:slug" element={<Suspense fallback={<ChargementPage />}><DocumentationArticlePage /></Suspense>} />
             <Route element={<WorkspaceLayout />}>
               <Route path="/app" element={<EspacePage />} />
               <Route path="/chat" element={<ChatPage />} />

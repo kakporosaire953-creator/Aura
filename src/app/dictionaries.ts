@@ -19,7 +19,6 @@ export interface Plan {
   prix: string;
   detail: string;
   vedette: boolean;
-  features: string[];
   cta: string;
 }
 
@@ -95,7 +94,18 @@ export interface Content {
     titre2: string;
     sous: string;
     note: string;
+    paiementNote: string;
+    inclusTitre: string;
+    inclus: string[];
     plans: Plan[];
+  };
+  vision: {
+    kicker: string;
+    titre1: string;
+    titre2: string;
+    sous: string;
+    axes: { icone: string; titre: string; texte: string; statut: string }[];
+    note: string;
   };
   cta: {
     kicker: string;
@@ -713,50 +723,56 @@ const contentFr: Content = {
     titre1: 'Clair,',
     titre2: 'sans surprise',
     sous:
-      'Les contours sont posés — les prix finaux seront annoncés avant l\'ouverture, en toute transparence.',
+      'Des tarifs simples en francs CFA, sans engagement caché. Choisissez le rythme qui vous convient.',
     note:
-      'Aucun prix n\'est figé tant qu\'il n\'est pas définitivement annoncé — pas de mauvaise surprise, jamais.',
+      'Les trois formules ouvrent aujourd’hui les mêmes fonctionnalités ; leurs droits respectifs seront précisés avant l’ouverture des abonnements.',
+    paiementNote:
+      'Le paiement en ligne n’est pas encore disponible : aucune transaction ne peut être effectuée pour le moment.',
+    inclusTitre: 'Inclus dans chaque formule',
+    inclus: [
+      'Assistant conversationnel en continu',
+      'Projets, missions et suivi',
+      'Recherche sourcée avec références',
+      'Studio de créations',
+      'Historique et mémoire de projet',
+    ],
     plans: [
+      { nom: 'Mensuelle', prix: '500 FCFA', detail: 'par mois', vedette: false, cta: 'Créer un compte' },
+      { nom: 'Mensuelle', prix: '1 500 FCFA', detail: 'par mois', vedette: false, cta: 'Créer un compte' },
+      { nom: 'Annuelle', prix: '20 000 FCFA', detail: 'par an', vedette: false, cta: 'Créer un compte' },
+    ],
+  },
+  vision: {
+    kicker: 'Notre direction',
+    titre1: 'Un assistant qui comprend',
+    titre2: 'le Bénin et l’Afrique',
+    sous:
+      'AURA ne peut pas se contenter des usages des grandes plateformes internationales : il doit progressivement comprendre les réalités, les besoins et les contextes de ses utilisateurs, à commencer par le Bénin. Voici la direction — honnêtement présentée, avec ce qui existe et ce qui reste à construire.',
+    axes: [
       {
-        nom: 'Découverte',
-        prix: 'Gratuit',
-        detail: 'Pour commencer le fil, dès l’ouverture.',
-        vedette: false,
-        features: [
-          '30 unités IA par mois',
-          '10 recherches sourcées',
-          '3 créations Studio',
-          '3 projets actifs',
-        ],
-        cta: 'Commencer',
+        icone: 'fa-map-location-dot',
+        titre: 'Comprendre le contexte béninois',
+        texte:
+          'Culture et patrimoine, géographie, éducation, entrepreneuriat, services administratifs : AURA devra s’appuyer sur des sources fiables et actualisées — recherche documentaire, base de connaissances locale, sources officielles — et reconnaître ses incertitudes plutôt que d’inventer.',
+        statut: 'En préparation',
       },
       {
-        nom: 'Créateur',
-        prix: 'Bientôt annoncé',
-        detail: 'Pour ceux qui créent tous les jours.',
-        vedette: true,
-        features: [
-          'Unités IA étendues',
-          'Créations Studio accrues',
-          'Versions illimitées',
-          'Exports complets',
-        ],
-        cta: 'Être prévenu',
+        icone: 'fa-language',
+        titre: 'Les langues locales',
+        texte:
+          'Le Fon constitue une piste prioritaire à étudier ; les autres langues suivront selon les besoins des utilisateurs et les ressources disponibles. Compréhension, traduction, expressions locales : aucune langue ne sera annoncée comme prise en charge avant d’avoir été testée avec des locuteurs compétents.',
+        statut: 'Phase d’étude',
       },
       {
-        nom: 'Équipe',
-        prix: 'Bientôt annoncé',
-        detail: 'Pour les collectifs qui avancent ensemble.',
-        vedette: false,
-        features: [
-          'Espace partagé',
-          'Rôles & permissions',
-          'Quotas mutualisés',
-          'Accompagnement dédié',
-        ],
-        cta: 'Être prévenu',
+        icone: 'fa-microphone',
+        titre: 'La voix, naturellement',
+        texte:
+          'Parler à AURA dans sa langue : dictée (parole → texte), compréhension, réponse, puis lecture vocale. Accents, bruit ambiant, confidentialité et consentement des enregistrements sont au cœur de cette évolution — aucun bouton microphone fantôme ne sera affiché avant que cela fonctionne réellement.',
+        statut: 'À venir',
       },
     ],
+    note:
+      'Ces axes sont présentés comme une direction produit : ils ne sont pas encore des fonctionnalités disponibles dans AURA aujourd’hui.',
   },
   cta: {
     kicker: 'Le chantier est vivant',
@@ -1421,50 +1437,56 @@ const contentEn: Content = {
     titre1: 'Clear,',
     titre2: 'no surprises',
     sous:
-      'The outlines are set — final prices will be announced before launch, fully transparent.',
+      'Simple prices in CFA francs, with no hidden commitment. Choose the pace that suits you.',
     note:
-      'No price is ever set until it is definitively announced — no bad surprises, ever.',
+      'All three plans currently open the same features; their respective entitlements will be clarified before subscriptions open.',
+    paiementNote:
+      'Online payment is not available yet: no transaction can be made at the moment.',
+    inclusTitre: 'Included in every plan',
+    inclus: [
+      'Continuous conversational assistant',
+      'Projects, missions and tracking',
+      'Sourced search with references',
+      'Creation studio',
+      'History and project memory',
+    ],
     plans: [
+      { nom: 'Monthly', prix: '500 FCFA', detail: 'per month', vedette: false, cta: 'Create an account' },
+      { nom: 'Monthly', prix: '1,500 FCFA', detail: 'per month', vedette: false, cta: 'Create an account' },
+      { nom: 'Annual', prix: '20,000 FCFA', detail: 'per year', vedette: false, cta: 'Create an account' },
+    ],
+  },
+  vision: {
+    kicker: 'Our direction',
+    titre1: 'An assistant that understands',
+    titre2: 'Benin and Africa',
+    sous:
+      'AURA cannot settle for the habits of large international platforms: it must gradually understand the realities, needs and contexts of its users, starting with Benin. Here is the direction — presented honestly, with what exists and what remains to be built.',
+    axes: [
       {
-        nom: 'Discovery',
-        prix: 'Free',
-        detail: 'To start the thread, at launch.',
-        vedette: false,
-        features: [
-          '30 AI units per month',
-          '10 sourced searches',
-          '3 Studio creations',
-          '3 active projects',
-        ],
-        cta: 'Get started',
+        icone: 'fa-map-location-dot',
+        titre: 'Understanding the Beninese context',
+        texte:
+          'Culture and heritage, geography, education, entrepreneurship, public services: AURA will rely on reliable, up-to-date sources — documentary research, local knowledge bases, official sources — and will acknowledge its uncertainties rather than inventing.',
+        statut: 'In preparation',
       },
       {
-        nom: 'Creator',
-        prix: 'Announced soon',
-        detail: 'For those who create every day.',
-        vedette: true,
-        features: [
-          'Extended AI units',
-          'Higher Studio creation quotas',
-          'Unlimited versions',
-          'Full exports',
-        ],
-        cta: 'Keep me posted',
+        icone: 'fa-language',
+        titre: 'Local languages',
+        texte:
+          'Fon is a priority language to study; others will follow based on user needs and available resources. Understanding, translation, local expressions: no language will be announced as supported before being tested with fluent speakers.',
+        statut: 'Study phase',
       },
       {
-        nom: 'Team',
-        prix: 'Announced soon',
-        detail: 'For teams moving forward together.',
-        vedette: false,
-        features: [
-          'Shared workspace',
-          'Roles & permissions',
-          'Pooled quotas',
-          'Dedicated support',
-        ],
-        cta: 'Keep me posted',
+        icone: 'fa-microphone',
+        titre: 'Voice, naturally',
+        texte:
+          'Talk to AURA in your language: dictation (speech to text), understanding, response, then spoken playback. Accents, ambient noise, privacy and consent for recordings are at the heart of this evolution — no phantom microphone button will be shown before it truly works.',
+        statut: 'Coming later',
       },
     ],
+    note:
+      'These axes are presented as a product direction: they are not yet features available in AURA today.',
   },
   cta: {
     kicker: 'The workshop is alive',
