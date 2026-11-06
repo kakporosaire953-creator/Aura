@@ -597,3 +597,209 @@ describe('Adaptateurs — appels normalisés', () => {
     purgerEnv();
   });
 });
+
+/* ── 6. Scénarios routeur & fallback (mission 02) ── */
+
+describe('Scénarios mission 02 — routeur', () => {
+  test('un fournisseur non configuré n\'est jamais sélectionné (même en tête d\'ordre)', async () => {
+    purgerEnv();
+    process.env.AI_FALLBACK_ORDER = 'openrouter,groq,gemini';
+    // Seule Groq possède une clé : OpenRouter en tête d\'ordre doit être ignoré.
+    process.env.GROQ_API_KEY = 'gsk-test';
+    reinitialiserRegistre();
+    const ids = (await candidatsPour(['texte'])).map((f) => f.id);
+    assert.deepEqual(ids, ['groq']);
+    purgerEnv();
+  });
+
+  test('quota épuisé connu : le fournisseur est écarté des requêtes suivantes', async () => {
+    const sQuota = await stub((_req, res) => {
+      res.writeHead(429, { 'Content-Type': 'application/json' });
+      res.end('{}');
+    });
+    const sBon = await stub((_req, res) => {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(reponseOpenAi('Service assuré'));
+    });
+    stubs.push(sQuota, sBon);
+    purgerEnv();
+    process.env.GEMINI_API_KEY = 'cle-a';
+    process.env.GEMINI_API_BASE = sQuota.url;
+    process.env.GROQ_API_KEY = 'cle-b';
+    process.env.GROQ_API_BASE = sBon.url;
+    process.env.AI_FALLBACK_ORDER = 'gemini,groq,openrouter';
+    reinitialiserRegistre();
+
+    // 1er appel : quota sur gemini → bascule sur groq.
+    assert.equal((await serviceIa.generer('conversation', requeteTest)).texte, 'Service assuré');
+    const hitsGemini = sQuota.hits();
+    // 2e appel : gemini est en état de quota connu → il n'est plus sollicité.
+    await serviceIa.generer('conversation', requeteTest);
+    assert.equal(sQuota.hits(), hitsGemini, 'quota connu : aucun nouvel appel');
+    purgerEnv();
+  });
+
+  test('capacité « sources » : seul un fournisseur avec recherche sourcée est choisi', async () => {
+    purgerEnv();
+    process.env.GROQ_API_KEY = 'gsk-test';
+    process.env.GEMINI_API_KEY = 'cle-test';
+    reinitialiserRegistre();
+    const ids = (await candidatsPour(['sources'])).map((f) => f.id);
+    assert.deepEqual(ids, ['gemini'], 'seul Gemini déclare la capacité sources');
+    purgerEnv();
+  });
+});
+
+describe('Scénarios mission 02 — fallback', () => {
+  const stubReponse = (texte: string) => async (_req: http.IncomingMessage, res: http.ServerResponse) => {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(reponseOpenAi(texte));
+  };
+  const stubErreur = (statut: number) => async (_req: http.IncomingMessage, res: http.ServerResponse) => {
+    res.writeHead(statut, { 'Content-Type': 'application/json' });
+    res.end('{}');
+  };
+
+  test('Groq indisponible → OpenRouter disponible sert la réponse', async () => {
+    const sG = await stub(stubErreur(500));
+    const sO = await stub(stubReponse('Réponse OpenRouter'));
+    stubs.push(sG, sO);
+    purgerEnv();
+    process.env.GROQ_API_KEY = 'cle';
+    process.env.GROQ_API_BASE = sG.url;
+    process.env.OPENROUTER_API_KEY = 'cle';
+    process.env.OPENROUTER_API_BASE = sO.url;
+    process.env.AI_FALLBACK_ORDER = 'groq,openrouter';
+    reinitialiserRegistre();
+    const rep = await serviceIa.generer('conversation', requeteTest);
+    assert.equal(rep.fournisseur, 'openrouter');
+    assert.equal(rep.texte, 'Réponse OpenRouter');
+    purgerEnv();
+  });
+
+  test('OpenRouter indisponible → Gemini disponible sert la réponse', async () => {
+    const sO = await stub(stubErreur(500));
+    const sGem = await stub(async (_req, res) => {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(reponseGemini('Réponse Gemini'));
+    });
+    stubs.push(sO, sGem);
+    purgerEnv();
+    process.env.OPENROUTER_API_KEY = 'cle';
+    process.env.OPENROUTER_API_BASE = sO.url;
+    process.env.GEMINI_API_KEY = 'cle';
+    process.env.GEMINI_API_BASE = sGem.url;
+    process.env.AI_FALLBACK_ORDER = 'openrouter,gemini,groq';
+    reinitialiserRegistre();
+    const rep = await serviceIa.generer('conversation', requeteTest);
+    assert.equal(rep.fournisseur, 'gemini');
+    assert.equal(rep.texte, 'Réponse Gemini');
+    purgerEnv();
+  });
+
+  test('deux fournisseurs indisponibles → le troisième sert ; aucun doublon facturé', async () => {
+    const s1 = await stub(stubErreur(500));
+    const s2 = await stub(stubErreur(500));
+    const s3 = await stub(stubReponse('Dernier recours'));
+    stubs.push(s1, s2, s3);
+    purgerEnv();
+    process.env.GEMINI_API_KEY = 'c';
+    process.env.GEMINI_API_BASE = s1.url;
+    process.env.GROQ_API_KEY = 'c';
+    process.env.GROQ_API_BASE = s2.url;
+    process.env.OPENROUTER_API_KEY = 'c';
+    process.env.OPENROUTER_API_BASE = s3.url;
+    process.env.AI_FALLBACK_ORDER = 'gemini,groq,openrouter';
+    reinitialiserRegistre();
+    const rep = await serviceIa.generer('conversation', requeteTest);
+    assert.equal(rep.fournisseur, 'openrouter');
+    assert.equal(s1.hits(), 1);
+    assert.equal(s2.hits(), 1);
+    assert.equal(s3.hits(), 1, 'exactement un appel par fournisseur — pas de boucle');
+    purgerEnv();
+  });
+
+  test('tous les fournisseurs indisponibles → erreur structurée unique', async () => {
+    const s1 = await stub(stubErreur(500));
+    const s2 = await stub(stubErreur(500));
+    stubs.push(s1, s2);
+    purgerEnv();
+    process.env.GEMINI_API_KEY = 'c';
+    process.env.GEMINI_API_BASE = s1.url;
+    process.env.GROQ_API_KEY = 'c';
+    process.env.GROQ_API_BASE = s2.url;
+    process.env.AI_FALLBACK_ORDER = 'gemini,groq';
+    reinitialiserRegistre();
+    await assert.rejects(
+      () => serviceIa.generer('conversation', requeteTest),
+      (e: unknown) => e instanceof ErreurAi && e.statut === 502,
+    );
+    assert.equal(s1.hits() + s2.hits(), 2, 'pas de tentatives multiples par fournisseur');
+    purgerEnv();
+  });
+
+  test('succès immédiat : aucun appel facturable supplémentaire (0 bascule)', async () => {
+    const s1 = await stub(stubReponse('Réponse immédiate'));
+    const s2 = await stub(stubReponse('Jamais appelée'));
+    stubs.push(s1, s2);
+    purgerEnv();
+    process.env.GROQ_API_KEY = 'c';
+    process.env.GROQ_API_BASE = s1.url;
+    process.env.OPENROUTER_API_KEY = 'c';
+    process.env.OPENROUTER_API_BASE = s2.url;
+    process.env.AI_FALLBACK_ORDER = 'groq,openrouter';
+    reinitialiserRegistre();
+    const traces: Array<{ mode: string; bascules?: number }> = [];
+    await serviceIa.generer('conversation', requeteTest, {
+      noter: (t) => traces.push(t),
+    });
+    assert.equal(s2.hits(), 0, 'le second fournisseur n\'est jamais sollicité');
+    assert.equal(s1.hits(), 1);
+    const generation = traces.find((t) => t.mode === 'generation');
+    assert.equal(generation?.bascules, 0);
+    purgerEnv();
+  });
+
+  test('streaming : annulation utilisateur en cours de flux → texte partiel conservé', async () => {
+    const s = await stub((_req, res) => {
+      res.writeHead(200, { 'Content-Type': 'text/event-stream' });
+      res.write(`data: ${JSON.stringify({ choices: [{ delta: { content: 'un ' } }] })}\n\n`);
+      setTimeout(() => {
+        res.write(`data: ${JSON.stringify({ choices: [{ delta: { content: 'deux ' } }] })}\n\n`);
+        setTimeout(() => res.end('data: [DONE]\n\n'), 400);
+      }, 200);
+    });
+    stubs.push(s);
+    purgerEnv();
+    process.env.GROQ_API_KEY = 'c';
+    process.env.GROQ_API_BASE = s.url;
+    reinitialiserRegistre();
+    const f = new FournisseurGroq();
+    const controle = new AbortController();
+    let recu = '';
+    setTimeout(() => controle.abort(), 320);
+    const rep = await f.streamResponse(requeteTest, (t) => (recu += t), controle.signal);
+    assert.equal(rep.texte.trim(), 'un deux', 'les fragments reçus avant annulation sont conservés');
+    assert.equal(recu, 'un deux ');
+    purgerEnv();
+  });
+
+  test('observabilité : durée et nombre de bascules tracés', async () => {
+    const s1 = await stub(stubErreur(500));
+    const s2 = await stub(stubReponse('Après bascule'));
+    stubs.push(s1, s2);
+    purgerEnv();
+    process.env.GEMINI_API_KEY = 'c';
+    process.env.GEMINI_API_BASE = s1.url;
+    process.env.GROQ_API_KEY = 'c';
+    process.env.GROQ_API_BASE = s2.url;
+    reinitialiserRegistre();
+    const traces: Array<{ mode: string; dureeMs?: number; bascules?: number; fournisseur?: string }> = [];
+    await serviceIa.generer('conversation', requeteTest, { noter: (t) => traces.push(t) });
+    const generation = traces.find((t) => t.mode === 'generation');
+    assert.ok((generation?.dureeMs ?? -1) >= 0, 'durée mesurée');
+    assert.equal(generation?.bascules, 1, 'une bascule tracée');
+    assert.equal(generation?.fournisseur, 'groq');
+    purgerEnv();
+  });
+});

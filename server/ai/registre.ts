@@ -16,7 +16,26 @@ import type { CapacitesAi, FournisseurAi } from './types';
 
 let instances: FournisseurAi[] | null = null;
 const desactives = new Set<string>();
+const quotaJusqu = new Map<string, number>();
 let journalFait = false;
+
+/**
+ * Durée d'écartement d'un fournisseur en dépassement de quota connu
+ * (le routeur ne lui envoie plus de requêtes pendant cette fenêtre).
+ */
+export const DELAI_QUOTA_MS = 5 * 60 * 1000;
+
+/** État de quota observé (429/402) : le fournisseur est écarté un temps. */
+export function signalerQuota(id: string): void {
+  quotaJusqu.set(id, Date.now() + DELAI_QUOTA_MS);
+  console.warn(
+    `[ia] fournisseur '${id}' en dépassement de quota — écarté pendant ${Math.round(DELAI_QUOTA_MS / 1000)} s`,
+  );
+}
+
+function enQuota(id: string): boolean {
+  return (quotaJusqu.get(id) ?? 0) > Date.now();
+}
 
 function construire(): FournisseurAi[] {
   const parId: Record<IdFournisseur, () => FournisseurAi> = {
@@ -44,6 +63,7 @@ export function registreFournisseurs(): FournisseurAi[] {
 export function reinitialiserRegistre(): void {
   instances = null;
   desactives.clear();
+  quotaJusqu.clear();
   journalFait = false;
 }
 
@@ -75,7 +95,7 @@ export async function candidatsPour(
   requises: (keyof CapacitesAi)[],
 ): Promise<FournisseurAi[]> {
   const capables = ordonnerCandidats(registreFournisseurs(), requises).filter(
-    (f) => !desactives.has(f.id),
+    (f) => !desactives.has(f.id) && !enQuota(f.id),
   );
   const disponibles: FournisseurAi[] = [];
   for (const f of capables) {

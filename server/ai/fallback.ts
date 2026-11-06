@@ -19,9 +19,11 @@ import type { FournisseurAi } from './types';
 export type OptionsRepli = {
   maxTentatives: number;
   /** Appelé à chaque échec avant bascule (journalisation). */
-  onEchec?: (fournisseur: FournisseurAi, erreur: unknown, tentative: number) => void;
+  onEchec?: (fournisseur: FournisseurAi, erreur: unknown, tentative: number) => void | Promise<void>;
   /** Désactive durablement un fournisseur (ex. erreur d'authentification). */
   onDesactiver?: (fournisseur: FournisseurAi) => void;
+  /** État de quota connu : le fournisseur est écarté des requêtes suivantes. */
+  onQuota?: (fournisseur: FournisseurAi) => void;
   /**
    * Règle streaming : si une réponse a déjà été émise vers le client,
    * aucune bascule silencieuse vers un autre fournisseur.
@@ -54,9 +56,11 @@ export async function executerAvecRepli<T>(
       return await action(f);
     } catch (e) {
       derniere = e;
-      if (natureDe(e) === 'auth') opts.onDesactiver?.(f);
+      const nature = natureDe(e);
+      if (nature === 'auth') opts.onDesactiver?.(f);
+      if (nature === 'quota') opts.onQuota?.(f);
       if (!estRecuperable(e)) throw e;
-      opts.onEchec?.(f, e, i + 1);
+      await opts.onEchec?.(f, e, i + 1);
     }
   }
   if (derniere instanceof ErreurAi) throw derniere;
