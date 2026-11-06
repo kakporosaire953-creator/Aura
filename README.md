@@ -26,7 +26,9 @@ npm run lint     # vérification TypeScript (tsc --noEmit)
 ```
 
 ```bash
-npm test           # tests unitaires et d'intégration (base de test isolée)
+npm test           # tests unitaires, d'intégration et d'interaction (base de test isolée)
+                   # 176 tests ; l'interface est testée dans un DOM simulé (jsdom),
+                   # pas dans un vrai navigateur — voir docs/analyse/015-tests-navigateur.md
 npm run verif:prod # construit, puis vérifie que la production ne peut pas
                    # activer le mode simulation (voir scripts/verifier-prod.cjs)
 ```
