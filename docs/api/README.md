@@ -1,12 +1,29 @@
 # API AURA
 
 Toutes les réponses sont JSON. Les routes privées exigent le cookie de
-session `aura_session` (HttpOnly, SameSite=Lax, Secure en production) ; sans
-session valide : `401 { error, code: "anonyme" }`. Les ressources sont
-toujours résolues dans le périmètre du compte connecté (un identifiant
-d'un autre compte renvoie `404`, sans fuite d'existence).
+session — `aura_session` en développement, `__Host-aura_session` en
+production (HttpOnly, SameSite=Lax, Secure, Path=/). Les deux noms sont
+acceptés en lecture : une session ouverte avant le changement de nom reste
+valide.
+
+Refus distincts, jamais confondus :
+
+| Situation | Réponse |
+|---|---|
+| Aucune session | `401 { code: "anonyme" }` |
+| Cookie présent, session inconnue ou expirée | `401 { code: "session-expiree" }` |
+| Stockage injoignable | `503 { code: "stockage-indisponible" }` |
+| Tentatives trop nombreuses | `429 { code: "limite" }` |
+
+Les ressources sont toujours résolues dans le périmètre du compte connecté
+(un identifiant d'un autre compte renvoie `404`, sans fuite d'existence).
 
 Erreurs uniformes : `{ "error": string, "code": string, "champs"?: { champ: message } }`.
+
+Limitation de débit (compteur partagé dans le stockage, repli mémoire si le
+stockage tombe) : connexion 20 / 10 min par IP et 10 / 10 min par adresse,
+inscription 30 / 10 min par IP et 10 / heure par adresse, suppression de
+compte 5 / 15 min, chat 40 / 5 min par compte.
 
 ## Historique (compatibilité conservée)
 

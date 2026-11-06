@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useT, usePrefs } from '../app/prefs';
 import { useSession } from '../app/session';
-import { simulationActivee, definirSimulation } from '../app/simulation';
+import { simulationActivee, simulationDisponible, definirSimulation } from '../app/simulation';
 import { Dialogue } from '../components/ui/Primitives';
 import * as api from '../services/api';
 import type { CompteV1 } from '../services/types';
@@ -20,6 +20,7 @@ export const ParametresPage: React.FC = () => {
   const { statut, compte, deconnecter, rafraichir } = useSession();
   const navigate = useNavigate();
   const sim = simulationActivee();
+  const simDisponible = simulationDisponible();
 
   const [profil, setProfil] = useState<CompteV1['profil'] | null>(null);
   const [prefs, setPrefs] = useState<CompteV1['preferences'] | null>(null);
@@ -290,6 +291,7 @@ export const ParametresPage: React.FC = () => {
         </div>
       </section>
 
+      {simDisponible && (
       <section className="param-section">
         <h2>{t.parametres.simulation}</h2>
         <p className="corps">{t.parametres.simulationSous}</p>
@@ -317,6 +319,7 @@ export const ParametresPage: React.FC = () => {
           </div>
         </div>
       </section>
+      )}
 
       <section className="param-section">
         <h2>{t.parametres.session}</h2>

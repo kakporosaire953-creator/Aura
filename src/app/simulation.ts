@@ -17,20 +17,43 @@ const CLE_ONBOARDING = 'aura_sim_onboarding';
 
 /* ── Activation ── */
 
+/**
+ * Le mode simulation est un outil de développement. Il n'est jamais
+ * disponible dans une version de production : `import.meta.env.DEV` est
+ * remplacé par `false` à la construction, donc la fonction ci-dessous
+ * court-circuite avant même de lire le stockage local. Aucune valeur
+ * enregistrée dans le navigateur ne peut le rallumer.
+ */
+const DEV = import.meta.env?.DEV === true;
+
+/** Décision pure, testable hors navigateur. */
+export function modeSimulationActif(enregistre: string | null, dev: boolean): boolean {
+  if (!dev) return false;
+  if (enregistre === '0') return false;
+  if (enregistre === '1') return true;
+  return true;
+}
+
+export function simulationDisponible(): boolean {
+  return DEV;
+}
+
 export function simulationActivee(): boolean {
+  if (!DEV) return false;
+  let enregistre: string | null = null;
   try {
-    const v = localStorage.getItem(CLE_MODE);
-    if (v === '0') return false;
-    if (v === '1') return true;
+    enregistre = localStorage.getItem(CLE_MODE);
   } catch {
     /* stockage indisponible */
   }
-  // Par défaut : simulation en développement seulement. En production,
-  // l'entrée en démonstration est volontaire (bouton dédié ou bascule).
-  return import.meta.env.DEV;
+  return modeSimulationActif(enregistre, DEV);
 }
 
 export function definirSimulation(active: boolean): void {
+  if (!DEV) {
+    console.warn('[aura] Le mode simulation est désactivé hors développement.');
+    return;
+  }
   try {
     localStorage.setItem(CLE_MODE, active ? '1' : '0');
   } catch {
@@ -39,9 +62,7 @@ export function definirSimulation(active: boolean): void {
   window.location.reload();
 }
 
-/* ── Comptes simulés (localStorage uniquement) ── */
-
-/* ── Comptes simulés (localStorage uniquement, SANS mot de passe) ── */
+/* ── Comptes simulés (localStorage uniquement, sans mot de passe) ── */
 // Aucun secret n'est stocké : le mode démonstration est un habillage local,
 // jamais une protection. La vraie authentification (scrypt, côté serveur)
 // reste la seule à vérifier un mot de passe.
@@ -136,7 +157,11 @@ export function onboardingSimule(fait: boolean, objectif: string): ResultatSimul
 
 /** Entrée volontaire en démonstration (bouton « Voir la démonstration ») :
  *  active explicitement le mode simulation, puis ouvre la session démo. */
-export function ouvrirDemo(): void {
+export function ouvrirDemo(): boolean {
+  if (!DEV) {
+    console.warn('[aura] La démonstration locale est désactivée en production.');
+    return false;
+  }
   try {
     localStorage.setItem(CLE_MODE, '1');
   } catch {
@@ -154,6 +179,7 @@ export function ouvrirDemo(): void {
     ecrireComptes(comptes);
   }
   localStorage.setItem(CLE_SESSION, adresse);
+  return true;
 }
 
 /* ── Chat simulé ── */

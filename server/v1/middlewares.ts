@@ -4,18 +4,25 @@
  * navigateur n'est crus sur parole.
  */
 import type { NextFunction, Request, Response } from 'express';
+import { empreinteJeton, lireJetonSession } from '../accounts';
 import {
-  COOKIE_SESSION,
-  empreinteJeton,
-  lireCookie,
-} from '../accounts';
-import { entrepotComptes, entrepotDonnees, type EntrepotComptes, type EntrepotDonnees } from '../db/entrepots';
+  baseDeDonnees,
+  entrepotComptes,
+  entrepotDonnees,
+  type EntrepotComptes,
+  type EntrepotDonnees,
+} from '../db/entrepots';
 import type { Compte, ComptePublic } from '../db/types';
+import { compterTentative, ipClient, empreinteIdentifiant } from './limite';
 
 export type ReqV1 = Request & {
   compte?: Compte;
   comptes?: EntrepotComptes;
   donnees?: EntrepotDonnees;
+  /** Le cookie de session était présent mais ne correspond à aucune session valide. */
+  sessionExpiree?: boolean;
+  /** La lecture du stockage a échoué : anonyme par accident, pas par nature. */
+  stockageIndisponible?: boolean;
 };
 
 export function versPublicV1(c: Compte): ComptePublic {
@@ -30,10 +37,17 @@ export function versPublicV1(c: Compte): ComptePublic {
   };
 }
 
-/** Attache le compte si le cookie de session est valide. */
+/**
+ * Attache le compte si le cookie de session est valide.
+ *
+ * Trois situations distinctes, jamais confondues :
+ * - session valide → compte attaché ;
+ * - cookie présent mais inconnu ou expiré → `sessionExpiree` (401 ciblé) ;
+ * - stockage injoignable → `stockageIndisponible` (503, pas 401).
+ */
 export async function attacherCompteV1(req: ReqV1, _res: Response, next: NextFunction) {
   req.comptes = entrepotComptes();
-  const jeton = lireCookie(req, COOKIE_SESSION);
+  const jeton = lireJetonSession(req);
   if (jeton) {
     try {
       const session = await req.comptes.sessionParEmpreinte(empreinteJeton(jeton));
@@ -42,10 +56,18 @@ export async function attacherCompteV1(req: ReqV1, _res: Response, next: NextFun
         if (compte) {
           req.compte = compte;
           req.donnees = entrepotDonnees(compte.id);
+        } else {
+          req.sessionExpiree = true;
         }
+      } else {
+        req.sessionExpiree = true;
       }
-    } catch {
-      /* stockage injoignable : traité comme anonyme */
+    } catch (e) {
+      req.stockageIndisponible = true;
+      console.error(
+        '[api] session illisible (stockage) —',
+        e instanceof Error ? e.message : e,
+      );
     }
   }
   next();
@@ -53,40 +75,100 @@ export async function attacherCompteV1(req: ReqV1, _res: Response, next: NextFun
 
 /** Refuse toute route privée sans compte authentifié. */
 export function authRequise(req: ReqV1, res: Response, next: NextFunction) {
-  if (!req.compte || !req.donnees) {
-    res.status(401).json({ error: 'Connexion requise.', code: 'anonyme' });
+  if (req.compte && req.donnees) {
+    next();
     return;
   }
-  next();
+  // Une panne de stockage n'est pas un visiteur anonyme : le dire clairement.
+  if (req.stockageIndisponible) {
+    erreur503Stockage(res, 'Service momentanément indisponible : stockage injoignable.');
+    return;
+  }
+  if (req.sessionExpiree) {
+    res.status(401).json({ error: 'Session expirée. Reconnectez-vous.', code: 'session-expiree' });
+    return;
+  }
+  res.status(401).json({ error: 'Connexion requise.', code: 'anonyme' });
 }
 
-/* ── Limitation de débit (best-effort par instance) ── */
+/* ── Limitation de débit (compteur partagé, repli local) ── */
 
-const tentatives = new Map<string, number[]>();
+/**
+ * Portées de limitation. Chaque portée a son propre préfixe de clé :
+ * saturer la connexion ne ferme ni l'inscription ni le chat.
+ */
+export type Portee =
+  | 'login-ip'
+  | 'login-email'
+  | 'register-ip'
+  | 'register-email'
+  | 'compte'
+  | 'chat';
 
-export function tropDeTentatives(
-  cle: string,
-  max = 25,
-  fenetreMs = 10 * 60 * 1000,
-): boolean {
-  const maintenant = Date.now();
-  const fenetre = (tentatives.get(cle) ?? []).filter((t) => maintenant - t < fenetreMs);
-  if (fenetre.length >= max) {
-    tentatives.set(cle, fenetre);
+export type RegleLimite = { portee: Portee; max: number; fenetreMs: number };
+
+export const REGLES: Record<
+  'loginIp' | 'loginEmail' | 'registerIp' | 'registerEmail' | 'suppression',
+  RegleLimite
+> = {
+  loginIp: { portee: 'login-ip', max: 20, fenetreMs: 10 * 60 * 1000 },
+  loginEmail: { portee: 'login-email', max: 10, fenetreMs: 10 * 60 * 1000 },
+  registerIp: { portee: 'register-ip', max: 30, fenetreMs: 10 * 60 * 1000 },
+  registerEmail: { portee: 'register-email', max: 10, fenetreMs: 60 * 60 * 1000 },
+  suppression: { portee: 'compte', max: 5, fenetreMs: 15 * 60 * 1000 },
+};
+
+/** Message commun — jamais d'indice sur le compteur exact restant. */
+function refusLimite(res: Response) {
+  res.status(429).json({
+    error: 'Trop de tentatives. Réessayez dans quelques minutes.',
+    code: 'limite',
+  });
+}
+
+/**
+ * Applique une règle à une clé donnée. Renvoie true si la requête est
+ * refusée (la réponse 429 est déjà envoyée).
+ */
+export async function depasse(
+  res: Response,
+  portee: Portee,
+  identifiant: string,
+  max: number,
+  fenetreMs: number,
+): Promise<boolean> {
+  const base = baseDeDonnees();
+  const verdict = await compterTentative(base, `${portee}:${identifiant}`, max, fenetreMs);
+  if (verdict.bloque) {
+    refusLimite(res);
     return true;
   }
-  fenetre.push(maintenant);
-  tentatives.set(cle, fenetre);
   return false;
 }
 
+/** Limitation d'une route d'authentification, par adresse IP. */
+export function limiteParIp(regle: RegleLimite) {
+  return async (req: ReqV1, res: Response, next: NextFunction) => {
+    if (await depasse(res, regle.portee, ipClient(req), regle.max, regle.fenetreMs)) return;
+    next();
+  };
+}
+
+/** Limitation par identifiant fourni (adresse e-mail à l'inscription/connexion). */
+export async function limiteIdentifiant(
+  res: Response,
+  regle: RegleLimite,
+  valeur: string,
+): Promise<boolean> {
+  if (!valeur) return false;
+  return depasse(res, regle.portee, empreinteIdentifiant(valeur), regle.max, regle.fenetreMs);
+}
+
+/** Limitation d'une action sensible sur le compte connecté. */
 export function limiteParCompte(max: number, fenetreMs: number) {
-  return (req: ReqV1, res: Response, next: NextFunction) => {
-    const cle = req.compte?.id ?? req.ip ?? 'inconnu';
-    if (tropDeTentatives(cle, max, fenetreMs)) {
-      res.status(429).json({ error: 'Trop de requêtes. Réessayez dans quelques minutes.', code: 'limite' });
-      return;
-    }
+  return async (req: ReqV1, res: Response, next: NextFunction) => {
+    const identifiant = req.compte?.id ?? `ip-${ipClient(req)}`;
+    if (await depasse(res, 'compte', identifiant, max, fenetreMs)) return;
     next();
   };
 }

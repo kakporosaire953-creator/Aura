@@ -4,7 +4,8 @@ import gsap from 'gsap';
 import { AuraLogo } from '../components/brand/AuraLogo';
 import { useT } from '../app/prefs';
 import { useSession, appelerAuth } from '../app/session';
-import { ouvrirDemo } from '../app/simulation';
+import { ouvrirDemo, simulationDisponible } from '../app/simulation';
+import { destinationApresConnexion } from '../app/retour';
 import { Icone } from '../components/ui/Icone';
 
 /** Traduction des codes d'erreur de l'API en messages locaux (fr/en). */
@@ -43,6 +44,11 @@ export const AuthPage: React.FC = () => {
   const { statut, rafraichir } = useSession();
   const inscription = location.pathname.startsWith('/register');
   const filmRef = useRef<HTMLDivElement | null>(null);
+  // Destination demandée avant la redirection (jamais une URL externe).
+  const depuis = destinationApresConnexion(
+    (location.state as { depuis?: string } | null)?.depuis,
+  );
+  const demoDisponible = simulationDisponible();
 
   const [email, setEmail] = useState('');
   const [mdp, setMdp] = useState('');
@@ -51,10 +57,10 @@ export const AuthPage: React.FC = () => {
   const [erreur, setErreur] = useState<string | null>(null);
   const [detail, setDetail] = useState<Record<string, string> | null>(null);
 
-  // Déjà connecté → espace.
+  // Déjà connecté → destination demandée, sinon l'espace.
   useEffect(() => {
-    if (statut === 'connecte') navigate('/app', { replace: true });
-  }, [statut, navigate]);
+    if (statut === 'connecte') navigate(depuis, { replace: true });
+  }, [statut, navigate, depuis]);
 
   useEffect(() => {
     const reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -120,7 +126,7 @@ export const AuthPage: React.FC = () => {
 
     if (res.ok) {
       await rafraichir();
-      navigate('/app', { replace: true });
+      navigate(depuis, { replace: true });
       return;
     }
     setEtat('erreur');
@@ -172,6 +178,12 @@ export const AuthPage: React.FC = () => {
             <em className="italique-vif">{inscription ? t.auth.titre2 : t.auth.titreLogin2}</em>.
           </h1>
           <p className="sous-titre">{inscription ? t.auth.sous : t.auth.sousLogin}</p>
+
+          {(location.state as { expiree?: boolean } | null)?.expiree && (
+            <p className="form-note form-info" role="status">
+              <Icone nom="circle-info" /> {t.auth.sessionExpiree}
+            </p>
+          )}
 
           {(location.state as { info?: string } | null)?.info && (
             <p className="form-note form-info" role="status">
@@ -246,20 +258,22 @@ export const AuthPage: React.FC = () => {
             {t.auth.note}
           </p>
 
-          {/* Entrée volontaire en démonstration : toujours proposée,
-              y compris en production où la simulation est désactivée par défaut. */}
-          <button
-            type="button"
-            className="btn btn-ligne auth-demo"
-            onClick={() => {
-              ouvrirDemo();
-              void rafraichir();
-              navigate('/app', { replace: true });
-            }}
-          >
-            <Icone nom="flask" />
-            <span>{t.simulation.demoBtn}</span>
-          </button>
+          {/* Entrée volontaire en démonstration : outil de développement,
+              jamais proposé par une version de production. */}
+          {demoDisponible && (
+            <button
+              type="button"
+              className="btn btn-ligne auth-demo"
+              onClick={() => {
+                if (!ouvrirDemo()) return;
+                void rafraichir();
+                navigate(depuis, { replace: true });
+              }}
+            >
+              <Icone nom="flask" />
+              <span>{t.simulation.demoBtn}</span>
+            </button>
+          )}
 
           <p className="auth-bascule">
             {inscription ? t.auth.basculeLogin : t.auth.basculeRegister}{' '}

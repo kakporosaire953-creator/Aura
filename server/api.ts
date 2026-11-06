@@ -10,11 +10,11 @@
  */
 import express, { type NextFunction, type Request, type Response } from 'express';
 import {
-  COOKIE_SESSION,
   creerSession,
   empreinteJeton,
   hacherMotDePasse,
-  lireCookie,
+  lireJetonSession,
+  nomCookieSession,
   serialiserCookie,
   validerInscription,
   verifierMotDePasse,
@@ -31,11 +31,36 @@ import { validerMessages } from './chat';
 import * as serviceIa from './ai/service';
 import { ErreurAi } from './ai/errors';
 import { createApiV1 } from './v1/routes';
-import { tropDeTentatives } from './v1/middlewares';
+import {
+  REGLES,
+  asyncRoute,
+  limiteParIp,
+  limiteIdentifiant,
+  depasse,
+} from './v1/middlewares';
+import { ipClient } from './v1/limite';
 
 const comptes = entrepotComptes();
 
-type ReqAuth = Request & { compte?: { utilisateur: Compte } };
+type ReqAuth = Request & {
+  compte?: { utilisateur: Compte };
+  /** Cookie présent mais session inconnue ou expirée. */
+  sessionExpiree?: boolean;
+  /** Lecture du stockage impossible : anonyme par accident, pas par nature. */
+  stockageIndisponible?: boolean;
+};
+
+/**
+ * Confiance proxy : AURA est derrière un seul proxy (Vercel) ou exposée
+ * directement (dev, auto-hébergement). On ne fait confiance à un en-tête
+ * `x-forwarded-for` que lorsqu'un proxy de confiance est effectivement
+ * devant l'application — jamais par défaut.
+ */
+export function configurerConfianceProxy(app: express.Application): void {
+  const derriereProxy =
+    process.env.VERCEL !== undefined || process.env.AURA_TRUST_PROXY === '1';
+  app.set('trust proxy', derriereProxy ? 1 : false);
+}
 
 function versPublic(u: Compte): ComptePublic {
   return {
@@ -50,16 +75,23 @@ function versPublic(u: Compte): ComptePublic {
 }
 
 async function attacherCompte(req: ReqAuth, _res: Response, next: NextFunction) {
-  const jeton = lireCookie(req, COOKIE_SESSION);
+  const jeton = lireJetonSession(req);
   if (jeton) {
     try {
       const session = await comptes.sessionParEmpreinte(empreinteJeton(jeton));
       if (session) {
         const utilisateur = await comptes.parId(session.userId);
         if (utilisateur) req.compte = { utilisateur };
+        else req.sessionExpiree = true;
+      } else {
+        req.sessionExpiree = true;
       }
-    } catch {
-      /* stockage momentanément injoignable : traité comme anonyme */
+    } catch (e) {
+      req.stockageIndisponible = true;
+      console.error(
+        '[api] session illisible (stockage) —',
+        e instanceof Error ? e.message : e,
+      );
     }
   }
   next();
@@ -68,12 +100,27 @@ async function attacherCompte(req: ReqAuth, _res: Response, next: NextFunction) 
 function definirSession(res: Response, jeton: string) {
   res.setHeader(
     'Set-Cookie',
-    serialiserCookie(COOKIE_SESSION, jeton, { maxAge: Math.floor(DUREE_SESSION_MS / 1000) }),
+    serialiserCookie(nomCookieSession(), jeton, { maxAge: Math.floor(DUREE_SESSION_MS / 1000) }),
   );
+}
+
+/**
+ * En-têtes de sécurité communs à l'API. Volontairement sobres : l'API ne
+ * renvoie que du JSON, aucune ressource à charger, donc pas de CSP ici
+ * (elle est posée sur le document par la plateforme, voir vercel.json).
+ */
+function enTetesApi(_req: Request, res: Response, next: NextFunction) {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
+  res.setHeader('Cache-Control', 'no-store');
+  next();
 }
 
 export function createApiApp(): express.Router {
   const api = express.Router();
+  api.use(enTetesApi);
   // Les messages peuvent porter des images : corps plus large sur cette seule
   // route, avant le limiteur général (32 Ko) qui s'applique au reste de l'API.
   api.use('/v1/conversations/:id/messages', express.json({ limit: '6mb' }));
@@ -84,7 +131,7 @@ export function createApiApp(): express.Router {
   api.use('/v1', createApiV1());
 
   // État réel du produit — jamais de fausse fonctionnalité.
-  api.get('/status', async (_req, res) => {
+  api.get('/status', asyncRoute(async (_req, res) => {
     const comptesActifs = comptes.mode !== 'indisponible';
     const etatIa = await serviceIa.etatIa();
     const chatActif = etatIa.ok;
@@ -112,25 +159,23 @@ export function createApiApp(): express.Router {
         ...(chatActif
           ? {}
           : {
-              chat: 'Assistant non configuré sur cet environnement : ajoutez GEMINI_API_KEY (clé serveur uniquement).',
+              chat: "Assistant non configuré sur cet environnement : ajoutez une clé de moteur côté serveur (jamais dans le navigateur).",
             }),
       },
     });
-  });
+  }));
 
   /* ── Inscription ── */
-  api.post('/auth/register', async (req, res) => {
-    const ip = req.ip ?? 'inconnu';
-    if (tropDeTentatives(ip)) {
-      res.status(429).json({ error: 'Trop de tentatives. Réessayez plus tard.', code: 'limite' });
-      return;
-    }
+  api.post('/auth/register', limiteParIp(REGLES.registerIp), asyncRoute(async (req, res) => {
     if (comptes.mode === 'indisponible') {
       res.status(503).json({ error: comptes.raison, code: 'stockage-indisponible' });
       return;
     }
 
     const corps = (req.body ?? {}) as { email?: string; password?: string; nom?: string };
+    if (typeof corps.email === 'string' && corps.email.trim()) {
+      if (await limiteIdentifiant(res, REGLES.registerEmail, corps.email)) return;
+    }
     const { ok, champs } = validerInscription(corps);
     if (!ok) {
       res.status(400).json({ error: 'Saisie invalide.', code: 'validation', champs });
@@ -162,15 +207,10 @@ export function createApiApp(): express.Router {
 
     definirSession(res, jeton);
     res.status(201).json({ compte: versPublic(utilisateur) });
-  });
+  }));
 
   /* ── Connexion ── */
-  api.post('/auth/login', async (req, res) => {
-    const ip = req.ip ?? 'inconnu';
-    if (tropDeTentatives(ip)) {
-      res.status(429).json({ error: 'Trop de tentatives. Réessayez plus tard.', code: 'limite' });
-      return;
-    }
+  api.post('/auth/login', limiteParIp(REGLES.loginIp), asyncRoute(async (req, res) => {
     if (comptes.mode === 'indisponible') {
       res.status(503).json({ error: comptes.raison, code: 'stockage-indisponible' });
       return;
@@ -183,6 +223,9 @@ export function createApiApp(): express.Router {
       res.status(400).json({ error: 'Saisie invalide.', code: 'validation' });
       return;
     }
+    // Deuxième verrou, indépendant de l'adresse IP : une même adresse n'est
+    // pas martelée depuis plusieurs machines.
+    if (await limiteIdentifiant(res, REGLES.loginEmail, email)) return;
 
     const utilisateur = await comptes.parEmail(email);
     // Message unique : pas d'énumération de comptes.
@@ -205,11 +248,11 @@ export function createApiApp(): express.Router {
 
     definirSession(res, jeton);
     res.json({ compte: versPublic(utilisateur) });
-  });
+  }));
 
   /* ── Déconnexion ── */
-  api.post('/auth/logout', async (req, res) => {
-    const jeton = lireCookie(req, COOKIE_SESSION);
+  api.post('/auth/logout', asyncRoute(async (req, res) => {
+    const jeton = lireJetonSession(req);
     if (jeton && comptes.mode !== 'indisponible') {
       try {
         await comptes.supprimerSession(empreinteJeton(jeton));
@@ -217,14 +260,26 @@ export function createApiApp(): express.Router {
         /* le cookie est de toute façon effacé */
       }
     }
-    res.setHeader('Set-Cookie', serialiserCookie(COOKIE_SESSION, '', { maxAge: 0 }));
+    res.setHeader('Set-Cookie', serialiserCookie(nomCookieSession(), '', { maxAge: 0 }));
     res.status(204).end();
-  });
+  }));
 
   /* ── Compte courant ── */
   api.get('/me', (req, res) => {
     const reqAuth = req as ReqAuth;
     if (!reqAuth.compte) {
+      // Une panne de stockage ne doit jamais être présentée comme un anonymat.
+      if (reqAuth.stockageIndisponible) {
+        res.status(503).json({
+          error: 'Service momentanément indisponible : stockage injoignable.',
+          code: 'stockage-indisponible',
+        });
+        return;
+      }
+      if (reqAuth.sessionExpiree) {
+        res.status(401).json({ error: 'session expirée', code: 'session-expiree' });
+        return;
+      }
       res.status(401).json({ error: 'non connecté', code: 'anonyme' });
       return;
     }
@@ -232,7 +287,7 @@ export function createApiApp(): express.Router {
   });
 
   /* ── Onboarding ── */
-  api.patch('/me/onboarding', async (req, res) => {
+  api.patch('/me/onboarding', asyncRoute(async (req, res) => {
     const reqAuth = req as ReqAuth;
     if (!reqAuth.compte) {
       res.status(401).json({ error: 'non connecté', code: 'anonyme' });
@@ -251,10 +306,10 @@ export function createApiApp(): express.Router {
     await comptes.enregistrer(u);
     reqAuth.compte.utilisateur = u;
     res.json({ compte: versPublic(u) });
-  });
+  }));
 
   /* ── Chat (contrat historique ; le flux principal passe par /v1) ── */
-  api.post('/chat', async (req, res) => {
+  api.post('/chat', asyncRoute(async (req, res) => {
     const reqAuth = req as ReqAuth;
     if (!reqAuth.compte) {
       res.status(401).json({ error: 'non connecté', code: 'anonyme' });
@@ -268,11 +323,9 @@ export function createApiApp(): express.Router {
       });
       return;
     }
-    const ip = reqAuth.compte.utilisateur.id || (req.ip ?? 'inconnu');
-    if (tropDeTentatives('chat:' + ip, 40, 5 * 60 * 1000)) {
-      res.status(429).json({ error: 'Trop de messages. Réessayez dans quelques minutes.', code: 'limite' });
-      return;
-    }
+    // Limite par compte (le trafic chat est toujours authentifié).
+    const identifiantChat = reqAuth.compte.utilisateur.id || `ip-${ipClient(req)}`;
+    if (await depasse(res, 'chat', identifiantChat, 40, 5 * 60 * 1000)) return;
 
     const corps = (req.body ?? {}) as { messages?: unknown; langue?: unknown };
     const verif = validerMessages(corps.messages);
@@ -303,7 +356,7 @@ export function createApiApp(): express.Router {
       }
       res.status(502).json({ error: 'Le moteur IA ne répond pas.', code: 'modele-indisponible' });
     }
-  });
+  }));
 
   return api;
 }

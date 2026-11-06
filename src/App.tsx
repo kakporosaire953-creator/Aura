@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { PrefsProvider } from './app/prefs';
 import { SessionProvider } from './app/session';
+import { RoutePrivee } from './app/gardes';
 import { AuraIntro, shouldShowIntro } from './components/intro/AuraIntro';
 import { LandingPage } from './pages/LandingPage';
 import { AuthPage } from './pages/AuthPage';
@@ -65,18 +66,20 @@ export const App: React.FC = () => {
             <Route path="/register" element={<AuthPage />} />
             <Route path="/documentation" element={<Suspense fallback={<ChargementPage />}><DocumentationPage /></Suspense>} />
             <Route path="/documentation/:slug" element={<Suspense fallback={<ChargementPage />}><DocumentationArticlePage /></Suspense>} />
-            <Route element={<WorkspaceLayout />}>
-              <Route path="/app" element={<EspacePage />} />
-              <Route path="/chat" element={<ChatPage />} />
-              <Route path="/chat/:id" element={<ChatPage />} />
-              <Route path="/projets" element={<ProjetsPage />} />
-              <Route path="/projets/:id" element={<ProjetDetailPage />} />
-              <Route path="/historique" element={<HistoriquePage />} />
-              <Route path="/explore" element={<ExplorePage />} />
-              <Route path="/studio" element={<StudioPage />} />
-              <Route path="/missions" element={<MissionsPage />} />
-              <Route path="/memoire" element={<MemoirePage />} />
-              <Route path="/parametres" element={<ParametresPage />} />
+            <Route element={<RoutePrivee />}>
+              <Route element={<WorkspaceLayout />}>
+                <Route path="/app" element={<EspacePage />} />
+                <Route path="/chat" element={<ChatPage />} />
+                <Route path="/chat/:id" element={<ChatPage />} />
+                <Route path="/projets" element={<ProjetsPage />} />
+                <Route path="/projets/:id" element={<ProjetDetailPage />} />
+                <Route path="/historique" element={<HistoriquePage />} />
+                <Route path="/explore" element={<ExplorePage />} />
+                <Route path="/studio" element={<StudioPage />} />
+                <Route path="/missions" element={<MissionsPage />} />
+                <Route path="/memoire" element={<MemoirePage />} />
+                <Route path="/parametres" element={<ParametresPage />} />
+              </Route>
             </Route>
             <Route path="*" element={<NotFoundPage />} />
           </Routes>

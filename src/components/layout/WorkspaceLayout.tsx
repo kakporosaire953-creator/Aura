@@ -3,7 +3,7 @@ import { NavLink, Outlet, Link, useLocation, useNavigate } from 'react-router-do
 import { BandeauSimulation } from './SiteChrome';
 import { useT, usePrefs } from '../../app/prefs';
 import { useSession } from '../../app/session';
-import { simulationActivee, definirSimulation } from '../../app/simulation';
+import { simulationActivee, simulationDisponible, definirSimulation } from '../../app/simulation';
 import { Icone } from '../ui/Icone';
 
 /**
@@ -35,6 +35,7 @@ export const WorkspaceLayout: React.FC = () => {
   const profilRef = useRef<HTMLDivElement | null>(null);
   const creationRef = useRef<HTMLDivElement | null>(null);
   const sim = simulationActivee();
+  const simReglable = simulationDisponible();
 
   // Fermer les menus au changement de page.
   useEffect(() => {
@@ -176,14 +177,16 @@ export const WorkspaceLayout: React.FC = () => {
               </div>
             )}
           </div>
-          <button
-            type="button"
-            className={`bascule-sim${sim ? ' actif' : ''}`}
-            title={sim ? t.simulation.quitter : t.simulation.reprendre}
-            onClick={() => definirSimulation(!sim)}
-          >
-            <Icone nom="flask" />
-          </button>
+          {simReglable && (
+            <button
+              type="button"
+              className={`bascule-sim${sim ? ' actif' : ''}`}
+              title={sim ? t.simulation.quitter : t.simulation.reprendre}
+              onClick={() => definirSimulation(!sim)}
+            >
+              <Icone nom="flask" />
+            </button>
+          )}
           <button
             type="button"
             className="bascule-theme ws-cercle"

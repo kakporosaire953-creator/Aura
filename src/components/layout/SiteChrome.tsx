@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { AuraLogo } from '../brand/AuraLogo';
 import { usePrefs } from '../../app/prefs';
 import { useSession } from '../../app/session';
-import { simulationActivee, definirSimulation } from '../../app/simulation';
+import { simulationActivee, simulationDisponible, definirSimulation } from '../../app/simulation';
 import { Icone } from '../ui/Icone';
 
 /** Bannière permanente du mode simulation — jamais de contenu simulé sans étiquette. */
@@ -32,6 +32,7 @@ export const SiteNav: React.FC = () => {
   const { t, theme, toggleTheme, lang, setLang } = usePrefs();
   const { statut } = useSession();
   const sim = React.useState(() => simulationActivee())[0];
+  const simReglable = simulationDisponible();
 
   React.useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 32);
@@ -144,15 +145,17 @@ export const SiteNav: React.FC = () => {
           <div className="nav-outils">
             {basculeLangue}
             {basculeTheme}
-            <button
-              type="button"
-              className={`bascule-sim${sim ? ' actif' : ''}`}
-              onClick={() => definirSimulation(!sim)}
-              aria-pressed={sim}
-              title={sim ? t.simulation.quitter : t.simulation.reprendre}
-            >
-              <Icone nom="flask" />
-            </button>
+            {simReglable && (
+              <button
+                type="button"
+                className={`bascule-sim${sim ? ' actif' : ''}`}
+                onClick={() => definirSimulation(!sim)}
+                aria-pressed={sim}
+                title={sim ? t.simulation.quitter : t.simulation.reprendre}
+              >
+                <Icone nom="flask" />
+              </button>
+            )}
           </div>
           {statut === 'connecte' ? (
             <Link to="/app" className="btn btn-encre">

@@ -158,6 +158,11 @@ export interface Content {
     errLimite: string;
     errServeur: string;
     retour: string;
+    indispoTitre: string;
+    indispoStockage: string;
+    indispoReseau: string;
+    reessayer: string;
+    sessionExpiree: string;
   };
   espace: {
     kicker: string;
@@ -899,6 +904,13 @@ const contentFr: Content = {
     errLimite: 'Trop de tentatives. Réessayez plus tard.',
     errServeur: 'Le service ne répond pas. Réessayez.',
     retour: "Retour à l'accueil",
+    indispoTitre: 'Votre espace est momentanément indisponible',
+    indispoStockage:
+      "Le stockage des comptes ne répond pas. Votre session n'est pas perdue : rien n'a été supprimé, réessayez dans un instant.",
+    indispoReseau:
+      "Le service ne répond pas. Vérifiez votre connexion, puis réessayez : votre session est conservée.",
+    reessayer: 'Réessayer',
+    sessionExpiree: 'Votre session a expiré. Reconnectez-vous pour reprendre le fil.',
   },
   espace: {
     kicker: 'Votre espace',
@@ -1628,6 +1640,13 @@ const contentEn: Content = {
     errLimite: 'Too many attempts. Try again later.',
     errServeur: 'The service is not responding. Try again.',
     retour: 'Back to home',
+    indispoTitre: 'Your workspace is temporarily unavailable',
+    indispoStockage:
+      'Account storage is not responding. Your session is not lost: nothing was deleted, try again in a moment.',
+    indispoReseau:
+      'The service is not responding. Check your connection, then try again: your session is kept.',
+    reessayer: 'Try again',
+    sessionExpiree: 'Your session has expired. Sign in again to pick up the thread.',
   },
   espace: {
     kicker: 'Your space',
