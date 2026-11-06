@@ -124,6 +124,7 @@ export const ChatPage: React.FC = () => {
   const [renommage, setRenommage] = useState<{ id: string; titre: string } | null>(null);
   const [streamActif, setStreamActif] = useState('');
   const [dictatee, setDictatee] = useState(false);
+  const [listeOuverte, setListeOuverte] = useState(false);
   const projectIdInitial = useRef<string | null>(null);
 
   const finRef = useRef<HTMLDivElement | null>(null);
@@ -154,9 +155,30 @@ export const ChatPage: React.FC = () => {
     return () => clearTimeout(timer);
   }, [recherche, rafraichirListe]);
 
+  /* ── Nouvelle conversation ── */
+  const nouvelleConversation = useCallback(() => {
+    setListeOuverte(false);
+    setConvActive(null);
+    setMessages([]);
+    setErreur(null);
+    navigate('/chat', { replace: true });
+    saisieRef.current?.focus();
+  }, [navigate]);
+
+  /* ── Échap ferme le panneau des conversations (mobile) ── */
+  useEffect(() => {
+    if (!listeOuverte) return;
+    const surTouche = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setListeOuverte(false);
+    };
+    window.addEventListener('keydown', surTouche);
+    return () => window.removeEventListener('keydown', surTouche);
+  }, [listeOuverte]);
+
   /* ── Ouverture d'une conversation (route /chat/:id) ── */
   const ouvrir = useCallback(
     async (id: string) => {
+      setListeOuverte(false);
       setErreur(null);
       setChargement(true);
       const r = await api.ouvrirConversation(id);
@@ -370,18 +392,16 @@ export const ChatPage: React.FC = () => {
   return (
     <div className="chat-page">
       {/* — Colonne conversations — */}
-      <aside className="chat-liste" aria-label={t.ws.conversationsTitre}>
+      <aside
+        id="chat-liste"
+        className={`chat-liste${listeOuverte ? ' ouverte' : ''}`}
+        aria-label={t.ws.conversationsTitre}
+      >
         <div className="chat-liste-haut">
           <button
             type="button"
             className="btn-principal chat-nouveau"
-            onClick={() => {
-              setConvActive(null);
-              setMessages([]);
-              setErreur(null);
-              navigate('/chat', { replace: true });
-              saisieRef.current?.focus();
-            }}
+            onClick={nouvelleConversation}
           >
             <Icone nom="plus" /> {t.ws.nouvelleConv}
           </button>
@@ -434,8 +454,45 @@ export const ChatPage: React.FC = () => {
         </div>
       </aside>
 
+      {listeOuverte && (
+        <button
+          type="button"
+          className="chat-voile"
+          aria-label={t.workspace.fermer}
+          onClick={() => setListeOuverte(false)}
+        />
+      )}
+
       {/* — Zone de discussion — */}
       <section className="chat chat-colonne">
+        {/* Barre mobile : ouverture explicite du panneau des conversations.
+            Auparavant le panneau s'ouvrait dès que le champ de saisie avait
+            le focus, ce qui masquait la conversation au moment d'écrire. */}
+        <div className="chat-barre">
+          <button
+            type="button"
+            className={`chat-liste-bouton${listeOuverte ? ' actif' : ''}`}
+            aria-expanded={listeOuverte}
+            aria-controls="chat-liste"
+            onClick={() => setListeOuverte((v) => !v)}
+          >
+            <Icone nom="comment-dots" />
+            <span>{t.ws.conversationsTitre}</span>
+            {conversations.length > 0 && (
+              <em className="chat-liste-compte">{conversations.length}</em>
+            )}
+          </button>
+          <button
+            type="button"
+            className="chat-nouveau-bouton"
+            aria-label={t.ws.nouvelleConv}
+            title={t.ws.nouvelleConv}
+            onClick={nouvelleConversation}
+          >
+            <Icone nom="plus" />
+          </button>
+        </div>
+
         {erreur && (
           <EtatErreur
             message={erreur}

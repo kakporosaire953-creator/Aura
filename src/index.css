@@ -5859,7 +5859,9 @@ button:disabled,
     position: absolute; inset: 0 auto 0 0; width: min(300px, 86vw); z-index: 40;
     background: var(--papier); transform: translateX(-102%); transition: transform 0.3s var(--soie);
   }
-  .chat-page:focus-within .chat-liste { transform: none; }
+  /* Le panneau ne s'ouvre plus au focus du champ de saisie : il a son
+     propre bouton (voir .chat-barre). */
+  .chat-liste.ouverte { transform: none; }
   .chat-item-titre { max-width: 210px; }
   .chat-lien-historique { display: none; }
   .page-module { padding: 1.15rem 1rem 2.6rem; }
@@ -6834,4 +6836,325 @@ button:disabled,
 
 .etat-erreur .icone {
   color: var(--feu);
+}
+
+/* ═══════════════════════════════════════════
+   MOBILE 011 — composeur du tableau de bord,
+   assistant sur téléphone, barre d'onglets
+   ═══════════════════════════════════════════ */
+
+/* ── Libellé de saisie du tableau de bord ──
+   Texte d'invite plus grand et plus calme, dans la continuité d'un
+   composeur de plein écran : le champ respire, l'envoi reste à droite. */
+.accueil-saisie {
+  font-size: clamp(1.05rem, 0.55vw + 0.92rem, 1.24rem);
+  line-height: 1.5;
+  min-height: 76px;
+  padding: 0.35rem 0.4rem 0.25rem;
+}
+
+.accueil-saisie::placeholder {
+  color: var(--encre-3);
+  opacity: 1;
+}
+
+.accueil-composeur {
+  padding: 1.15rem 1.2rem 0.95rem;
+}
+
+.accueil-composeur-bas {
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.35rem;
+}
+
+.accueil-pastilles {
+  width: min(720px, 100%);
+  margin-top: 0.85rem;
+}
+
+/* ── Barre d'outils du panneau, mobile uniquement ── */
+.chat-barre {
+  display: none;
+}
+
+.chat-liste-bouton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.95rem;
+  border-radius: 999px;
+  border: 1px solid var(--verre-trait);
+  background: var(--papier);
+  color: var(--encre-2);
+  font-family: var(--font-texte);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.chat-liste-bouton.actif {
+  border-color: var(--vert);
+  color: var(--vert-profond);
+}
+
+.chat-liste-compte {
+  font-style: normal;
+  background: var(--brume);
+  color: var(--encre-2);
+  border-radius: 999px;
+  padding: 0.02rem 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.chat-nouveau-bouton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--verre-trait);
+  background: var(--papier);
+  color: var(--encre);
+  cursor: pointer;
+}
+
+.chat-voile {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  /* La page assistant occupe exactement l'espace libre : le composeur
+     reste visible au-dessus de la barre d'onglets. */
+  .ws:has(.chat-page) {
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .ws-main:has(> .chat-page) {
+    display: flex;
+    flex-direction: column;
+    /* Sous 899 px la coque passe en flex colonne : sans cette croissance,
+       la zone de discussion se tasserait sur son contenu. */
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    /* Pleine largeur et jusqu'en bas : le panneau des conversations et son
+       voile couvrent tout, le composeur se remonte lui-même au-dessus de la
+       barre d'onglets. */
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  .ws-main:has(> .chat-page) > .chat-page {
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 0;
+    width: 100%;
+    /* La colonne occupe toute la hauteur disponible : le composeur reste
+       plaqué en bas, au-dessus de la barre d'onglets. */
+    grid-template-rows: 1fr;
+  }
+
+  .chat-barre {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    padding: 0.65rem 1rem 0.55rem;
+    border-bottom: 1px solid var(--verre-trait);
+  }
+
+  .chat-voile {
+    display: block;
+    position: absolute;
+    inset: 0;
+    z-index: 35;
+    border: none;
+    padding: 0;
+    background: rgba(18, 33, 27, 0.42);
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
+    cursor: pointer;
+    animation: fondu-menu 0.25s ease;
+  }
+
+  .chat-liste {
+    z-index: 40;
+    box-shadow: 0 24px 60px -30px rgba(18, 33, 27, 0.55);
+  }
+
+  /* Accueil de l'assistant : compact pour laisser place au composeur */
+  .chat-accueil {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 1.6rem 1rem 1rem;
+  }
+
+  .chat-accueil-titre {
+    font-size: 1.5rem;
+  }
+
+  .chat-accueil-sous {
+    font-size: 0.92rem;
+    margin-bottom: 1.1rem;
+  }
+
+  .chat-suggestions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .chat-suggestion {
+    font-size: 0.85rem;
+    padding: 0.6rem 0.9rem;
+    text-align: left;
+    border-radius: 14px;
+  }
+
+  .chat-messages {
+    padding: 0.85rem 0.9rem;
+  }
+
+  /* La colonne n'a plus de marge basse : c'est le composeur qui réserve
+     la place de la barre d'onglets, sinon un vide s'installe entre les deux. */
+  .chat-colonne {
+    padding-bottom: 0;
+  }
+
+  .chat-composeur {
+    padding: 0.6rem 0.75rem calc(0.55rem + 63px + env(safe-area-inset-bottom, 0px));
+    gap: 0.5rem;
+    background: var(--ivoire);
+    border-top: 1px solid var(--verre-trait);
+  }
+
+  .chat-saisie {
+    min-height: 44px;
+    border-radius: 16px;
+    font-size: 0.95rem;
+    padding: 0.62rem 0.9rem;
+  }
+
+  .chat-envoi span,
+  .chat-arret span {
+    display: none;
+  }
+
+  .chat-envoi,
+  .chat-arret {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    padding: 0 0 0 0;
+    justify-content: center;
+    border-radius: 50%;
+  }
+
+  /* Tableau de bord : pastilles sur une seule ligne, glissable */
+  .accueil-pastilles {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 0.15rem;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .accueil-pastilles::-webkit-scrollbar {
+    display: none;
+  }
+
+  .accueil-pastille {
+    flex: none;
+  }
+
+  .accueil-saisie {
+    min-height: 88px;
+  }
+
+  .accueil-composeur-bas {
+    margin-top: 0.5rem;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .accueil-pastilles {
+    justify-content: flex-start;
+  }
+}
+
+/* ── Barre d'onglets : icônes seules, libellés pour les lecteurs d'écran ── */
+.ws-bottom a {
+  position: relative;
+}
+
+.ws-bottom-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 30px;
+  border-radius: 999px;
+  transition: background 0.25s var(--soie), color 0.25s var(--soie);
+}
+
+.ws-bottom a .icone {
+  font-size: 1.32rem;
+}
+
+.ws-bottom a.actif {
+  background: transparent;
+}
+
+.ws-bottom a.actif .ws-bottom-icone {
+  background: rgba(165, 232, 56, 0.22);
+}
+
+.ws-bottom-libelle {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Très petits écrans : la barre haute garde un titre lisible.
+   Toutes les commandes restent présentes, seuls les espacements se resserrent. */
+@media (max-width: 440px) {
+  .ws-topbar {
+    gap: 0.4rem;
+    padding-left: 0.7rem;
+    padding-right: 0.6rem;
+  }
+
+  .ws-fil {
+    font-size: 0.92rem;
+    min-width: 0;
+  }
+
+  .ws-topbar-droite {
+    gap: 0.3rem;
+  }
+
+  .bascule-sim,
+  .ws-cercle {
+    width: 34px;
+    height: 34px;
+  }
+
+  .ws-creation {
+    padding: 0.42rem 0.6rem;
+  }
 }
