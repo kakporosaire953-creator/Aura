@@ -4,6 +4,7 @@ import { AuraLogo } from '../brand/AuraLogo';
 import { usePrefs } from '../../app/prefs';
 import { useSession } from '../../app/session';
 import { simulationActivee, definirSimulation } from '../../app/simulation';
+import { Icone } from '../ui/Icone';
 
 /** Bannière permanente du mode simulation — jamais de contenu simulé sans étiquette. */
 export const BandeauSimulation: React.FC = () => {
@@ -12,7 +13,7 @@ export const BandeauSimulation: React.FC = () => {
   if (!active) return null;
   return (
     <div className="bandeau-sim" role="status">
-      <i className="fa-solid fa-flask" aria-hidden />
+      <Icone nom="flask" />
       <span>{t.simulation.banniere}</span>
       <button type="button" onClick={() => definirSimulation(false)}>
         {t.simulation.quitter}
@@ -109,7 +110,7 @@ export const SiteNav: React.FC = () => {
       onClick={toggleTheme}
       aria-label={theme === 'dark' ? t.nav.themeClair : t.nav.themeSombre}
     >
-      <i className={`fa-solid ${theme === 'dark' ? 'fa-sun' : 'fa-moon'}`} aria-hidden />
+      <Icone nom={theme === 'dark' ? 'sun' : 'moon'} />
     </button>
   );
 
@@ -150,12 +151,12 @@ export const SiteNav: React.FC = () => {
               aria-pressed={sim}
               title={sim ? t.simulation.quitter : t.simulation.reprendre}
             >
-              <i className="fa-solid fa-flask" aria-hidden />
+              <Icone nom="flask" />
             </button>
           </div>
           {statut === 'connecte' ? (
             <Link to="/app" className="btn btn-encre">
-              <i className="fa-solid fa-user" aria-hidden />
+              <Icone nom="user" />
               <span>{t.espace.kicker}</span>
             </Link>
           ) : (
@@ -180,7 +181,7 @@ export const SiteNav: React.FC = () => {
           aria-label={menuOuvert ? t.nav.menuFermer : t.nav.menuOuvrir}
           onClick={() => setMenuOuvert((o) => !o)}
         >
-          <i className={`fa-solid ${menuOuvert ? 'fa-xmark' : 'fa-bars'}`} aria-hidden />
+          <Icone nom={menuOuvert ? 'xmark' : 'bars'} />
         </button>
       </div>
 
@@ -231,7 +232,7 @@ export const SiteNav: React.FC = () => {
         <div className="nav-mobile-actions">
           {statut === 'connecte' ? (
             <Link to="/app" className="btn btn-encre" onClick={() => setMenuOuvert(false)}>
-              <i className="fa-solid fa-user" aria-hidden />
+              <Icone nom="user" />
               <span>{t.espace.kicker}</span>
             </Link>
           ) : (

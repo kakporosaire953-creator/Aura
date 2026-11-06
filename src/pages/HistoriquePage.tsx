@@ -4,6 +4,7 @@ import { useT } from '../app/prefs';
 import { EtatChargement, EtatVide, EtatErreur } from '../components/ui/Primitives';
 import * as api from '../services/api';
 import type { Conversation } from '../services/types';
+import { Icone } from '../components/ui/Icone';
 
 /**
  * Historique — toutes les conversations persistées du compte, avec
@@ -46,7 +47,7 @@ export const HistoriquePage: React.FC = () => {
           className="btn-principal"
           onClick={() => navigate('/chat', { state: { nouveau: true } })}
         >
-          <i className="fa-solid fa-plus" /> {t.ws.nouvelleConv}
+          <Icone nom="plus" /> {t.ws.nouvelleConv}
         </button>
       </header>
 
@@ -65,7 +66,7 @@ export const HistoriquePage: React.FC = () => {
         <EtatChargement />
       ) : conversations.length === 0 ? (
         <EtatVide
-          icone="fa-clock-rotate-left"
+          icone="clock-rotate-left"
           titre={t.historique.vide}
           action={
             <button
@@ -82,7 +83,7 @@ export const HistoriquePage: React.FC = () => {
           {conversations.map((c) => (
             <div key={c.id} className="ligne-simple">
               <Link to={`/chat/${c.id}`} className="ligne-ouvrir">
-                <i className="fa-solid fa-comment-dots" />
+                <Icone nom="comment-dots" />
                 <strong>{c.titre}</strong>
                 <em>
                   {new Date(c.maj).toLocaleDateString()} · {new Date(c.maj).toLocaleTimeString()}
@@ -98,7 +99,7 @@ export const HistoriquePage: React.FC = () => {
                   void rafraichir();
                 }}
               >
-                <i className="fa-solid fa-trash" />
+                <Icone nom="trash" />
               </button>
             </div>
           ))}

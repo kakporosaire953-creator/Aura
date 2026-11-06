@@ -5,6 +5,7 @@ import { AuraLogo } from '../components/brand/AuraLogo';
 import { useT } from '../app/prefs';
 import { useSession, appelerAuth } from '../app/session';
 import { ouvrirDemo } from '../app/simulation';
+import { Icone } from '../components/ui/Icone';
 
 /** Traduction des codes d'erreur de l'API en messages locaux (fr/en). */
 function messageErreur(
@@ -174,7 +175,7 @@ export const AuthPage: React.FC = () => {
 
           {(location.state as { info?: string } | null)?.info && (
             <p className="form-note form-info" role="status">
-              <i className="fa-solid fa-circle-info" aria-hidden="true" />{' '}
+              <Icone nom="circle-info" />{' '}
               {(location.state as { info?: string }).info}
             </p>
           )}
@@ -227,7 +228,7 @@ export const AuthPage: React.FC = () => {
 
             {erreur && (
               <p className="form-erreur" role="alert">
-                <i className="fa-solid fa-circle-exclamation" aria-hidden /> {erreur}
+                <Icone nom="circle-exclamation" /> {erreur}
               </p>
             )}
 
@@ -256,7 +257,7 @@ export const AuthPage: React.FC = () => {
               navigate('/app', { replace: true });
             }}
           >
-            <i className="fa-solid fa-flask" aria-hidden />
+            <Icone nom="flask" />
             <span>{t.simulation.demoBtn}</span>
           </button>
 

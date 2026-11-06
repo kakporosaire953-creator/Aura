@@ -13,7 +13,7 @@ const path = require('path');
 const chromium = require('@sparticuz/chromium').default;
 const puppeteer = require('puppeteer-core');
 
-const BASE = 'http://127.0.0.1:3112';
+const BASE = process.env.AURA_BASE || 'http://127.0.0.1:3112';
 const SORTIE = '/home/user/audit-captures/workspace';
 const resultats = [];
 let echecs = 0;

@@ -65,7 +65,7 @@ export const AuraLogo: React.FC<AuraLogoProps> = ({
             fontWeight: 520,
             letterSpacing: '-0.02em',
             lineHeight: 1,
-            color: surFondSombre ? '#FFFDF8' : '#12211B',
+            color: surFondSombre ? '#FFFDF8' : 'var(--encre)',
             paddingBottom: '0.06em',
           }}
         >

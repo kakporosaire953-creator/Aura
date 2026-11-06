@@ -5,6 +5,7 @@ import { useT, usePrefs } from '../app/prefs';
 import { simulationActivee } from '../app/simulation';
 import * as api from '../services/api';
 import type { Conversation, Creation, Mission, Projet } from '../services/types';
+import { Icone } from '../components/ui/Icone';
 
 /**
  * Vue d'ensemble — centre de pilotage personnel : salutation, composeur,
@@ -54,10 +55,10 @@ export const EspacePage: React.FC = () => {
 
   const actions = useMemo(
     () => [
-      { titre: t.ws.actionQuestion, icone: 'fa-comment-dots', va: () => navigate('/chat', { state: { nouveau: true } }) },
-      { titre: t.ws.actionProjet, icone: 'fa-folder-plus', va: () => navigate('/projets', { state: { creer: true } }) },
-      { titre: t.ws.actionMission, icone: 'fa-list-check', va: () => navigate('/missions', { state: { creer: true } }) },
-      { titre: t.ws.actionDocument, icone: 'fa-file-lines', va: () => navigate('/studio') },
+      { titre: t.ws.actionQuestion, icone: 'comment-dots', va: () => navigate('/chat', { state: { nouveau: true } }) },
+      { titre: t.ws.actionProjet, icone: 'folder-plus', va: () => navigate('/projets', { state: { creer: true } }) },
+      { titre: t.ws.actionMission, icone: 'list-check', va: () => navigate('/missions', { state: { creer: true } }) },
+      { titre: t.ws.actionDocument, icone: 'file-lines', va: () => navigate('/studio') },
     ],
     [t, navigate],
   );
@@ -159,22 +160,22 @@ export const EspacePage: React.FC = () => {
           />
           <div className="accueil-composeur-bas">
             <span className="accueil-moteur" title={t.accueil.moteurTitre}>
-              <i className="fa-solid fa-bolt" />
+              <Icone nom="bolt" />
               {sim ? t.accueil.moteurSim : assistantOk ? 'Aura' : t.accueil.moteurNon}
             </span>
             <div className="accueil-pastilles">
               <Link to="/explore" className="accueil-pastille">
-                <i className="fa-solid fa-magnifying-glass" /> {t.accueil.chipRecherche}
+                <Icone nom="magnifying-glass" /> {t.accueil.chipRecherche}
               </Link>
               <button
                 type="button"
                 className="accueil-pastille"
                 onClick={() => setSaisie(t.accueil.action3Prompt)}
               >
-                <i className="fa-solid fa-code" /> {t.accueil.chipCode}
+                <Icone nom="code" /> {t.accueil.chipCode}
               </button>
               <Link to="/missions" className="accueil-pastille">
-                <i className="fa-solid fa-list-check" /> {t.accueil.chipMissions}
+                <Icone nom="list-check" /> {t.accueil.chipMissions}
               </Link>
               <button
                 type="submit"
@@ -182,7 +183,7 @@ export const EspacePage: React.FC = () => {
                 aria-label={t.accueil.envoyer}
                 disabled={!saisie.trim()}
               >
-                <i className="fa-solid fa-arrow-right" />
+                <Icone nom="arrow-right" />
               </button>
             </div>
           </div>
@@ -194,8 +195,8 @@ export const EspacePage: React.FC = () => {
         {actions.map((a) => (
           <button key={a.titre} type="button" className="accueil-action" onClick={a.va}>
             <span className="accueil-action-haut">
-              <i className={`fa-solid ${a.icone}`} />
-              <i className="fa-solid fa-arrow-right accueil-action-fleche" />
+              <Icone nom={a.icone} />
+              <Icone nom="arrow-right" className="accueil-action-fleche" />
             </span>
             <strong>{a.titre}</strong>
           </button>
@@ -230,10 +231,10 @@ export const EspacePage: React.FC = () => {
       <section className="accueil-recents">
         <header className="accueil-recents-haut">
           <h2>
-            <i className="fa-solid fa-clock" /> {t.ws.continuTitre}
+            <Icone nom="clock" /> {t.ws.continuTitre}
           </h2>
           <Link to="/historique" className="accueil-voir-tout">
-            {t.accueil.voirTout} <i className="fa-solid fa-arrow-right" />
+            {t.accueil.voirTout} <Icone nom="arrow-right" />
           </Link>
         </header>
 
@@ -244,7 +245,7 @@ export const EspacePage: React.FC = () => {
             {conversations.map((c) => (
               <Link key={c.id} to={`/chat/${c.id}`} className="accueil-recent">
                 <span className="accueil-recent-icone">
-                  <i className="fa-solid fa-comment-dots" />
+                  <Icone nom="comment-dots" />
                 </span>
                 <span className="accueil-recent-texte">
                   <strong>{c.titre}</strong>
@@ -252,13 +253,13 @@ export const EspacePage: React.FC = () => {
                     {t.accueil.typeConversation} · {quand(c.maj)}
                   </em>
                 </span>
-                <i className="fa-solid fa-chevron-right accueil-recent-fleche" />
+                <Icone nom="chevron-right" className="accueil-recent-fleche" />
               </Link>
             ))}
             {projets.map((p) => (
               <Link key={p.id} to={`/projets/${p.id}`} className="accueil-recent">
                 <span className="accueil-recent-icone">
-                  <i className="fa-solid fa-folder-open" />
+                  <Icone nom="folder-open" />
                 </span>
                 <span className="accueil-recent-texte">
                   <strong>{p.nom}</strong>
@@ -266,13 +267,13 @@ export const EspacePage: React.FC = () => {
                     {t.accueil.typeProjet} · {quand(p.maj)}
                   </em>
                 </span>
-                <i className="fa-solid fa-chevron-right accueil-recent-fleche" />
+                <Icone nom="chevron-right" className="accueil-recent-fleche" />
               </Link>
             ))}
             {missions.map((m) => (
               <Link key={m.id} to="/missions" className="accueil-recent">
                 <span className="accueil-recent-icone">
-                  <i className="fa-solid fa-list-check" />
+                  <Icone nom="list-check" />
                 </span>
                 <span className="accueil-recent-texte">
                   <strong>{m.titre}</strong>
@@ -280,13 +281,13 @@ export const EspacePage: React.FC = () => {
                     {t.accueil.typeMission} · {quand(m.maj)}
                   </em>
                 </span>
-                <i className="fa-solid fa-chevron-right accueil-recent-fleche" />
+                <Icone nom="chevron-right" className="accueil-recent-fleche" />
               </Link>
             ))}
             {creations.map((c) => (
               <Link key={c.id} to="/studio" className="accueil-recent">
                 <span className="accueil-recent-icone">
-                  <i className="fa-solid fa-file-lines" />
+                  <Icone nom="file-lines" />
                 </span>
                 <span className="accueil-recent-texte">
                   <strong>{c.titre}</strong>
@@ -294,7 +295,7 @@ export const EspacePage: React.FC = () => {
                     Studio · {quand(c.maj)}
                   </em>
                 </span>
-                <i className="fa-solid fa-chevron-right accueil-recent-fleche" />
+                <Icone nom="chevron-right" className="accueil-recent-fleche" />
               </Link>
             ))}
           </div>

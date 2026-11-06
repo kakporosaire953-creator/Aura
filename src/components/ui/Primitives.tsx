@@ -3,6 +3,7 @@
  * (chargement, vide, erreur), carte d'identité d'un élément.
  */
 import React, { useEffect, useRef } from 'react';
+import { Icone } from '../ui/Icone';
 
 /* ── Dialogue accessible (Escape, clic extérieur, retour de focus) ── */
 
@@ -53,7 +54,7 @@ export const Dialogue: React.FC<{
         <div className="dlg-entete">
           <h2 className="dlg-titre">{titre}</h2>
           <button type="button" className="dlg-fermer" aria-label="Fermer" onClick={onFermer}>
-            <i className="fa-solid fa-xmark" aria-hidden="true" />
+            <Icone nom="xmark" />
           </button>
         </div>
         <div className="dlg-corps">{children}</div>
@@ -79,7 +80,7 @@ export const EtatVide: React.FC<{
   action?: React.ReactNode;
 }> = ({ icone, titre, texte, action }) => (
   <div className="etat etat-vide">
-    <i className={`fa-solid ${icone ?? 'fa-inbox'}`} aria-hidden="true" />
+    <Icone nom={icone ?? 'inbox'} />
     <p className="etat-titre">{titre}</p>
     {texte && <p className="etat-texte">{texte}</p>}
     {action}
@@ -91,7 +92,7 @@ export const EtatErreur: React.FC<{ message: string; action?: React.ReactNode }>
   action,
 }) => (
   <div className="etat etat-erreur" role="alert">
-    <i className="fa-solid fa-triangle-exclamation" aria-hidden="true" />
+    <Icone nom="triangle-exclamation" />
     <p>{message}</p>
     {action}
   </div>

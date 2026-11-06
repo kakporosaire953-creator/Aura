@@ -1049,23 +1049,23 @@ button {
   transform: translateY(-7px) scale(1.12);
 }
 
-.plan-liste li i {
+.plan-liste li i, .plan-liste li .icone {
   color: var(--vert);
   font-size: 0.82rem;
   margin-top: 0.28em;
   flex-shrink: 0;
 }
 
-.plan-vedette .plan-liste li i {
+.plan-vedette .plan-liste li i, .plan-vedette .plan-liste li .icone {
   color: var(--lime);
 }
 
-.carte-demo i {
+.carte-demo i, .carte-demo .icone {
   font-size: 0.62rem;
   margin-right: 0.35em;
 }
 
-.btn i {
+.btn i, .btn .icone {
   font-size: 0.88em;
 }
 
@@ -1735,7 +1735,7 @@ button {
   opacity: 0;
 }
 
-.auth-carte i {
+.auth-carte i, .auth-carte .icone {
   width: 9px;
   height: 9px;
   border-radius: 50%;
@@ -3499,7 +3499,7 @@ button {
   transform: translateY(-3px);
 }
 
-.module-carte > i {
+.module-carte > i, .module-carte > .icone {
   font-size: 1.25rem;
   color: var(--vert-profond);
 }
@@ -3869,7 +3869,7 @@ button {
   min-height: 46px;
 }
 
-.ws-nav-side a i {
+.ws-nav-side a i, .ws-nav-side a .icone {
   width: 1.25em;
   text-align: center;
   font-size: 1.02rem;
@@ -3910,7 +3910,7 @@ button {
   transform: translateY(-2px);
 }
 
-.ws-plus i {
+.ws-plus i, .ws-plus .icone {
   color: var(--feu);
   font-size: 1.05rem;
 }
@@ -3991,7 +3991,7 @@ button {
   text-overflow: ellipsis;
 }
 
-.ws-user > i {
+.ws-user > i, .ws-user > .icone {
   font-size: 0.72rem;
   opacity: 0.55;
 }
@@ -4006,7 +4006,7 @@ button {
 .ws-repliee .ws-plus,
 .ws-repliee .ws-lien-simple span,
 .ws-repliee .ws-user-texte,
-.ws-repliee .ws-user > i {
+.ws-repliee .ws-user > i, .ws-repliee .ws-user > .icone {
   display: none;
 }
 
@@ -4237,7 +4237,7 @@ button {
   white-space: nowrap;
 }
 
-.accueil-moteur i {
+.accueil-moteur i, .accueil-moteur .icone {
   color: var(--feu);
 }
 
@@ -4417,7 +4417,7 @@ button {
   font-weight: 600;
 }
 
-.accueil-recents-haut h2 i {
+.accueil-recents-haut h2 i, .accueil-recents-haut h2 .icone {
   font-size: 1.02rem;
   opacity: 0.75;
 }
@@ -4736,7 +4736,7 @@ button {
   .ws-plus,
   .ws-lien-simple span,
   .ws-user-texte,
-  .ws-user > i {
+  .ws-user > i, .ws-user > .icone {
     display: none;
   }
 
@@ -4806,7 +4806,7 @@ button {
   .ws-plus,
   .ws-lien-simple span,
   .ws-user-texte,
-  .ws-user > i {
+  .ws-user > i, .ws-user > .icone {
     display: revert;
   }
 
@@ -4861,7 +4861,7 @@ button {
     min-height: 48px;
   }
 
-  .ws-bottom a i {
+  .ws-bottom a i, .ws-bottom a .icone {
     font-size: 1.12rem;
   }
 
@@ -5412,10 +5412,10 @@ button:disabled,
 
 /* ── États ── */
 .etat { text-align: center; padding: 2.6rem 1.2rem; color: var(--encre-3); }
-.etat i { font-size: 1.9rem; margin-bottom: 0.7rem; display: block; color: var(--encre-3); }
+.etat i, .etat .icone { font-size: 1.9rem; margin-bottom: 0.7rem; display: block; color: var(--encre-3); }
 .etat-titre { font-family: var(--font-titre); font-size: 1.15rem; color: var(--encre); margin: 0.35rem 0; }
 .etat-texte { max-width: 46ch; margin: 0.2rem auto 0.9rem; font-size: 0.92rem; }
-.etat-erreur i { color: var(--feu); }
+.etat-erreur i, .etat-erreur .icone { color: var(--feu); }
 .etat-erreur { color: var(--feu-profond); }
 .etat-spinner {
   display: inline-block; width: 26px; height: 26px;
@@ -6020,7 +6020,7 @@ button:disabled,
   opacity: 0.82;
 }
 
-.tarifs-paiement i {
+.tarifs-paiement i, .tarifs-paiement .icone {
   margin-top: 0.18em;
   color: var(--feu);
 }
@@ -6123,12 +6123,12 @@ button:disabled,
   text-decoration: none;
 }
 
-.doc-lire i {
+.doc-lire i, .doc-lire .icone {
   transition: transform 0.35s var(--soie);
 }
 
 .doc-lire:hover i,
-.doc-lire:focus-visible i {
+.doc-lire:focus-visible i, .doc-lire:focus-visible .icone {
   transform: translateX(4px);
 }
 
@@ -6298,7 +6298,7 @@ button:disabled,
   line-height: 1.6;
 }
 
-.doc-note i {
+.doc-note i, .doc-note .icone {
   margin-top: 0.2em;
 }
 
@@ -6310,7 +6310,7 @@ button:disabled,
   background: rgba(255, 121, 13, 0.12);
 }
 
-.doc-note-limite i {
+.doc-note-limite i, .doc-note-limite .icone {
   color: var(--feu);
 }
 
@@ -6680,7 +6680,7 @@ button:disabled,
   font-size: 0.95rem;
 }
 
-.tarifs-inclus li i {
+.tarifs-inclus li i, .tarifs-inclus li .icone {
   margin-top: 0.22em;
   color: var(--vert-profond);
   font-size: 0.8rem;
@@ -6745,4 +6745,93 @@ button:disabled,
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* =========================================================
+   ICÔNES AURA — jeu maison (aucun webfont externe)
+   ========================================================= */
+
+.icone {
+  display: inline-block;
+  vertical-align: -0.125em;
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+/* Dans les boutons et pastilles, l'icône suit la ligne de base du texte. */
+.btn .icone,
+.btn-principal .icone,
+.btn-primaire .icone,
+.btn-simple .icone,
+.btn-danger-simple .icone,
+.nav-mobile a .icone {
+  vertical-align: -0.15em;
+}
+
+.icone-tourne {
+  animation: rotation-icone 0.9s linear infinite;
+  transform-origin: 50% 50%;
+}
+
+@keyframes rotation-icone {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .icone-tourne {
+    animation-duration: 2.4s;
+  }
+}
+
+/* =========================================================
+   ICÔNES DE CONTENU — tailles et couleurs (jeu SVG maison)
+   ========================================================= */
+
+/* L'ancienne icône d'étape utilisait un dégradé découpé dans le texte :
+   impossible avec un tracé SVG. Couleur pleine, lisible sur fond clair. */
+.etape-icone {
+  font-size: 1rem;
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: var(--vert-profond);
+}
+
+.capacite-icone {
+  font-size: 1.45rem;
+}
+
+.doc-icone .icone,
+.vision-icone .icone,
+.module-carte > .icone {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.etat .icone {
+  margin-bottom: 0.55rem;
+}
+
+.carte-demo .icone {
+  width: 0.85em;
+  height: 0.85em;
+}
+
+.studio-type .icone {
+  width: 1.05em;
+  height: 1.05em;
+}
+
+/* L'icône d'état reste inline-block : c'est text-align qui la centre,
+   un display:block la collait au bord gauche du bloc. */
+.etat .icone {
+  display: inline-block;
+  margin: 0 auto 0.6rem;
+  color: var(--encre-3);
+}
+
+.etat-erreur .icone {
+  color: var(--feu);
 }

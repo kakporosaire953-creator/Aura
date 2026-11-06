@@ -9,6 +9,7 @@ import {
   EtatVide,
 } from '../components/ui/Primitives';
 import * as api from '../services/api';
+import { Icone } from '../components/ui/Icone';
 import type {
   Mission,
   PrioriteMission,
@@ -220,12 +221,12 @@ export const MissionsPage: React.FC = () => {
         </div>
         {m.echeance && (
           <p className="mission-echeance">
-            <i className="fa-solid fa-calendar" /> {m.echeance}
+            <Icone nom="calendar" /> {m.echeance}
           </p>
         )}
         {m.sousTaches.length > 0 && (
           <p className="mission-progression">
-            <i className="fa-solid fa-bars-progress" /> {faits}/{m.sousTaches.length}
+            <Icone nom="bars-progress" /> {faits}/{m.sousTaches.length}
           </p>
         )}
         {ouvert && (
@@ -281,10 +282,10 @@ export const MissionsPage: React.FC = () => {
                   })
                 }
               >
-                <i className="fa-solid fa-pen" />
+                <Icone nom="pen" />
               </button>
               <button type="button" className="btn-danger-simple" onClick={() => void supprimer(m.id)}>
-                <i className="fa-solid fa-trash" />
+                <Icone nom="trash" />
               </button>
             </div>
           </div>
@@ -303,20 +304,20 @@ export const MissionsPage: React.FC = () => {
         <div className="page-module-actions">
           <div className="boutons-vue" role="group" aria-label="Vue">
             <button type="button" className={vue === 'liste' ? 'actif' : ''} onClick={() => setVue('liste')}>
-              <i className="fa-solid fa-list" /> {t.ws.vueListe}
+              <Icone nom="list" /> {t.ws.vueListe}
             </button>
             <button type="button" className={vue === 'kanban' ? 'actif' : ''} onClick={() => setVue('kanban')}>
-              <i className="fa-solid fa-table-columns" /> {t.ws.vueKanban}
+              <Icone nom="table-columns" /> {t.ws.vueKanban}
             </button>
             <button type="button" className={vue === 'echeances' ? 'actif' : ''} onClick={() => setVue('echeances')}>
-              <i className="fa-solid fa-calendar" /> {t.ws.vueEcheances}
+              <Icone nom="calendar" /> {t.ws.vueEcheances}
             </button>
           </div>
           <button type="button" className="btn-simple" onClick={() => setAideOuverte(true)}>
-            <i className="fa-solid fa-wand-magic-sparkles" /> {t.ws.aideIa}
+            <Icone nom="studio" /> {t.ws.aideIa}
           </button>
           <button type="button" className="btn-principal" onClick={() => setFormulaire({ ...FORM_VIDE })}>
-            <i className="fa-solid fa-plus" /> {t.ws.nouvelleMission}
+            <Icone nom="plus" /> {t.ws.nouvelleMission}
           </button>
         </div>
       </header>
@@ -329,7 +330,7 @@ export const MissionsPage: React.FC = () => {
         <EtatChargement />
       ) : missions.length === 0 ? (
         <EtatVide
-          icone="fa-list-check"
+          icone="list-check"
           titre={t.ws.nouvelleMission}
           texte={t.ws.aideIaNote}
           action={
@@ -532,7 +533,7 @@ export const MissionsPage: React.FC = () => {
                     onClick={() => setPropositions(propositions.filter((_, j) => j !== i))}
                     aria-label={t.ws.confirmer}
                   >
-                    <i className="fa-solid fa-xmark" />
+                    <Icone nom="xmark" />
                   </button>
                 </div>
                 <textarea
@@ -548,7 +549,7 @@ export const MissionsPage: React.FC = () => {
                   <ul className="proposition-soustaches">
                     {p.sousTaches.map((s, k) => (
                       <li key={k}>
-                        <i className="fa-solid fa-corner" aria-hidden="true" /> {s}
+                        <Icone nom="corner" /> {s}
                       </li>
                     ))}
                   </ul>
@@ -657,7 +658,7 @@ const FormulaireMissionChamp: React.FC<{
               }
               aria-label={t.ws.confirmer}
             >
-              <i className="fa-solid fa-xmark" />
+              <Icone nom="xmark" />
             </button>
           </div>
         ))}
@@ -666,7 +667,7 @@ const FormulaireMissionChamp: React.FC<{
           className="btn-simple"
           onClick={() => onChange({ ...valeur, sousTaches: [...valeur.sousTaches, ''] })}
         >
-          <i className="fa-solid fa-plus" /> {t.ws.ajouterSousTache}
+          <Icone nom="plus" /> {t.ws.ajouterSousTache}
         </button>
       </fieldset>
     </div>

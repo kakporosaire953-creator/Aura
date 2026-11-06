@@ -10,6 +10,7 @@ import {
 import { Markdown } from '../components/ui/Markdown';
 import * as api from '../services/api';
 import type { Recherche, SourceRecherche } from '../services/types';
+import { Icone } from '../components/ui/Icone';
 
 /**
  * Explorer — recherche d'informations avec sources réelles (connecteur
@@ -97,11 +98,11 @@ export const ExplorePage: React.FC = () => {
         <button type="submit" className="btn-principal" disabled={!requete.trim() || enCours || (dispo ? !dispo.ok : false)}>
           {enCours ? (
             <>
-              <i className="fa-solid fa-circle-notch fa-spin" /> {t.chat.reflexion}
+              <Icone nom="spinner" tourne /> {t.chat.reflexion}
             </>
           ) : (
             <>
-              <i className="fa-solid fa-magnifying-glass" /> {t.ws.lancer}
+              <Icone nom="magnifying-glass" /> {t.ws.lancer}
             </>
           )}
         </button>
@@ -130,7 +131,7 @@ export const ExplorePage: React.FC = () => {
               {resultat.sources.map((s) => (
                 <li key={s.id}>
                   <a href={s.url} target="_blank" rel="noopener noreferrer">
-                    <i className="fa-solid fa-link" /> {s.titre}
+                    <Icone nom="link" /> {s.titre}
                   </a>
                   <span className="explore-url">{s.url}</span>
                 </li>
@@ -144,14 +145,14 @@ export const ExplorePage: React.FC = () => {
               className="btn-simple"
               onClick={() => navigate('/missions', { state: { creer: true } })}
             >
-              <i className="fa-solid fa-list-check" /> {t.ws.devenirMission}
+              <Icone nom="list-check" /> {t.ws.devenirMission}
             </button>
             <button
               type="button"
               className="btn-simple"
               onClick={() => navigate('/studio', { state: { source: resultat.recherche } })}
             >
-              <i className="fa-solid fa-file-lines" /> {t.ws.devenirDocument}
+              <Icone nom="file-lines" /> {t.ws.devenirDocument}
             </button>
           </div>
         </section>
@@ -173,7 +174,7 @@ export const ExplorePage: React.FC = () => {
                   }
                 }}
               >
-                <i className="fa-solid fa-clock-rotate-left" />
+                <Icone nom="clock-rotate-left" />
                 <strong>{r.requete}</strong>
                 <em>{new Date(r.cree).toLocaleDateString()}</em>
               </button>
