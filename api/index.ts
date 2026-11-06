@@ -8,6 +8,20 @@ import { createApiApp } from '../server/api';
  * réellement.
  */
 export default function handler(req: Request, res: Response) {
+  try {
+    return executer(req, res);
+  } catch (e) {
+    // Même une exception au montage doit rester du JSON : le navigateur ne
+    // sait rien faire d'une page d'erreur HTML renvoyée sous /api.
+    console.error('[api] échec du routeur —', e instanceof Error ? (e.stack ?? e.message) : e);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Erreur interne du service.', code: 'interne' });
+    }
+    return;
+  }
+}
+
+function executer(req: Request, res: Response): void {
   const qAny = req.query as Record<string, unknown> | undefined;
   const vercelPath = qAny?.__path;
   if (typeof vercelPath === 'string' && vercelPath.trim() && qAny) {

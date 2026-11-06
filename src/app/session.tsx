@@ -146,6 +146,8 @@ export async function appelerAuth(
   erreur?: string;
   code?: string;
   detail?: Record<string, string>;
+  /** Code HTTP observé — 0 quand la requête n'a jamais abouti. */
+  statut?: number;
 }> {
   // Mode simulation : même contrat de réponse, stockage local.
   if (simulationActivee()) {
@@ -176,13 +178,16 @@ export async function appelerAuth(
       champs?: Record<string, string>;
     };
     if (r.ok && d.compte) return { ok: true, compte: d.compte };
+    // Réponse sans notre contrat JSON (500 de la fonction, page d'erreur d'un
+    // proxy) : on le dit distinctement d'une coupure réseau.
     return {
       ok: false,
       erreur: d.error ?? 'Le service ne répond pas.',
-      code: d.code,
+      code: d.code ?? 'serveur',
       detail: d.champs,
+      statut: r.status,
     };
   } catch {
-    return { ok: false, erreur: 'Le service ne répond pas.', code: 'reseau' };
+    return { ok: false, erreur: 'Le service ne répond pas.', code: 'reseau', statut: 0 };
   }
 }

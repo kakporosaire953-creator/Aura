@@ -383,5 +383,36 @@ export function createApiApp(): express.Router {
     }
   }));
 
+  /* ── Filets de sécurité de l'API ──
+     Toute réponse de /api doit rester du JSON : une page HTML d'erreur est
+     illisible par le client, qui affiche alors « le service ne répond pas »
+     sans pouvoir distinguer une panne d'une route absente. */
+
+  // Route inconnue sous /api : 404 JSON explicite (jamais le SPA).
+  api.use((_req, res) => {
+    res.status(404).json({ error: 'Ressource introuvable.', code: 'introuvable' });
+  });
+
+  // Erreur non capturée : le statut d'origine est respecté (un corps JSON
+  // malformé est une faute du client, pas une panne du serveur).
+  api.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+    if (res.headersSent) return;
+    const statut =
+      typeof (err as { status?: unknown })?.status === 'number'
+        ? (err as { status: number }).status
+        : typeof (err as { statusCode?: unknown })?.statusCode === 'number'
+          ? (err as { statusCode: number }).statusCode
+          : 500;
+    if (statut >= 400 && statut < 500) {
+      res.status(statut).json({ error: 'Requête invalide.', code: 'validation' });
+      return;
+    }
+    console.error(
+      '[api] erreur non gérée —',
+      err instanceof Error ? (err.stack ?? err.message) : err,
+    );
+    res.status(500).json({ error: 'Erreur interne du service.', code: 'interne' });
+  });
+
   return api;
 }
