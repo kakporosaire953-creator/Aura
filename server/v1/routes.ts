@@ -38,9 +38,9 @@ import type { ImageAi, MessageAi } from '../ai/types';
 import { createRoutesTravail } from './routesTravail';
 import { createRoutesCreation } from './routesCreation';
 import {
-  COOKIE_SESSION,
   empreinteJeton,
-  lireCookie,
+  lireJetonSession,
+  nomCookieSession,
   serialiserCookie,
   verifierMotDePasse,
 } from '../accounts';
@@ -299,9 +299,9 @@ export function createApiV1(): express.Router {
       // Suppression : données, sessions, compte, index email.
       await r.donnees!.supprimerTout();
       await r.comptes!.supprimerCompte(r.compte!.id);
-      const jeton = lireCookie(req, COOKIE_SESSION);
+      const jeton = lireJetonSession(req);
       if (jeton) await r.comptes!.supprimerSession(empreinteJeton(jeton));
-      res.setHeader('Set-Cookie', serialiserCookie(COOKIE_SESSION, '', { maxAge: 0 }));
+      res.setHeader('Set-Cookie', serialiserCookie(nomCookieSession(), '', { maxAge: 0 }));
       res.status(204).end();
     }),
   );

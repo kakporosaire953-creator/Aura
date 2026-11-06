@@ -1,7 +1,8 @@
 import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createApiApp } from './server/api';
+import { configurerConfianceProxy, createApiApp } from './server/api';
+import { appliquerEnTetesDocument } from './server/en-tetes';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isProd = process.env.NODE_ENV === 'production';
@@ -12,6 +13,8 @@ export { createApiApp };
 
 async function main() {
   const app = express();
+  // Un seul proxy de confiance (Vercel) ou aucun : voir server/api.ts.
+  configurerConfianceProxy(app);
   app.use('/api', createApiApp());
 
   if (!isProd) {
@@ -23,6 +26,8 @@ async function main() {
     });
     app.use(vite.middlewares);
   } else {
+    // En-têtes du document en production auto-hébergée (voir server/en-tetes.ts).
+    appliquerEnTetesDocument(app);
     const dist = path.join(__dirname, 'dist');
     app.use(express.static(dist));
     app.get('*', (_req, res) => res.sendFile(path.join(dist, 'index.html')));

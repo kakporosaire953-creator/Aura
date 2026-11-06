@@ -21,9 +21,22 @@ export type Compte = {
   onboarding: { fait: boolean; objectif: string | null };
 };
 
+/**
+ * Quatre états, jamais confondus :
+ * - `chargement` : la session n'est pas encore vérifiée ;
+ * - `connecte` : le serveur reconnaît le cookie ;
+ * - `anonyme` : le serveur répond explicitement 401 ;
+ * - `indisponible` : le serveur est injoignable ou son stockage est en
+ *   panne — ce n'est pas un visiteur anonyme, et l'interface doit le dire.
+ */
+export type StatutSession = 'chargement' | 'anonyme' | 'connecte' | 'indisponible';
+
 type EtatSession = {
-  statut: 'chargement' | 'anonyme' | 'connecte';
+  statut: StatutSession;
   compte: Compte | null;
+  motif: 'stockage' | 'reseau' | null;
+  /** Le serveur a répondu 401 `session-expiree` : le dire, plutôt que « anonyme ». */
+  expiree: boolean;
 };
 
 type CtxSession = EtatSession & {
@@ -34,43 +47,74 @@ type CtxSession = EtatSession & {
 const SessionCtx = createContext<CtxSession>({
   statut: 'chargement',
   compte: null,
+  motif: null,
+  expiree: false,
   rafraichir: async () => {},
   deconnecter: async () => {},
 });
 
 export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [etat, setEtat] = useState<EtatSession>({ statut: 'chargement', compte: null });
+  const [etat, setEtat] = useState<EtatSession>({
+    statut: 'chargement',
+    compte: null,
+    motif: null,
+    expiree: false,
+  });
 
   const rafraichir = useCallback(async () => {
     // Mode simulation : état local du navigateur, jamais présenté comme réel.
     if (simulationActivee()) {
       const c = compteCourantSimule();
-      setEtat(c ? { statut: 'connecte', compte: c } : { statut: 'anonyme', compte: null });
+      setEtat(
+        c
+          ? { statut: 'connecte', compte: c, motif: null, expiree: false }
+          : { statut: 'anonyme', compte: null, motif: null, expiree: false },
+      );
       return;
     }
     try {
       const r = await fetch('/api/me', { credentials: 'same-origin' });
       if (r.ok) {
         const d = (await r.json()) as { compte: Compte };
-        setEtat({ statut: 'connecte', compte: d.compte });
-      } else {
-        setEtat({ statut: 'anonyme', compte: null });
+        setEtat({ statut: 'connecte', compte: d.compte, motif: null, expiree: false });
+        return;
       }
+      if (r.status === 401) {
+        const code = await r
+          .json()
+          .then((d: { code?: string }) => d?.code)
+          .catch(() => undefined);
+        setEtat({
+          statut: 'anonyme',
+          compte: null,
+          motif: null,
+          expiree: code === 'session-expiree',
+        });
+        return;
+      }
+      // 503 (stockage) ou toute autre erreur serveur : le service est
+      // indisponible, l'utilisateur n'est pas pour autant anonyme.
+      setEtat({
+        statut: 'indisponible',
+        compte: null,
+        motif: r.status === 503 ? 'stockage' : 'reseau',
+        expiree: false,
+      });
     } catch {
-      setEtat({ statut: 'anonyme', compte: null });
+      setEtat({ statut: 'indisponible', compte: null, motif: 'reseau', expiree: false });
     }
   }, []);
 
   const deconnecter = useCallback(async () => {
     if (simulationActivee()) {
       deconnecterSimule();
-      setEtat({ statut: 'anonyme', compte: null });
+      setEtat({ statut: 'anonyme', compte: null, motif: null, expiree: false });
       return;
     }
     try {
       await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
     } finally {
-      setEtat({ statut: 'anonyme', compte: null });
+      setEtat({ statut: 'anonyme', compte: null, motif: null, expiree: false });
     }
   }, []);
 

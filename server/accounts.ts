@@ -60,6 +60,31 @@ export function empreinteJeton(jeton: string): string {
 
 export const COOKIE_SESSION = 'aura_session';
 
+/**
+ * Nom préfixé `__Host-` : le navigateur n'accepte ce cookie que s'il est
+ * `Secure`, posé sur `Path=/` et sans attribut `Domain`. C'est une garantie
+ * supplémentaire contre l'écrasement par un sous-domaine.
+ * Utilisé uniquement en production (HTTPS) ; en développement et en
+ * auto-hébergement, le nom simple reste en vigueur.
+ */
+export const COOKIE_SESSION_SECURISE = '__Host-aura_session';
+
+/** Nom du cookie à poser, selon l'environnement réel. */
+export function nomCookieSession(): string {
+  return process.env.NODE_ENV === 'production' ? COOKIE_SESSION_SECURISE : COOKIE_SESSION;
+}
+
+/**
+ * Jeton de session lu dans les deux noms : les sessions ouvertes avant le
+ * passage au préfixe `__Host-` restent valides (aucun utilisateur déconnecté
+ * par un renommage de cookie).
+ */
+export function lireJetonSession(requete: { headers: { cookie?: string } }): string | null {
+  const prefere = lireCookie(requete, nomCookieSession());
+  if (prefere) return prefere;
+  return lireCookie(requete, COOKIE_SESSION);
+}
+
 export function lireCookie(requete: { headers: { cookie?: string } }, nom: string): string | null {
   const entete = requete.headers.cookie;
   if (!entete) return null;

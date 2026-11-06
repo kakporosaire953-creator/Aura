@@ -25,8 +25,11 @@ npm run build    # build de production
 npm run lint     # vérification TypeScript (tsc --noEmit)
 ```
 
-Il n'existe pas encore de suite de tests automatisés ; la validation se fait
-par `tsc`, le build et des parcours manuels/navigateur.
+```bash
+npm test           # tests unitaires et d'intégration (base de test isolée)
+npm run verif:prod # construit, puis vérifie que la production ne peut pas
+                   # activer le mode simulation (voir scripts/verifier-prod.cjs)
+```
 
 ## Variables d'environnement
 
@@ -34,6 +37,8 @@ par `tsc`, le build et des parcours manuels/navigateur.
 |---|---|
 | `GEMINI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY` | Clés serveur des fournisseurs IA (jamais exposées au client — voir `docs/architecture/AI-MULTI-PROVIDER.md`) |
 | `KV_REST_API_URL` / `KV_REST_API_TOKEN` | Persistance des comptes (Vercel KV). Sans elles, l'API répond honnêtement un 503 « non configuré » |
+| `AURA_DATA_DIR` | Dossier du pilote fichier (développement, auto-hébergement) |
+| `AURA_TRUST_PROXY=1` | À poser seulement derrière un proxy de confiance (Vercel le fait automatiquement). Sans proxy, aucune confiance n'est accordée à `x-forwarded-for` |
 
 Aucun secret n'est stocké dans le code ni dans une variable `VITE_*`.
 
@@ -42,7 +47,7 @@ Aucun secret n'est stocké dans le code ni dans une variable `VITE_*`.
 | Route | Page | État |
 |---|---|---|
 | `/` | Accueil (hero, fil narratif, capacités, galerie, tarifs) | Réel |
-| `/login`, `/register` | Authentification (+ entrée volontaire en démonstration) | Réel (serveur) / démo badgée |
+| `/login`, `/register` | Authentification (entrée en démonstration en développement seulement) | Réel (serveur) |
 | `/documentation` | 6 rubriques avec statut honnête (en rédaction / à venir) | Partiel |
 | `/app` | Espace de travail (accueil, composeur, récents) | Réel + démo badgée |
 | `/chat` | Conversation (moteur IA multi-fournisseurs côté serveur, historique local) | Réel |
