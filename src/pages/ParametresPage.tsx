@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useT, usePrefs } from '../app/prefs';
 import { useSession } from '../app/session';
 import { simulationActivee, definirSimulation } from '../app/simulation';
+import { Dialogue } from '../components/ui/Primitives';
 import * as api from '../services/api';
 import type { CompteV1 } from '../services/types';
 
@@ -23,6 +24,11 @@ export const ParametresPage: React.FC = () => {
   const [prefs, setPrefs] = useState<CompteV1['preferences'] | null>(null);
   const [etatSauvegarde, setEtatSauvegarde] = useState<'idle' | 'envoi' | 'fait' | 'erreur'>('idle');
   const [erreur, setErreur] = useState<string | null>(null);
+  const [dialogueSuppression, setDialogueSuppression] = useState(false);
+  const [motDePasse, setMotDePasse] = useState('');
+  const [confirmation, setConfirmation] = useState('');
+  const [etatSuppression, setEtatSuppression] = useState<'idle' | 'envoi' | 'erreur'>('idle');
+  const [erreurSuppression, setErreurSuppression] = useState<string | null>(null);
 
   useEffect(() => {
     void (async () => {
@@ -331,6 +337,19 @@ export const ParametresPage: React.FC = () => {
         )}
       </section>
 
+      {/* — Zone sensible : suppression de compte — */}
+      {statut === 'connecte' && !sim && (
+        <section className="param-section param-danger">
+          <h2>
+            <i className="fa-solid fa-triangle-exclamation" /> {t.ws.dangerZone}
+          </h2>
+          <p className="corps">{t.ws.dangerSous}</p>
+          <button type="button" className="btn-danger-simple" onClick={() => setDialogueSuppression(true)}>
+            <i className="fa-solid fa-user-slash" /> {t.ws.supprimerCompte}
+          </button>
+        </section>
+      )}
+
       <section className="param-section">
         <h2>{t.parametres.aPropos}</h2>
         <p className="corps">{t.parametres.aProposTexte}</p>
@@ -343,6 +362,81 @@ export const ParametresPage: React.FC = () => {
           </Link>
         </div>
       </section>
+
+      {/* — Confirmation de suppression de compte — */}
+      <Dialogue
+        ouvert={dialogueSuppression}
+        onFermer={() => {
+          setDialogueSuppression(false);
+          setErreurSuppression(null);
+        }}
+        titre={t.ws.supprimerCompte}
+        pied={
+          <>
+            <button
+              type="button"
+              className="btn-simple"
+              onClick={() => {
+                setDialogueSuppression(false);
+                setErreurSuppression(null);
+              }}
+            >
+              {t.ws.annuler}
+            </button>
+            <button
+              type="button"
+              className="btn-danger-simple"
+              disabled={
+                etatSuppression === 'envoi' ||
+                !motDePasse ||
+                confirmation !== t.ws.supprimerCompteConfirmeValeur
+              }
+              onClick={async () => {
+                setEtatSuppression('envoi');
+                setErreurSuppression(null);
+                const r = await api.supprimerCompte(motDePasse);
+                if (r.ok) {
+                  await rafraichir();
+                  navigate('/login', { state: { info: t.ws.compteSupprime } });
+                } else {
+                  setEtatSuppression('erreur');
+                  setErreurSuppression(r.erreur);
+                }
+              }}
+            >
+              {etatSuppression === 'envoi' ? t.chat.envoi : t.ws.supprimerCompte}
+            </button>
+          </>
+        }
+      >
+        <div className="formulaire">
+          <p className="corps param-danger-texte">
+            <i className="fa-solid fa-triangle-exclamation" aria-hidden="true" />{' '}
+            {t.ws.supprimerCompteAvertissement}
+          </p>
+          <label className="champ">
+            <span>{t.ws.motDePasseLabel}</span>
+            <input
+              type="password"
+              value={motDePasse}
+              onChange={(e) => setMotDePasse(e.target.value)}
+              autoComplete="current-password"
+            />
+          </label>
+          <label className="champ">
+            <span>
+              {t.ws.supprimerCompteConfirmeLabel} <strong>{t.ws.supprimerCompteConfirmeValeur}</strong>
+            </span>
+            <input
+              type="text"
+              value={confirmation}
+              onChange={(e) => setConfirmation(e.target.value)}
+              autoComplete="off"
+            />
+          </label>
+          {erreurSuppression && <p className="form-erreur">{erreurSuppression}</p>}
+        </div>
+      </Dialogue>
     </div>
   );
 };

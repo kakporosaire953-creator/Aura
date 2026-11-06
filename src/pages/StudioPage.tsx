@@ -242,9 +242,19 @@ export const StudioPage: React.FC = () => {
                       </select>
                     )}
                     {active.versions.length > 0 && (
-                      <a className="btn-simple" href={api.urlExportCreation(active.id)} download>
-                        <i className="fa-solid fa-download" /> {t.ws.exporter}
-                      </a>
+                      <>
+                        <a className="btn-simple" href={api.urlExportCreation(active.id)} download>
+                          <i className="fa-solid fa-download" /> {t.ws.exporter}
+                        </a>
+                        <button
+                          type="button"
+                          className="btn-simple"
+                          onClick={() => window.print()}
+                          title={t.ws.exportPdf}
+                        >
+                          <i className="fa-solid fa-print" /> {t.ws.exportPdf}
+                        </button>
+                      </>
                     )}
                     <button
                       type="button"

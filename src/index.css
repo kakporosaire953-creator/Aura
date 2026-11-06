@@ -5808,3 +5808,61 @@ button:disabled,
   .page-module-titre { font-size: 1.5rem; }
   .btn-principal, .btn-simple { font-size: 0.82rem; padding: 0.5rem 0.9rem; }
 }
+
+/* ── Impression / export PDF (Studio) : seul le document est imprimé ── */
+@media print {
+  .ws-topbar,
+  .ws-sidebar,
+  .ws-bottom,
+  .ws-voile,
+  .chat-liste,
+  .chat-composeur,
+  .studio-creation,
+  .studio-historique,
+  .studio-revision,
+  .studio-apercu-haut,
+  .page-module-haut,
+  .onglets,
+  .module-note,
+  .dlg-fond,
+  .accueil-filigrane {
+    display: none !important;
+  }
+  body * {
+    visibility: hidden;
+  }
+  .studio-document,
+  .studio-document * {
+    visibility: visible;
+  }
+  .studio-document {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 0;
+    border: none;
+    background: #fff;
+    color: #12211b;
+  }
+  .md-bloc-code {
+    background: #f4f4f0;
+  }
+  .md-bloc-code code,
+  .md-bloc-code-barre {
+    color: #12211b;
+  }
+}
+
+/* Message d'état (ex. « compte supprimé ») sur l'authentification */
+.form-info {
+  display: flex; align-items: center; gap: 0.5rem;
+  border: 1px solid rgba(67, 188, 44, 0.35); border-radius: 12px;
+  padding: 0.65rem 0.95rem; margin: 0 0 1rem;
+  color: var(--vert-profond); background: rgba(67, 188, 44, 0.08);
+}
+.param-danger {
+  border: 1px solid rgba(255, 121, 13, 0.35); border-radius: 18px;
+}
+.param-danger h2 { color: var(--feu-profond); }
+.param-danger-texte { color: var(--feu-profond); display: flex; gap: 0.55rem; }

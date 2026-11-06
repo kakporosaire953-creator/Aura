@@ -27,6 +27,7 @@ Erreurs uniformes : `{ "error": string, "code": string, "champs"?: { champ: mess
 
 ### Compte
 | GET | `/me` | compte complet (profil contextuel + préférences) |
+| DELETE | `/me` | **suppression de compte** (irréversible) — `{ password }` requis ; efface données, sessions, compte, index email ; `401 identifiants` si mot de passe incorrect ; rate-limit 5 / 15 min |
 | PATCH | `/me` | `nom`, `profil{pays,region,languePrincipale,languesSecondaires,devise,fuseau,unites,domaine}` |
 | GET | `/preferences` | préférences de réponse |
 | PATCH | `/preferences` | `tonReponse`, `utiliserMemoire`, `langueReponse` |

@@ -213,6 +213,28 @@ export class EntrepotComptes {
     }
     return sessions;
   }
+
+  /**
+   * Suppression de compte complète : compte, index email, toutes les
+   * sessions et l'agrégat de données. Irréversible — appelé uniquement
+   * après confirmation du mot de passe (route DELETE /v1/me).
+   */
+  async supprimerCompte(userId: string): Promise<void> {
+    const compte = await this.parId(userId);
+    if (!compte) return;
+    await this.base.supprimer(CLE.compteParEmail(compte.email));
+    await this.base.supprimer(CLE.compte(userId));
+    for (const s of await this.sessionsDe(userId)) {
+      await this.base.supprimer(CLE.session(s.id));
+    }
+    // Sessions éventuellement expirées restantes du même compte.
+    const cles = await this.base.lister('aurav1:session:');
+    for (const c of cles) {
+      const s = await this.base.lire<Session>(c);
+      if (s?.userId === userId) await this.base.supprimer(c);
+    }
+    await this.base.supprimer(CLE.donnees(userId));
+  }
 }
 
 /* ───────────────────────── Données utilisateur ───────────────────────── */
@@ -594,6 +616,11 @@ export class EntrepotDonnees {
     await this.maj((d) => {
       d.evenements.push({ ...e, userId: this.userId });
     });
+  }
+
+  /** Suppression totale de l'agrégat utilisateur (suppression de compte). */
+  async supprimerTout(): Promise<void> {
+    await this.base.supprimer(CLE.donnees(this.userId));
   }
 }
 

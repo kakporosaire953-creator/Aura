@@ -29,6 +29,13 @@ import * as ia from '../ai/registre';
 import { ErreurAi, type MessageAi } from '../ai/types';
 import { createRoutesTravail } from './routesTravail';
 import { createRoutesCreation } from './routesCreation';
+import {
+  COOKIE_SESSION,
+  empreinteJeton,
+  lireCookie,
+  serialiserCookie,
+  verifierMotDePasse,
+} from '../accounts';
 
 const LIMITE_CONTENU = 8000;
 
@@ -168,6 +175,35 @@ export function createApiV1(): express.Router {
       },
     });
   }));
+
+  /* ── Suppression de compte (§16) — confirmation par mot de passe ── */
+
+  v1.delete(
+    '/me',
+    authRequise,
+    limiteParCompte(5, 15 * 60 * 1000),
+    asyncRoute(async (req, res) => {
+      const r = req as ReqV1;
+      const corps = (req.body ?? {}) as Record<string, unknown>;
+      const password = typeof corps.password === 'string' ? corps.password : '';
+      if (!password) {
+        invalide(res, { password: 'invalide' });
+        return;
+      }
+      const valide = await verifierMotDePasse(password, r.compte!.hash, r.compte!.sel);
+      if (!valide) {
+        res.status(401).json({ error: 'Mot de passe incorrect.', code: 'identifiants' });
+        return;
+      }
+      // Suppression : données, sessions, compte, index email.
+      await r.donnees!.supprimerTout();
+      await r.comptes!.supprimerCompte(r.compte!.id);
+      const jeton = lireCookie(req, COOKIE_SESSION);
+      if (jeton) await r.comptes!.supprimerSession(empreinteJeton(jeton));
+      res.setHeader('Set-Cookie', serialiserCookie(COOKIE_SESSION, '', { maxAge: 0 }));
+      res.status(204).end();
+    }),
+  );
 
   /* ── Conversations ── */
 

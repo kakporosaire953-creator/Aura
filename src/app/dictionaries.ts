@@ -497,6 +497,15 @@ export interface Content {
     retour: string;
     indisponible: string;
     configRequise: string;
+    dangerZone: string;
+    dangerSous: string;
+    supprimerCompte: string;
+    supprimerCompteAvertissement: string;
+    supprimerCompteConfirmeLabel: string;
+    supprimerCompteConfirmeValeur: string;
+    motDePasseLabel: string;
+    compteSupprime: string;
+    exportPdf: string;
   };
 }
 
@@ -1265,6 +1274,16 @@ const contentFr: Content = {
     retour: 'Retour',
     indisponible: 'Indisponible',
     configRequise: 'Configuration requise',
+    dangerZone: 'Zone sensible',
+    dangerSous: 'Ces actions affectent durablement votre compte.',
+    supprimerCompte: 'Supprimer mon compte',
+    supprimerCompteAvertissement:
+      'Cette action est définitive : vos conversations, projets, missions, mémoires et créations seront supprimés, ainsi que toutes vos sessions. Aucune récupération ne sera possible.',
+    supprimerCompteConfirmeLabel: 'Pour confirmer, saisissez :',
+    supprimerCompteConfirmeValeur: 'SUPPRIMER',
+    motDePasseLabel: 'Mot de passe',
+    compteSupprime: 'Votre compte a été supprimé.',
+    exportPdf: 'Imprimer / PDF',
   },
 };
 
@@ -1960,6 +1979,16 @@ const contentEn: Content = {
     retour: 'Back',
     indisponible: 'Unavailable',
     configRequise: 'Setup required',
+    dangerZone: 'Danger zone',
+    dangerSous: 'These actions permanently affect your account.',
+    supprimerCompte: 'Delete my account',
+    supprimerCompteAvertissement:
+      'This action is permanent: your conversations, projects, missions, memories and creations will be deleted, along with all your sessions. No recovery will be possible.',
+    supprimerCompteConfirmeLabel: 'To confirm, type:',
+    supprimerCompteConfirmeValeur: 'DELETE',
+    motDePasseLabel: 'Password',
+    compteSupprime: 'Your account has been deleted.',
+    exportPdf: 'Print / PDF',
   },
 };
 
