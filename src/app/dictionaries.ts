@@ -1,3 +1,5 @@
+import type { ModeChat } from '../services/types';
+
 export type Lang = 'fr' | 'en';
 export type Theme = 'light' | 'dark';
 
@@ -281,6 +283,17 @@ export interface Content {
     vide: string;
     note: string;
   };
+  composeur: {
+    joindre: string;
+    retirer: string;
+    maxImages: string;
+    imageIllisible: string;
+    mode: string;
+    modeAide: string;
+    modeImageAide: string;
+    modes: Record<ModeChat, string>;
+  };
+
   accueil: {
     bonjour: string;
     prenomDefaut: string;
@@ -1053,6 +1066,22 @@ const contentFr: Content = {
     note:
       'Vos missions sont conservées localement dans ce navigateur uniquement, sans compte ni serveur : elles ne suivent pas d’un appareil à l’autre et disparaissent si vous effacez les données du site.',
   },
+  composeur: {
+    joindre: 'Joindre une image',
+    retirer: 'Retirer',
+    maxImages: 'Trois images au maximum par message.',
+    imageIllisible: 'Cette image n’a pas pu être lue.',
+    mode: 'Mode de travail',
+    modeAide: 'Change la façon dont AURA traite votre demande.',
+    modeImageAide: 'Le mode vaut pour les messages sans image : une image est traitée par le moteur qui sait la lire.',
+    modes: {
+      conversation: 'Aura',
+      raisonnement: 'Réflexion',
+      code: 'Code',
+      recherche: 'Recherche',
+    },
+  },
+
   accueil: {
     bonjour: 'Bonjour',
     prenomDefaut: 'à vous',
@@ -1766,6 +1795,22 @@ const contentEn: Content = {
     note:
       'Your missions are kept locally in this browser only, with no account or server: they do not follow you across devices and disappear if you clear site data.',
   },
+  composeur: {
+    joindre: 'Attach an image',
+    retirer: 'Remove',
+    maxImages: 'Three images maximum per message.',
+    imageIllisible: 'This image could not be read.',
+    mode: 'Working mode',
+    modeAide: 'Changes how AURA handles your request.',
+    modeImageAide: 'The mode applies to messages without an image: an image is handled by an engine that can read it.',
+    modes: {
+      conversation: 'Aura',
+      raisonnement: 'Reasoning',
+      code: 'Code',
+      recherche: 'Research',
+    },
+  },
+
   accueil: {
     bonjour: 'Hello',
     prenomDefaut: 'there',

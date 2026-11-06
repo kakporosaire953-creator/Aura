@@ -42,7 +42,7 @@ export class FournisseurMock implements FournisseurAi {
     this.capacites = {
       texte: true,
       streaming: true,
-      imagesEntree: false,
+      imagesEntree: true,
       generationImages: false,
       sortieStructuree: true,
       outils: false,
@@ -89,7 +89,11 @@ export class FournisseurMock implements FournisseurAi {
 
   private synthese(req: RequeteAi): string {
     const dernier = [...req.messages].reverse().find((m) => m.role === 'user');
-    return `[mock] Réponse à : ${(dernier?.content ?? '').slice(0, 120)}`;
+    const images = dernier?.images?.length ?? 0;
+    const noteImages = images
+      ? ` (${images} image${images > 1 ? 's' : ''} reçue${images > 1 ? 's' : ''})`
+      : '';
+    return `[mock] Réponse à : ${(dernier?.content ?? '').slice(0, 120)}${noteImages}`;
   }
 
   async generateResponse(req: RequeteAi): Promise<ReponseAi> {

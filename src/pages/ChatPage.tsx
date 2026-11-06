@@ -6,7 +6,13 @@ import { simulationActivee } from '../app/simulation';
 import { Markdown } from '../components/ui/Markdown';
 import { EtatChargement, EtatErreur, EtatVide, Dialogue } from '../components/ui/Primitives';
 import * as api from '../services/api';
-import type { Conversation, MessageChat } from '../services/types';
+import type { Conversation, MessageChat, ModeChat, PieceJointeChat } from '../services/types';
+import {
+  BoutonJoindre,
+  SelecteurMode,
+  VignettesPieces,
+  usePiecesJointes,
+} from '../components/ui/composeur';
 import { Icone } from '../components/ui/Icone';
 
 /**
@@ -48,8 +54,15 @@ const MessageBulle: React.FC<{
   return (
     <article className={`msg ${estUser ? 'msg-user' : 'msg-ia'}`}>
       <div className="msg-bulle">
+        {message.meta?.piecesJointes?.length ? (
+          <div className="msg-images">
+            {message.meta.piecesJointes.map((p, i) => (
+              <img key={`${p.nom}-${i}`} src={p.data} alt={p.nom} loading="lazy" />
+            ))}
+          </div>
+        ) : null}
         {estUser ? (
-          <p className="msg-texte">{texte}</p>
+          texte ? <p className="msg-texte">{texte}</p> : null
         ) : (
           <>
             <Markdown texte={texte} />
@@ -107,6 +120,8 @@ export const ChatPage: React.FC = () => {
   const etatNav = location.state as
     | {
         promptInitial?: string;
+        pieces?: PieceJointeChat[];
+        mode?: ModeChat;
         fil?: { id: string; titre: string; messages: MessageChat[] };
         nouveau?: boolean;
         projectId?: string | null;
@@ -125,11 +140,18 @@ export const ChatPage: React.FC = () => {
   const [streamActif, setStreamActif] = useState('');
   const [dictatee, setDictatee] = useState(false);
   const [listeOuverte, setListeOuverte] = useState(false);
+  const { pieces, erreur: erreurPieces, ajouter, retirer, vider } = usePiecesJointes();
+  const [mode, setMode] = useState<ModeChat>('conversation');
   const projectIdInitial = useRef<string | null>(null);
+  // Garde-fou : l'effet peut être rejoué (StrictMode, navigation) — un seul
+  // envoi automatique par clé de navigation.
+  const envoiAutoFait = useRef<string | null>(null);
 
   const finRef = useRef<HTMLDivElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
-  const envoyerRef = useRef<(texte: string) => void>(() => {});
+  const envoyerRef = useRef<
+    (texte: string, options?: { pieces?: PieceJointeChat[]; mode?: ModeChat }) => void
+  >(() => {});
   const saisieRef = useRef<HTMLTextAreaElement | null>(null);
 
   const recoVocale = useMemo(
@@ -215,13 +237,15 @@ export const ChatPage: React.FC = () => {
       return;
     }
     if (etatNav?.nouveau || etatNav?.promptInitial) {
+      if (envoiAutoFait.current === location.key) return;
+      envoiAutoFait.current = location.key;
       setConvActive(null);
       setMessages([]);
       projectIdInitial.current = (etatNav as { projectId?: string | null })?.projectId ?? null;
       if (etatNav.promptInitial) {
         const prompt = etatNav.promptInitial;
         navigate(location.pathname, { replace: true, state: null });
-        envoyerRef.current(prompt);
+        envoyerRef.current(prompt, { pieces: etatNav.pieces, mode: etatNav.mode });
       } else {
         navigate(location.pathname, { replace: true, state: null });
       }
@@ -237,9 +261,14 @@ export const ChatPage: React.FC = () => {
   useEffect(() => () => abortRef.current?.abort(), []);
 
   /* ── Envoi ── */
-  const envoyer = async (texte: string) => {
+  const envoyer = async (
+    texte: string,
+    options: { pieces?: PieceJointeChat[]; mode?: ModeChat } = {},
+  ) => {
     const contenu = texte.trim();
-    if (!contenu || etat === 'envoi') return;
+    const jointes = options.pieces ?? pieces;
+    const modeEnvoi = options.mode ?? mode;
+    if ((!contenu && !jointes.length) || etat === 'envoi') return;
     setErreur(null);
     setSaisie('');
     setEtat('envoi');
@@ -247,7 +276,7 @@ export const ChatPage: React.FC = () => {
     let convId = convActive?.id ?? null;
     if (!convId) {
       const r = await api.creerConversation({
-        titre: contenu.slice(0, 80),
+        titre: (contenu || jointes[0]?.nom || 'Image partagée').slice(0, 80),
         projectId: projectIdInitial.current,
       });
       if (!r.ok) {
@@ -262,7 +291,12 @@ export const ChatPage: React.FC = () => {
       void rafraichirListe();
     }
 
-    const localUser: MessageChat = { role: 'user', content: contenu };
+    const localUser: MessageChat = {
+      role: 'user',
+      content: contenu,
+      meta: jointes.length ? { piecesJointes: jointes } : null,
+    };
+    vider();
     const localStream: MessageChat = { role: 'assistant', content: '' };
     setMessages((m) => [...m, localUser, localStream]);
     setStreamActif('');
@@ -274,6 +308,8 @@ export const ChatPage: React.FC = () => {
     const r = await api.envoyerMessage(convId, contenu, {
       langue: lang,
       signal: controle.signal,
+      piecesJointes: jointes,
+      mode: modeEnvoi,
       onChunk: (morceau) => {
         accumule += morceau;
         setStreamActif(accumule);
@@ -546,22 +582,32 @@ export const ChatPage: React.FC = () => {
             void envoyer(saisie);
           }}
         >
-          <textarea
-            ref={saisieRef}
-            className="chat-saisie"
-            rows={1}
-            placeholder={t.chat.placeholder}
-            value={saisie}
-            onChange={(e) => setSaisie(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                void envoyer(saisie);
-              }
-            }}
-            aria-label={t.chat.placeholder}
-          />
+          <div className="chat-champ">
+            <VignettesPieces pieces={pieces} onRetirer={retirer} />
+            <textarea
+              ref={saisieRef}
+              className="chat-saisie"
+              rows={1}
+              placeholder={t.chat.placeholder}
+              value={saisie}
+              onChange={(e) => setSaisie(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  void envoyer(saisie);
+                }
+              }}
+              aria-label={t.chat.placeholder}
+            />
+            {erreurPieces && (
+              <p className="composeur-erreur" role="status">
+                {erreurPieces}
+              </p>
+            )}
+          </div>
           <div className="chat-composeur-actions">
+            <BoutonJoindre onFichiers={(f) => void ajouter(f)} desactive={pieces.length >= 3} />
+            <SelecteurMode mode={mode} onMode={setMode} desactive={pieces.length > 0} />
             {recoVocale && (
               <button
                 type="button"
@@ -582,7 +628,11 @@ export const ChatPage: React.FC = () => {
                 <Icone nom="stop" /> <span>{t.ws.arreter}</span>
               </button>
             ) : (
-              <button type="submit" className="btn-principal chat-envoi" disabled={!saisie.trim()}>
+              <button
+                type="submit"
+                className="btn-principal chat-envoi"
+                disabled={!saisie.trim() && !pieces.length}
+              >
                 <Icone nom="paper-plane" /> <span>{t.chat.envoyer}</span>
               </button>
             )}

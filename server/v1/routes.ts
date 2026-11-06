@@ -23,12 +23,18 @@ import {
   preferencesParDefaut,
   nouvelId,
 } from '../db/entrepots';
-import type { Message, PreferencesUtilisateur, ProfilContextuel, StatutMessage } from '../db/types';
+import type {
+  Message,
+  PieceJointe,
+  PreferencesUtilisateur,
+  ProfilContextuel,
+  StatutMessage,
+} from '../db/types';
 import { construireContexte, versMessagesModele } from '../services/contexte';
 import * as serviceIa from '../ai/service';
 import { ErreurAi } from '../ai/errors';
 import { enregistrerUsage, consommationParFournisseur } from '../ai/usage';
-import type { MessageAi } from '../ai/types';
+import type { ImageAi, MessageAi } from '../ai/types';
 import { createRoutesTravail } from './routesTravail';
 import { createRoutesCreation } from './routesCreation';
 import {
@@ -53,8 +59,93 @@ function messagePublic(m: Message) {
   };
 }
 
+/**
+ * Images jointes : validées ici, transmises au moteur uniquement si celui-ci
+ * accepte les entrées visuelles. Aucune URL distante n'est suivie.
+ */
+const TYPES_IMAGE = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif']);
+const MAX_PIECES = 3;
+const MAX_PIECE_OCTETS = 1_800_000; // ≈ 1,8 Mo de data URL par image
+const MAX_TOTAL_OCTETS = 4_000_000;
+
+/** Modes de travail proposés à l'utilisateur — jamais un nom de fournisseur. */
+const MODES: Record<string, 'conversation' | 'raisonnement' | 'code' | 'recherche'> = {
+  conversation: 'conversation',
+  raisonnement: 'raisonnement',
+  code: 'code',
+  recherche: 'recherche',
+};
+
+function validerPieces(brut: unknown): { pieces: PieceJointe[]; erreur?: string } {
+  if (brut === undefined || brut === null) return { pieces: [] };
+  if (!Array.isArray(brut)) return { pieces: [], erreur: 'Format des images invalide.' };
+  if (brut.length > MAX_PIECES) {
+    return { pieces: [], erreur: `Trois images au maximum par message.` };
+  }
+  const pieces: PieceJointe[] = [];
+  let total = 0;
+  for (const item of brut) {
+    const p = item as Partial<PieceJointe>;
+    if (typeof p?.data !== 'string' || !p.data.startsWith('data:')) {
+      return { pieces: [], erreur: 'Image illisible.' };
+    }
+    const m = /^data:([a-z/+.-]+);base64,([A-Za-z0-9+/=]+)$/i.exec(p.data);
+    if (!m || !TYPES_IMAGE.has(m[1].toLowerCase())) {
+      return { pieces: [], erreur: 'Format d’image non pris en charge (PNG, JPEG, WEBP, GIF).' };
+    }
+    if (m[2].length > MAX_PIECE_OCTETS) {
+      return { pieces: [], erreur: 'Image trop lourde (1,8 Mo maximum après compression).' };
+    }
+    total += m[2].length;
+    if (total > MAX_TOTAL_OCTETS) {
+      return { pieces: [], erreur: 'Images trop lourdes au total (4 Mo maximum).' };
+    }
+    pieces.push({
+      nom: typeof p.nom === 'string' ? p.nom.slice(0, 120) : 'image',
+      type: m[1].toLowerCase(),
+      taille: Math.round((m[2].length * 3) / 4),
+      data: p.data,
+    });
+  }
+  return { pieces };
+}
+
+/** `data:image/png;base64,xxxx` → `{ mime: 'image/png', data: 'xxxx' }`. */
+function imagePourModele(p: PieceJointe): ImageAi {
+  const i = p.data.indexOf('base64,');
+  return { mime: p.type, data: i >= 0 ? p.data.slice(i + 7) : p.data };
+}
+
+/** Erreur lisible pour l'utilisateur : on ne nomme jamais un fournisseur. */
+function messageErreur(e: unknown, tache: string): { error: string; code: string } {
+  if (e instanceof ErreurAi) {
+    if (e.code === 'aucun-fournisseur') {
+      if (tache === 'image') {
+        return {
+          error: 'Aucun moteur disponible ne peut lire les images sur cet environnement.',
+          code: 'modele-indisponible',
+        };
+      }
+      if (tache === 'recherche') {
+        return {
+          error: 'La recherche sourcée n’est pas disponible sur cet environnement.',
+          code: 'modele-indisponible',
+        };
+      }
+      return {
+        error: 'Ce mode de travail n’est pas disponible sur cet environnement.',
+        code: 'modele-indisponible',
+      };
+    }
+    return { error: e.message, code: e.code };
+  }
+  return { error: 'Le modèle ne répond pas.', code: 'modele-indisponible' };
+}
+
 export function createApiV1(): express.Router {
   const v1 = express.Router();
+  // Les messages peuvent porter des images : corps plus large sur cette seule route.
+  v1.use('/conversations/:id/messages', express.json({ limit: '6mb' }));
   v1.use(express.json({ limit: '64kb' }));
   v1.use(attacherCompteV1);
 
@@ -329,8 +420,26 @@ export function createApiV1(): express.Router {
       }
       const corps = (req.body ?? {}) as Record<string, unknown>;
       const estRegeneration = corps.regenerer === true;
-      const contenu = estRegeneration ? '' : chaine(corps.contenu, { min: 1, max: LIMITE_CONTENU });
-      if (!estRegeneration && (contenu === undefined || contenu === null)) {
+
+      const { pieces, erreur: erreurPieces } = validerPieces(corps.piecesJointes);
+      if (erreurPieces) {
+        res.status(400).json({ error: erreurPieces, code: 'pieces-jointes' });
+        return;
+      }
+      const demandeMode = typeof corps.mode === 'string' ? corps.mode : 'conversation';
+      const mode = MODES[demandeMode] ?? 'conversation';
+
+      const texteSaisi = typeof corps.contenu === 'string' ? corps.contenu.trim() : '';
+      let contenu: string | undefined;
+      if (estRegeneration) {
+        contenu = '';
+      } else if (texteSaisi) {
+        contenu = chaine(corps.contenu, { min: 1, max: LIMITE_CONTENU }) ?? undefined;
+      } else if (pieces.length) {
+        // Une image seule suffit : le texte devient facultatif.
+        contenu = '';
+      }
+      if (!estRegeneration && contenu === undefined) {
         invalide(res, { contenu: 'invalide' });
         return;
       }
@@ -377,14 +486,16 @@ export function createApiV1(): express.Router {
           contenu: contenu!,
           statut: 'envoye',
           cree: maintenant,
-          meta: null,
+          meta: {
+            ...(pieces.length ? { piecesJointes: pieces } : {}),
+            ...(mode !== 'conversation' ? { mode } : {}),
+          },
         });
 
-        // Titre auto à partir du premier message.
+        // Titre auto à partir du premier message (ou de la première image).
         if (conv.titre === 'Nouvelle conversation') {
-          await r.donnees!.majConversation(conv.id, {
-            titre: contenu!.slice(0, 80),
-          });
+          const titre = contenu!.trim() || pieces[0]?.nom || 'Image partagée';
+          await r.donnees!.majConversation(conv.id, { titre: titre.slice(0, 80) });
         }
       }
 
@@ -407,6 +518,18 @@ export function createApiV1(): express.Router {
 
       const historique = await r.donnees!.messages(conv.id, { limite: 40 });
       const messagesModele: MessageAi[] = versMessagesModele(historique);
+
+      const piecesAEnvoyer = pieces.length ? pieces : (messageUser.meta?.piecesJointes ?? []);
+      const modeEffectif = (pieces.length ? 'image' : mode) as
+        | 'conversation'
+        | 'raisonnement'
+        | 'code'
+        | 'recherche'
+        | 'image';
+      if (piecesAEnvoyer.length) {
+        const dernierUser = [...messagesModele].reverse().find((m) => m.role === 'user');
+        if (dernierUser) dernierUser.images = piecesAEnvoyer.map(imagePourModele);
+      }
 
       const enregistrerReponse = async (
         texte: string,
@@ -443,7 +566,7 @@ export function createApiV1(): express.Router {
 
         try {
           const rep = await serviceIa.genererEnStream(
-            'conversation',
+            modeEffectif,
             { messages: messagesModele, system: ctx.system, langue },
             (morceau) => envoyer('chunk', { texte: morceau }),
             controle.signal,
@@ -470,10 +593,7 @@ export function createApiV1(): express.Router {
               interrompu: true,
             });
           } else {
-            const err =
-              e instanceof ErreurAi
-                ? { error: e.message, code: e.code }
-                : { error: 'Le modèle ne répond pas.', code: 'modele-indisponible' };
+            const err = messageErreur(e, modeEffectif);
             await enregistrerReponse('', 'erreur', err.error);
             envoyer('error', err);
           }
@@ -485,7 +605,7 @@ export function createApiV1(): express.Router {
       // ── Réponse en une passe ──
       try {
         const rep = await serviceIa.generer(
-          'conversation',
+          modeEffectif,
           { messages: messagesModele, system: ctx.system, langue },
           journal,
         );
@@ -501,13 +621,10 @@ export function createApiV1(): express.Router {
           reponse: messagePublic(message),
         });
       } catch (e) {
-        if (e instanceof ErreurAi) {
-          await enregistrerReponse('', 'erreur', e.message);
-          res.status(e.statut).json({ error: e.message, code: e.code });
-          return;
-        }
-        await enregistrerReponse('', 'erreur', 'Le modèle ne répond pas.');
-        res.status(502).json({ error: 'Le modèle ne répond pas.', code: 'modele-indisponible' });
+        const err = messageErreur(e, modeEffectif);
+        await enregistrerReponse('', 'erreur', err.error);
+        const statut = e instanceof ErreurAi ? e.statut : 502;
+        res.status(statut).json(err);
       }
     }),
   );

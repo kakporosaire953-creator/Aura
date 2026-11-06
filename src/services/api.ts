@@ -15,7 +15,9 @@ import type {
   Creation,
   Memoire,
   MessageChat,
+  ModeChat,
   Mission,
+  PieceJointeChat,
   PrioriteMission,
   Projet,
   PropositionMission,
@@ -123,6 +125,8 @@ export async function envoyerMessage(
     signal?: AbortSignal;
     stream?: boolean;
     regenerer?: boolean;
+    piecesJointes?: PieceJointeChat[];
+    mode?: ModeChat;
   } = {},
 ): Promise<
   ReponseApi<{ message: MessageChat; reponse: MessageChat; interrompu?: boolean }>
@@ -140,6 +144,8 @@ export async function envoyerMessage(
         regenerer: opts.regenerer === true,
         langue: opts.langue,
         stream: veutStream,
+        ...(opts.piecesJointes?.length ? { piecesJointes: opts.piecesJointes } : {}),
+        ...(opts.mode && opts.mode !== 'conversation' ? { mode: opts.mode } : {}),
       }),
       signal: opts.signal,
     });
