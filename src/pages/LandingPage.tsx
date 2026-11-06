@@ -101,6 +101,48 @@ export const LandingPage: React.FC = () => {
   // Navigation vers les ancres (/#galerie, /#tarifs…) : défilement fiable
   // après le rendu, que l'on vienne d'une autre page ou d'une URL directe.
   // Sans ancre dans l'URL, aucun défilement intempestif.
+  /* Galerie : carte la plus centrée active (mobile, défilement tactile). */
+  useEffect(() => {
+    const piste = pisteGalerie.current;
+    if (!piste) return;
+    const cartes = Array.from(piste.querySelectorAll<HTMLElement>('.galerie-carte'));
+    const indices = Array.from(
+      piste.parentElement?.querySelectorAll<HTMLElement>('.galerie-indice') ?? [],
+    );
+    if (!cartes.length) return;
+    let raf = 0;
+    const maj = () => {
+      raf = 0;
+      const centre = piste.scrollLeft + piste.clientWidth / 2;
+      let meilleure = 0;
+      let distance = Number.POSITIVE_INFINITY;
+      cartes.forEach((carte, i) => {
+        const c = carte.offsetLeft + carte.offsetWidth / 2;
+        const d = Math.abs(c - centre);
+        if (d < distance) {
+          distance = d;
+          meilleure = i;
+        }
+      });
+      cartes.forEach((carte, i) => carte.classList.toggle('active', i === meilleure));
+      indices.forEach((ind, i) => ind.classList.toggle('actif', i === meilleure));
+    };
+    const planifier = () => {
+      if (!raf) raf = window.requestAnimationFrame(maj);
+    };
+    maj();
+    piste.addEventListener('scroll', planifier, { passive: true });
+    window.addEventListener('resize', planifier);
+    const obs = new ResizeObserver(planifier);
+    obs.observe(piste);
+    return () => {
+      piste.removeEventListener('scroll', planifier);
+      window.removeEventListener('resize', planifier);
+      obs.disconnect();
+      if (raf) window.cancelAnimationFrame(raf);
+    };
+  }, []);
+
   useEffect(() => {
     const ancre = location.hash;
     if (!ancre || ancre.length < 2) return;
@@ -116,6 +158,8 @@ export const LandingPage: React.FC = () => {
   const galerieRef = useRef<HTMLDivElement | null>(null);
   const stGalerie = useRef<ScrollTrigger | null>(null);
   const tarifsReveal = useRevealAll<HTMLDivElement>();
+  const visionReveal = useRevealAll<HTMLDivElement>();
+  const pisteGalerie = useRef<HTMLDivElement | null>(null);
 
   useGSAP(
     () => {
@@ -124,10 +168,12 @@ export const LandingPage: React.FC = () => {
       /* ===== HERO : révélation des mots dans des masques fixes
              (pas de blur sur les textes en dégradé — bug de rendu) ===== */
       if (!reduit) {
-        const tl = gsap.timeline({ defaults: { ease: 'power4.out' } });
-        tl.from('.hero-mot', { yPercent: 115, opacity: 0, duration: 1.15, stagger: 0.09 }, 0.12)
-          .from('[data-hero]', { opacity: 0, y: 32, duration: 1.05, stagger: 0.12 }, 0.5)
-          .from('.hero-lueur', { scale: 0.6, opacity: 0, duration: 1.7, ease: 'power2.out' }, 0);
+        // Séquence courte : la promesse et le CTA sont lisibles en moins
+        // d'une seconde (un hero qui « arrive » trop tard fait fuir).
+        const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+        tl.from('.hero-mot', { yPercent: 110, opacity: 0, duration: 0.78, stagger: 0.055 }, 0.04)
+          .from('[data-hero]', { opacity: 0, y: 22, duration: 0.62, stagger: 0.07 }, 0.22)
+          .from('.hero-lueur', { scale: 0.62, opacity: 0, duration: 1.2, ease: 'power2.out' }, 0);
       } else {
         gsap.set('.hero-mot, [data-hero]', { opacity: 1, y: 0 });
         gsap.set('.declaration-texte .mot', { opacity: 1 });
@@ -638,7 +684,6 @@ export const LandingPage: React.FC = () => {
                   {c.idx}
                 </div>
                 <div className="capacite-titre">
-                  <span className="capacite-trait" aria-hidden />
                   <i className={`fa-solid ${c.icone} capacite-icone`} aria-hidden />
                   <h3 className="display-md">{c.titre}</h3>
                 </div>
@@ -656,6 +701,40 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
+      {/* ================= VISION LOCALE ================= */}
+      <section id="vision" className="section vision">
+        <div className="wrap">
+          <div className="fil-en-tete">
+            <span className="kicker" data-reveal>
+              {t.vision.kicker}
+            </span>
+            <h2 className="display-xl" data-reveal>
+              {t.vision.titre1} <em className="italique-vif">{t.vision.titre2}</em>.
+            </h2>
+            <p className="sous-titre" data-reveal>
+              {t.vision.sous}
+            </p>
+          </div>
+
+          <div className="vision-axes" ref={visionReveal}>
+            {t.vision.axes.map((a) => (
+              <article className="vision-axe" key={a.titre} data-reveal>
+                <div className="vision-axe-haut">
+                  <span className="vision-icone" aria-hidden>
+                    <i className={`fa-solid ${a.icone}`} />
+                  </span>
+                  <span className="vision-statut">{a.statut}</span>
+                </div>
+                <h3 className="display-md">{a.titre}</h3>
+                <p className="corps">{a.texte}</p>
+              </article>
+            ))}
+          </div>
+
+          <p className="vision-note">{t.vision.note}</p>
+        </div>
+      </section>
+
       {/* ================= GALERIE STUDIO ================= */}
       <section id="galerie" className="galerie-section" ref={galerieRef}>
         <div className="wrap galerie-entete">
@@ -670,7 +749,7 @@ export const LandingPage: React.FC = () => {
           <p data-reveal>{t.galerie.sous}</p>
         </div>
 
-        <div className="galerie-piste" aria-label={t.galerie.kicker}>
+        <div className="galerie-piste" aria-label={t.galerie.kicker} ref={pisteGalerie}>
           <div className="galerie-track">
             {t.galerie.creations.map((c, i) => (
               <Tilt
@@ -706,6 +785,12 @@ export const LandingPage: React.FC = () => {
           </div>
         </div>
 
+        <div className="galerie-indices" aria-hidden>
+          {t.galerie.creations.map((c, i) => (
+            <span key={c.titre} className="galerie-indice" data-index={i} />
+          ))}
+        </div>
+
         <p className="galerie-note">{t.galerie.note}</p>
       </section>
 
@@ -724,33 +809,36 @@ export const LandingPage: React.FC = () => {
             </p>
           </div>
 
-          <div className="tarifs-grille" ref={tarifsReveal}>
-            {t.tarifs.plans.map((p) => (
-              <Tilt
-                className={`plan${p.vedette ? ' plan-vedette' : ''}`}
-                key={p.nom}
-                {...(p.vedette ? {} : { 'data-reveal': '' })}
-              >
+          <div className="tarifs-inclus" ref={tarifsReveal}>
+            <p className="tarifs-inclus-titre">{t.tarifs.inclusTitre}</p>
+            <ul>
+              {t.tarifs.inclus.map((f) => (
+                <li key={f}>
+                  <i className="fa-solid fa-check" aria-hidden /> {f}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="tarifs-grille">
+            {t.tarifs.plans.map((p, i) => (
+              <article className={`plan${p.vedette ? ' plan-vedette' : ''}`} key={`${p.nom}-${i}`} data-reveal>
                 <div className="plan-nom">{p.nom}</div>
                 <div className="plan-prix">
                   {p.prix}
                   <small>{p.detail}</small>
                 </div>
-                <ul className="plan-liste">
-                  {p.features.map((f) => (
-                    <li key={f}>
-                      <i className="fa-solid fa-check" aria-hidden /> {f}
-                    </li>
-                  ))}
-                </ul>
-                <Link to="/register" className={`btn ${p.vedette ? 'btn-ruban' : 'btn-ligne'}`}>
+                <Link to="/register" className="btn btn-ligne">
                   <span>{p.cta}</span>
                 </Link>
-              </Tilt>
+              </article>
             ))}
           </div>
 
           <p className="tarifs-note">{t.tarifs.note}</p>
+          <p className="tarifs-paiement">
+            <i className="fa-solid fa-circle-info" aria-hidden /> {t.tarifs.paiementNote}
+          </p>
         </div>
       </section>
 

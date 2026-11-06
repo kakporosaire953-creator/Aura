@@ -129,6 +129,9 @@ export const AuthPage: React.FC = () => {
 
   return (
     <div className="auth">
+      <a href="#contenu" className="lien-evitement">
+        {t.nav.contenu}
+      </a>
       <aside className="auth-film" ref={filmRef} aria-hidden>
         <div className="auth-balayage" data-auth-sweep />
 
