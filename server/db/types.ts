@@ -72,6 +72,18 @@ export type Conversation = {
 
 export type StatutMessage = 'envoye' | 'genere' | 'interrompu' | 'erreur';
 
+/**
+ * Image jointe à un message. `data` est une data URL (`data:image/png;base64,…`)
+ * déjà réduite côté navigateur : le serveur n'accepte ni fichier brut ni URL
+ * distante.
+ */
+export type PieceJointe = {
+  nom: string;
+  type: string;
+  taille: number;
+  data: string;
+};
+
 export type Message = {
   id: Identifiant;
   conversationId: Identifiant;
@@ -85,6 +97,9 @@ export type Message = {
     erreur?: string;
     memoiresUtilisees?: Identifiant[]; // contexte réellement envoyé au modèle
     interrompuParUtilisateur?: boolean;
+    piecesJointes?: PieceJointe[];
+    /** Mode demandé par l'utilisateur (routage), jamais un nom de fournisseur. */
+    mode?: string;
   } | null;
 };
 

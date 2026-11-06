@@ -74,6 +74,9 @@ function definirSession(res: Response, jeton: string) {
 
 export function createApiApp(): express.Router {
   const api = express.Router();
+  // Les messages peuvent porter des images : corps plus large sur cette seule
+  // route, avant le limiteur général (32 Ko) qui s'applique au reste de l'API.
+  api.use('/v1/conversations/:id/messages', express.json({ limit: '6mb' }));
   api.use(express.json({ limit: '32kb' }));
   api.use(attacherCompte);
 

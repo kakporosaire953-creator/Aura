@@ -6,6 +6,13 @@ import { simulationActivee } from '../app/simulation';
 import * as api from '../services/api';
 import type { Conversation, Creation, Mission, Projet } from '../services/types';
 import { Icone } from '../components/ui/Icone';
+import {
+  BoutonJoindre,
+  SelecteurMode,
+  VignettesPieces,
+  usePiecesJointes,
+} from '../components/ui/composeur';
+import type { ModeChat } from '../services/types';
 
 /**
  * Vue d'ensemble — centre de pilotage personnel : salutation, composeur,
@@ -18,6 +25,8 @@ export const EspacePage: React.FC = () => {
   const { lang } = usePrefs();
   const { statut, compte, rafraichir } = useSession();
   const navigate = useNavigate();
+  const { pieces, erreur: erreurPieces, ajouter, retirer, vider } = usePiecesJointes();
+  const [mode, setMode] = useState<ModeChat>('conversation');
   const sim = simulationActivee();
 
   const [saisie, setSaisie] = useState('');
@@ -80,8 +89,18 @@ export const EspacePage: React.FC = () => {
 
   const lancer = (texte: string) => {
     const contenu = texte.trim();
-    if (!contenu) return;
-    navigate('/chat', { state: { promptInitial: contenu } });
+    if (!contenu && !pieces.length) return;
+    const aTransmettre = pieces;
+    const modeChoisi = mode;
+    setSaisie('');
+    vider();
+    navigate('/chat', {
+      state: {
+        promptInitial: contenu,
+        pieces: aTransmettre,
+        mode: modeChoisi,
+      },
+    });
   };
 
   const envoyerObjectif = async (e: React.FormEvent) => {
@@ -144,6 +163,7 @@ export const EspacePage: React.FC = () => {
             lancer(saisie);
           }}
         >
+          <VignettesPieces pieces={pieces} onRetirer={retirer} />
           <textarea
             className="accueil-saisie"
             rows={2}
@@ -158,16 +178,27 @@ export const EspacePage: React.FC = () => {
             }}
             aria-label={t.accueil.placeholder}
           />
+          {erreurPieces && (
+            <p className="composeur-erreur" role="status">
+              {erreurPieces}
+            </p>
+          )}
           <div className="accueil-composeur-bas">
-            <span className="accueil-moteur" title={t.accueil.moteurTitre}>
-              <Icone nom="bolt" />
-              {sim ? t.accueil.moteurSim : assistantOk ? 'Aura' : t.accueil.moteurNon}
-            </span>
+            <div className="composeur-gauche">
+              <BoutonJoindre onFichiers={(f) => void ajouter(f)} desactive={pieces.length >= 3} />
+              <SelecteurMode mode={mode} onMode={setMode} desactive={pieces.length > 0} />
+              {(sim || !assistantOk) && (
+                <span className="accueil-moteur" title={t.accueil.moteurTitre}>
+                  <Icone nom="flask" />
+                  {sim ? t.accueil.moteurSim : t.accueil.moteurNon}
+                </span>
+              )}
+            </div>
             <button
               type="submit"
               className="accueil-envoi"
               aria-label={t.accueil.envoyer}
-              disabled={!saisie.trim()}
+              disabled={!saisie.trim() && !pieces.length}
             >
               <Icone nom="arrow-right" />
             </button>

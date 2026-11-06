@@ -7158,3 +7158,199 @@ button:disabled,
     padding: 0.42rem 0.6rem;
   }
 }
+
+/* ═══════════════════════════════════════════
+   COMPOSEUR — images jointes, mode de travail
+   ═══════════════════════════════════════════ */
+
+.bouton-joindre {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--verre-trait);
+  background: var(--papier);
+  color: var(--encre-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.2s var(--soie), color 0.2s var(--soie);
+}
+
+.bouton-joindre:hover:not(:disabled) {
+  border-color: var(--vert);
+  color: var(--vert-profond);
+}
+
+.bouton-joindre:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.composeur-gauche {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.selecteur-mode {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.38rem 1.55rem 0.38rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--verre-trait);
+  background: var(--papier);
+  color: var(--encre-2);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.selecteur-mode .icone {
+  color: var(--feu);
+  width: 0.95em;
+  height: 0.95em;
+}
+
+.selecteur-mode select {
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  outline: none;
+  padding: 0;
+}
+
+.selecteur-mode:focus-within {
+  border-color: var(--vert);
+}
+
+.selecteur-mode-chevron {
+  position: absolute;
+  right: 0.6rem;
+  width: 0.75em;
+  height: 0.75em;
+  pointer-events: none;
+  color: var(--encre-3);
+}
+
+.vignettes-pieces {
+  display: flex;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0 0 0.55rem;
+  padding: 0;
+  flex-wrap: wrap;
+}
+
+.vignettes-pieces li {
+  position: relative;
+}
+
+.vignettes-pieces img {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid var(--verre-trait);
+  display: block;
+}
+
+.vignettes-pieces button {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--verre-trait);
+  background: var(--papier);
+  color: var(--encre);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.vignettes-pieces button .icone {
+  width: 0.7em;
+  height: 0.7em;
+}
+
+.composeur-erreur {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  color: var(--feu-profond);
+}
+
+.chat-champ {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.msg-images {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
+.msg-images img {
+  max-width: 180px;
+  max-height: 180px;
+  border-radius: 12px;
+  display: block;
+  border: 1px solid var(--verre-trait);
+}
+
+/* ── Libellé de saisie : le texte porte le champ, comme sur la référence ── */
+.accueil-saisie {
+  font-size: clamp(1.15rem, 0.6vw + 1rem, 1.36rem);
+  line-height: 1.45;
+  min-height: 62px;
+  padding: 0.15rem 0.25rem 0.1rem;
+}
+
+.accueil-composeur {
+  padding: 1.05rem 1.1rem 0.85rem;
+}
+
+@media (max-width: 720px) {
+  .accueil-saisie {
+    font-size: 1.15rem;
+    /* Trois lignes d'invite doivent tenir sans être coupées. */
+    min-height: 96px;
+  }
+
+  .accueil-composeur-bas {
+    gap: 0.5rem;
+  }
+
+  .chat-composeur {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .chat-composeur-actions {
+    justify-content: space-between;
+  }
+
+  .selecteur-mode {
+    font-size: 0.78rem;
+  }
+}
+
+.selecteur-mode.est-desactive {
+  opacity: 0.55;
+}
+
+.selecteur-mode.est-desactive select {
+  cursor: not-allowed;
+}

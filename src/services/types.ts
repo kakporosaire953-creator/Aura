@@ -47,6 +47,17 @@ export type Conversation = {
 
 export type StatutMessage = 'envoye' | 'genere' | 'interrompu' | 'erreur';
 
+/** Image jointe à un message (data URL déjà réduite côté navigateur). */
+export type PieceJointeChat = {
+  nom: string;
+  type: string;
+  taille: number;
+  data: string;
+};
+
+/** Modes de travail proposés — jamais un nom de fournisseur ou de modèle. */
+export type ModeChat = 'conversation' | 'raisonnement' | 'code' | 'recherche';
+
 export type MessageChat = {
   id?: Identifiant;
   conversationId?: Identifiant;
@@ -60,6 +71,8 @@ export type MessageChat = {
     erreur?: string;
     memoiresUtilisees?: Identifiant[];
     interrompuParUtilisateur?: boolean;
+    piecesJointes?: PieceJointeChat[];
+    mode?: string;
   } | null;
 };
 
