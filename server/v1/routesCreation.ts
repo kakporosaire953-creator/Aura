@@ -18,8 +18,9 @@ import {
 import { nouvelId } from '../db/entrepots';
 import type { SourceRecherche, TypeCreation, VersionCreation } from '../db/types';
 import { choisirConnecteur } from '../search/connecteurs';
-import * as ia from '../ai/registre';
-import { ErreurAi } from '../ai/types';
+import * as serviceIa from '../ai/service';
+import { ErreurAi } from '../ai/errors';
+import { enregistrerUsage } from '../ai/usage';
 
 const TYPES_CREATION: readonly TypeCreation[] = [
   'document',
@@ -245,8 +246,8 @@ export function createRoutesCreation(): express.Router {
           (corps.langue === 'en' ? INSTRUCTIONS_TYPE[type].en : INSTRUCTIONS_TYPE[type].fr) +
           `\n\nSujet / instruction : ${instruction}` +
           (projet ? `\n\nContexte du projet « ${projet.nom} » : ${projet.objectif || projet.description}` : '');
-        const rep = await ia.generateResponse(
-          { capacites: ['texte'], usage: 'creation' },
+        const rep = await serviceIa.generer(
+          type === 'code' ? 'code' : 'creation',
           {
             messages: [{ role: 'user', content: consigne }],
             system:
@@ -255,6 +256,7 @@ export function createRoutesCreation(): express.Router {
                 : 'Tu es Aura Studio, le moteur de création de l’espace de travail Aura. Produis des livrables soignés et utilisables. N’invente ni sources ni faits ; signale explicitement les incertitudes.',
             maxTokens: 4096,
           },
+          { noter: (t) => enregistrerUsage(r.donnees, t) },
         );
         const version: Omit<VersionCreation, 'id'> = {
           numero: 1,
@@ -312,8 +314,8 @@ export function createRoutesCreation(): express.Router {
       const instruction = chaine(corps.instruction, { max: 2000, defaut: '' }) ?? '';
       const derniere = job.versions[job.versions.length - 1];
       try {
-        const rep = await ia.generateResponse(
-          { capacites: ['texte'], usage: 'creation' },
+        const rep = await serviceIa.generer(
+          job.type === 'code' ? 'code' : 'creation',
           {
             messages: [
               {
@@ -330,6 +332,7 @@ export function createRoutesCreation(): express.Router {
               'Tu es Aura Studio. Produis la version révisée complète du livrable, prête à l’emploi. N’invente ni sources ni faits.',
             maxTokens: 4096,
           },
+          { noter: (t) => enregistrerUsage(r.donnees, t) },
         );
         const version: Omit<VersionCreation, 'id'> = {
           numero: (derniere?.numero ?? 0) + 1,

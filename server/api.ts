@@ -28,8 +28,8 @@ import {
 } from './db/entrepots';
 import type { Compte, ComptePublic } from './db/types';
 import { validerMessages } from './chat';
-import * as ia from './ai/registre';
-import { ErreurAi } from './ai/types';
+import * as serviceIa from './ai/service';
+import { ErreurAi } from './ai/errors';
 import { createApiV1 } from './v1/routes';
 import { tropDeTentatives } from './v1/middlewares';
 
@@ -83,15 +83,16 @@ export function createApiApp(): express.Router {
   // État réel du produit — jamais de fausse fonctionnalité.
   api.get('/status', async (_req, res) => {
     const comptesActifs = comptes.mode !== 'indisponible';
-    const etatIa = await ia.etatFournisseurs();
-    const chatActif = Boolean(etatIa.fournisseur);
+    const etatIa = await serviceIa.etatIa();
+    const chatActif = etatIa.ok;
     res.json({
       name: 'Aura',
       phase: 'workspace',
       tagline: "De l'idée au résultat.",
       config: {
-        // État technique minimal pour l'UI (jamais de stratégie commerciale).
-        modele: etatIa.modele,
+        // État technique minimal pour l'UI (jamais de stratégie commerciale,
+        // jamais de nom de fournisseur ni de modèle).
+        iaConfiguree: etatIa.ok,
       },
       features: {
         publicSite: 'live',
@@ -256,11 +257,10 @@ export function createApiApp(): express.Router {
       res.status(401).json({ error: 'non connecté', code: 'anonyme' });
       return;
     }
-    const etatIa = await ia.etatFournisseurs();
-    if (!etatIa.fournisseur) {
+    const etatIa = await serviceIa.etatIa();
+    if (!etatIa.ok) {
       res.status(503).json({
-        error:
-          'Chat non configuré sur cet environnement : la clé GEMINI_API_KEY manque côté serveur.',
+        error: etatIa.raison ?? 'Chat indisponible : aucun moteur IA n’est configuré.',
         code: 'chat-indisponible',
       });
       return;
@@ -280,8 +280,8 @@ export function createApiApp(): express.Router {
 
     try {
       const langue = corps.langue === 'en' ? 'en' : 'fr';
-      const rep = await ia.generateResponse(
-        { capacites: ['texte'], usage: 'chat' },
+      const rep = await serviceIa.generer(
+        'conversation',
         {
           messages: verif.messages,
           langue,
@@ -291,13 +291,14 @@ export function createApiApp(): express.Router {
               : 'Tu es Aura, l\'assistant de la plateforme Aura. Réponds dans la langue de l\'utilisateur, clairement et honnêtement. N\'invente jamais de faits, de sources, de prix ou de fonctionnalités. Si tu ne sais pas, dis-le. Des réponses utiles et concises.',
         },
       );
-      res.json({ reponse: rep.texte, modele: rep.modele });
+      // Le modèle utilisé (interne) n'est jamais exposé côté client.
+      res.json({ reponse: rep.texte });
     } catch (e) {
       if (e instanceof ErreurAi) {
         res.status(e.statut).json({ error: e.message, code: e.code });
         return;
       }
-      res.status(502).json({ error: 'Le modèle ne répond pas.', code: 'modele-indisponible' });
+      res.status(502).json({ error: 'Le moteur IA ne répond pas.', code: 'modele-indisponible' });
     }
   });
 

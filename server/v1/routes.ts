@@ -25,8 +25,10 @@ import {
 } from '../db/entrepots';
 import type { Message, PreferencesUtilisateur, ProfilContextuel, StatutMessage } from '../db/types';
 import { construireContexte, versMessagesModele } from '../services/contexte';
-import * as ia from '../ai/registre';
-import { ErreurAi, type MessageAi } from '../ai/types';
+import * as serviceIa from '../ai/service';
+import { ErreurAi } from '../ai/errors';
+import { enregistrerUsage } from '../ai/usage';
+import type { MessageAi } from '../ai/types';
 import { createRoutesTravail } from './routesTravail';
 import { createRoutesCreation } from './routesCreation';
 import {
@@ -142,12 +144,13 @@ export function createApiV1(): express.Router {
     res.json({ preferences: prefs });
   }));
 
-  /* ── Capacités réelles (§21) : l'interface n'affiche que ce qui marche ── */
+  /* ── Capacités réelles (§21) : l'interface n'affiche que ce qui marche,
+        sans nom de fournisseur ni de modèle ── */
 
   v1.get('/capabilities', asyncRoute(async (req, res) => {
     const r = req as ReqV1;
     const comptesActifs = r.comptes!.mode !== 'indisponible';
-    const etatIa = await ia.etatFournisseurs();
+    const etatIa = await serviceIa.etatIa();
     res.json({
       comptes: comptesActifs,
       persistance: {
@@ -156,18 +159,16 @@ export function createApiV1(): express.Router {
         ...(comptesActifs ? {} : { raison: r.comptes!.raison }),
       },
       assistant: {
-        ok: Boolean(etatIa.fournisseur),
-        streaming: Boolean(etatIa.capacites?.streaming),
-        sortieStructuree: Boolean(etatIa.capacites?.sortieStructuree),
+        ok: etatIa.ok,
+        streaming: etatIa.streaming,
+        sortieStructuree: etatIa.sortieStructuree,
         ...(etatIa.raison ? { raison: etatIa.raison } : {}),
       },
       recherche: {
-        ok: Boolean(etatIa.fournisseur && etatIa.capacites?.outils),
-        ...(etatIa.fournisseur && etatIa.capacites?.outils
-          ? { connecteur: 'gemini-grounding' }
-          : { raison: 'Aucun moteur de recherche configuré.' }),
+        ok: etatIa.sources,
+        ...(etatIa.sources ? {} : { raison: 'Aucun moteur de recherche configuré.' }),
       },
-      studio: { ok: Boolean(etatIa.fournisseur) },
+      studio: { ok: etatIa.ok },
       images: { ok: false, raison: "Génération d'images non disponible sur cet environnement." },
       fichiers: {
         ok: false,
@@ -328,14 +329,20 @@ export function createApiV1(): express.Router {
         corps.stream === true ||
         (req.headers.accept ?? '').includes('text/event-stream');
 
-      const etatIa = await ia.etatFournisseurs();
-      if (!etatIa.fournisseur) {
+      const etatIa = await serviceIa.etatIa();
+      if (!etatIa.ok) {
         res.status(503).json({
-          error: 'Assistant non configuré sur cet environnement : la clé GEMINI_API_KEY manque côté serveur.',
+          error:
+            etatIa.raison ??
+            'Assistant indisponible : aucun moteur IA n’est configuré sur cet environnement.',
           code: 'chat-indisponible',
         });
         return;
       }
+
+      const journal = {
+        noter: (t: Parameters<typeof enregistrerUsage>[1]) => enregistrerUsage(r.donnees, t),
+      };
 
       const maintenant = new Date().toISOString();
       let messageUser!: Message;
@@ -405,7 +412,6 @@ export function createApiV1(): express.Router {
           statut,
           cree: new Date().toISOString(),
           meta: {
-            modele: etatIa.modele ?? undefined,
             ...(erreur ? { erreur } : {}),
             memoiresUtilisees: ctx.memoiresUtilisees,
           },
@@ -427,11 +433,12 @@ export function createApiV1(): express.Router {
         req.on('close', () => controle.abort());
 
         try {
-          const rep = await ia.streamResponse(
-            { capacites: ['texte', 'streaming'], usage: 'chat' },
+          const rep = await serviceIa.genererEnStream(
+            'conversation',
             { messages: messagesModele, system: ctx.system, langue },
             (morceau) => envoyer('chunk', { texte: morceau }),
             controle.signal,
+            journal,
           );
           const message = await enregistrerReponse(rep.texte, 'genere');
           envoyer('done', {
@@ -468,9 +475,10 @@ export function createApiV1(): express.Router {
 
       // ── Réponse en une passe ──
       try {
-        const rep = await ia.generateResponse(
-          { capacites: ['texte'], usage: 'chat' },
+        const rep = await serviceIa.generer(
+          'conversation',
           { messages: messagesModele, system: ctx.system, langue },
+          journal,
         );
         const message = await enregistrerReponse(rep.texte, 'genere');
         await r.donnees!.enregistrerEvenement({

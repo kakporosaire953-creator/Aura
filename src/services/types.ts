@@ -168,7 +168,7 @@ export type Capabilities = {
   comptes: boolean;
   persistance: { ok: boolean; mode: string; raison?: string };
   assistant: { ok: boolean; streaming: boolean; sortieStructuree: boolean; raison?: string };
-  recherche: { ok: boolean; connecteur?: string; raison?: string };
+  recherche: { ok: boolean; raison?: string };
   studio: { ok: boolean; raison?: string };
   images: { ok: boolean; raison?: string };
   fichiers: { ok: boolean; raison?: string };

@@ -618,6 +618,11 @@ export class EntrepotDonnees {
     });
   }
 
+  /** Lecture des événements d'usage (suivi de consommation IA). */
+  async evenements(): Promise<EvenementUsage[]> {
+    return (await this.tout()).evenements;
+  }
+
   /** Suppression totale de l'agrégat utilisateur (suppression de compte). */
   async supprimerTout(): Promise<void> {
     await this.base.supprimer(CLE.donnees(this.userId));

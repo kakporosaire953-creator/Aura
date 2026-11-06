@@ -1,5 +1,10 @@
 # Architecture cible — AURA Workspace
 
+> **Note (2026-11-06)** : la couche IA décrite ici (fournisseur Gemini
+> unique) a été reconstruite en architecture multi-fournisseurs — voir
+> [`AI-MULTI-PROVIDER.md`](./AI-MULTI-PROVIDER.md). Le reste du document
+> reste valide (persistance, routes, frontend).
+
 > Suite à la [proposition technique](000-proposition-technique.md). État
 > implémenté sur la branche `arena/3bf5199b-aura`.
 

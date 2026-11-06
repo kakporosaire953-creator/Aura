@@ -909,7 +909,7 @@ const contentFr: Content = {
     titre1: 'Une conversation,',
     titre2: 'un vrai résultat',
     sous:
-      "Discutez avec Aura — la conversation nourrit le fil qui mène au résultat. Réponses du moteur Gemini, côté serveur.",
+      'Discutez avec Aura — la conversation nourrit le fil qui mène au résultat. Réponses générées côté serveur par des moteurs IA externes.',
     accueil: 'Par quoi commençons-nous ?',
     suggestions: [
       'Aide-moi à clarifier une idée de projet',
@@ -923,7 +923,7 @@ const contentFr: Content = {
     reflexion: 'Aura réfléchit…',
     errEnvoi: "Le message n'est pas parti. Réessayez.",
     setupNote:
-      'Chat non configuré sur cet environnement : la clé GEMINI_API_KEY doit être ajoutée côté serveur (elle ne sera jamais exposée au navigateur).',
+      'Chat non configuré sur cet environnement : un moteur IA doit être configuré côté serveur (les clés ne sont jamais exposées au navigateur).',
     connexionSous: 'Connectez-vous pour ouvrir la conversation.',
     connexionBtn: 'Se connecter',
     note:
@@ -1616,7 +1616,7 @@ const contentEn: Content = {
     titre1: 'One conversation,',
     titre2: 'a real result',
     sous:
-      'Talk with Aura — the conversation feeds the thread that leads to the result. Answers from the Gemini engine, server-side.',
+      'Talk with Aura — the conversation feeds the thread that leads to the result. Answers generated server-side by external AI engines.',
     accueil: 'Where shall we start?',
     suggestions: [
       'Help me clarify a project idea',
@@ -1630,7 +1630,7 @@ const contentEn: Content = {
     reflexion: 'Aura is thinking…',
     errEnvoi: 'The message did not go through. Try again.',
     setupNote:
-      'Chat is not configured on this environment: the GEMINI_API_KEY key must be added server-side (it will never be exposed to the browser).',
+      'Chat is not configured on this environment: an AI engine must be set up server-side (keys are never exposed to the browser).',
     connexionSous: 'Sign in to open the conversation.',
     connexionBtn: 'Sign in',
     note:

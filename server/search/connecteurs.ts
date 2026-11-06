@@ -3,14 +3,13 @@
  * génération. Un connecteur renvoie des sources RÉELLES (URLs extraites
  * d'un moteur), jamais des liens inventés par le modèle.
  *
- * Connecteurs :
- *  - `gemini-grounding` : grounding Google Search via l'API Gemini
- *    configurée. Les URLs proviennent des métadonnées de grounding.
- *
- * Sans connecteur disponible, l'API déclare la recherche indisponible et
- * l'interface n'affiche aucun résultat simulé.
+ * Le connecteur `recherche-web` passe par le service IA central
+ * (capacité `sources`) : seul un fournisseur doté d'une recherche
+ * sourcée réelle est sollicité. Sans connecteur disponible, l'API
+ * déclare la recherche indisponible et l'interface n'affiche aucun
+ * résultat simulé.
  */
-import { FournisseurGemini } from '../ai/gemini';
+import * as serviceIa from '../ai/service';
 
 export type SourceReelle = { titre: string; url: string; extrait: string };
 export type ResultatRecherche = {
@@ -26,12 +25,14 @@ export interface ConnecteurRecherche {
   rechercher(question: string, opts: { langue: 'fr' | 'en' }): Promise<ResultatRecherche>;
 }
 
-class ConnecteurGeminiGrounding implements ConnecteurRecherche {
-  readonly id = 'gemini-grounding';
-  private readonly gemini = new FournisseurGemini();
+class ConnecteurRechercheWeb implements ConnecteurRecherche {
+  readonly id = 'recherche-web';
 
   async disponible(): Promise<{ ok: boolean; raison?: string }> {
-    return this.gemini.checkAvailability();
+    const etat = await serviceIa.etatIa();
+    return etat.sources
+      ? { ok: true }
+      : { ok: false, raison: 'Aucun moteur de recherche sourcée configuré.' };
   }
 
   async rechercher(question: string, opts: { langue: 'fr' | 'en' }): Promise<ResultatRecherche> {
@@ -39,7 +40,7 @@ class ConnecteurGeminiGrounding implements ConnecteurRecherche {
       opts.langue === 'en'
         ? "You are Aura's research assistant. Answer using up-to-date information from web search results. Cite nothing that is not in the search results. If information is uncertain or time-sensitive, say so explicitly. Answer in the user's language."
         : "Tu es l'assistant de recherche d'Aura. Réponds à partir des résultats de recherche web à jour. Ne cite rien qui ne figure pas dans les résultats. Si une information est incertaine ou dépendante de la date, signale-le explicitement. Réponds dans la langue de l'utilisateur.";
-    const { texte, sources } = await this.gemini.rechercherAvecSources(question, system);
+    const { texte, sources } = await serviceIa.rechercherAvecSources(question, system);
     return {
       connecteur: this.id,
       synthese: texte,
@@ -49,7 +50,7 @@ class ConnecteurGeminiGrounding implements ConnecteurRecherche {
   }
 }
 
-const connecteurs: ConnecteurRecherche[] = [new ConnecteurGeminiGrounding()];
+const connecteurs: ConnecteurRecherche[] = [new ConnecteurRechercheWeb()];
 
 export async function choisirConnecteur(): Promise<ConnecteurRecherche | null> {
   for (const c of connecteurs) {

@@ -22,8 +22,9 @@ import type {
   StatutMission,
   TypeMemoire,
 } from '../db/types';
-import * as ia from '../ai/registre';
-import { ErreurAi } from '../ai/types';
+import * as serviceIa from '../ai/service';
+import { ErreurAi } from '../ai/errors';
+import { enregistrerUsage } from '../ai/usage';
 
 const STATUTS: readonly StatutMission[] = ['a_faire', 'en_cours', 'en_attente', 'terminee', 'archivee'];
 const PRIORITES: readonly PrioriteMission[] = ['basse', 'moyenne', 'haute', 'urgente'];
@@ -190,14 +191,14 @@ export function createRoutesTravail(): express.Router {
         return;
       }
       try {
-        const proposition = await ia.generateStructuredOutput<{ missions: Array<{
+        const proposition = await serviceIa.genererStructure<{ missions: Array<{
           titre: string;
           description: string;
           priorite: PrioriteMission;
           echeance: string | null;
           sousTaches: string[];
         }> }>(
-          { capacites: ['texte', 'sortieStructuree'], usage: 'structure' },
+          'structure',
           {
             messages: [
               {
@@ -230,6 +231,7 @@ export function createRoutesTravail(): express.Router {
               required: ['missions'],
             },
           },
+          { noter: (t) => enregistrerUsage(r.donnees, t) },
         );
         const missions = (proposition.missions ?? [])
           .slice(0, 10)
