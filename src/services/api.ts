@@ -455,3 +455,15 @@ export async function majPreferences(corps: Partial<CompteV1['preferences']>): P
   if (simulationActivee()) return succes({ preferences: local.majPreferences(corps) });
   return apiAppel('/preferences', { methode: 'PATCH', corps });
 }
+
+/**
+ * Suppression de compte — irréversible : données, sessions et compte.
+ * Confirmation par mot de passe exigée côté serveur.
+ */
+export async function supprimerCompte(password: string): Promise<ReponseApi<void>> {
+  if (simulationActivee()) {
+    local.supprimerCompte();
+    return succes(undefined);
+  }
+  return apiAppel('/me', { methode: 'DELETE', corps: { password } });
+}

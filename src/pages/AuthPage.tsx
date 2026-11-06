@@ -169,6 +169,13 @@ export const AuthPage: React.FC = () => {
           </h1>
           <p className="sous-titre">{inscription ? t.auth.sous : t.auth.sousLogin}</p>
 
+          {(location.state as { info?: string } | null)?.info && (
+            <p className="form-note form-info" role="status">
+              <i className="fa-solid fa-circle-info" aria-hidden="true" />{' '}
+              {(location.state as { info?: string }).info}
+            </p>
+          )}
+
           <form onSubmit={soumettre} noValidate>
             {inscription && (
               <div className="form-groupe">

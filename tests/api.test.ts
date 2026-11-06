@@ -425,3 +425,61 @@ describe('Profil contextuel et préférences', () => {
     assert.equal((prefs.json.preferences as Json).tonReponse, 'pedagogique');
   });
 });
+
+describe('Suppression de compte (§16)', () => {
+  test('confirmation par mot de passe, suppression complète, sessions invalidées', async () => {
+    const c = client();
+    await c('POST', '/auth/register', {
+      email: 'del@test.dev',
+      password: 'motdepasse123',
+      nom: 'Del',
+    });
+    await c('POST', '/v1/conversations', { titre: 'À supprimer' });
+
+    // Mauvais mot de passe → refus, rien n'est supprimé.
+    const faux = await c('DELETE', '/v1/me', { password: 'incorrecte!!' });
+    assert.equal(faux.statut, 401);
+    assert.equal(faux.json.code, 'identifiants');
+    assert.equal((await c('GET', '/v1/conversations')).statut, 200);
+
+    // Bon mot de passe → suppression.
+    const ok = await c('DELETE', '/v1/me', { password: 'motdepasse123' });
+    assert.equal(ok.statut, 204);
+
+    // Session immédiatement invalide.
+    assert.equal((await c('GET', '/me')).statut, 401);
+    assert.equal((await c('GET', '/v1/conversations')).statut, 401);
+
+    // Le compte n'existe plus : reconnexion impossible.
+    const c2 = client();
+    const login = await c2('POST', '/auth/login', {
+      email: 'del@test.dev',
+      password: 'motdepasse123',
+    });
+    assert.equal(login.statut, 401);
+  });
+
+  test('les autres comptes restent intacts', async () => {
+    const a = client();
+    await a('POST', '/auth/register', {
+      email: 'survivant@test.dev',
+      password: 'motdepasse123',
+      nom: 'Survie',
+    });
+    const conv = await a('POST', '/v1/conversations', { titre: 'Précieux' });
+
+    const b = client();
+    await b('POST', '/auth/register', {
+      email: 'partant@test.dev',
+      password: 'motdepasse123',
+      nom: 'Partant',
+    });
+    assert.equal((await b('DELETE', '/v1/me', { password: 'motdepasse123' })).statut, 204);
+
+    assert.equal((await a('GET', '/me')).statut, 200);
+    assert.equal(
+      (await a('GET', `/v1/conversations/${(conv.json.conversation as Json).id}`)).statut,
+      200,
+    );
+  });
+});

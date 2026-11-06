@@ -13,7 +13,7 @@ de travail numérique, pas un clone de chatbot.
 | Projets | ✅ opérationnel | CRUD, objectif/catégorie/instructions, espace projet (conversations, missions, créations, recherches, mémoire), isolation serveur |
 | Missions | ✅ opérationnel | persistance API, vues liste/tableau/échéances, sous-tâches, priorités ; aide IA = **proposition validée par l'utilisateur avant enregistrement** |
 | Mémoire | ✅ opérationnel | consultation/ajout/modification/désactivation/effacement ; pas de mémorisation automatique ; usage dans les réponses contrôlé par préférence |
-| Studio | ✅ opérationnel (si moteur configuré) | génération réelle, versions successives, révision, export Markdown ; aucun pourcentage inventé, aucun contenu prédéfini présenté comme généré |
+| Studio | ✅ opérationnel (si moteur configuré) | génération réelle, versions successives, révision, export Markdown + **Imprimer / PDF** (rendu d'impression isolé) ; aucun pourcentage inventé, aucun contenu prédéfini présenté comme généré |
 | Explorer | ⚠️ conditionnel | recherche sourcée réelle (grounding) uniquement si la clé serveur y accède ; sinon **indisponible affichée**, jamais de recherche simulée |
 | AURA Local | ✅ opérationnel | profil pays/ville/langue/devise/fuseau/unités/domaine + préférences de réponse ; utilisé comme préférences, jamais présenté comme faits vérifiés |
 | Voix | ✅ capacités réelles du navigateur | dictation (SpeechRecognition si disponible), lecture (speechSynthesis) ; sinon boutons absents — aucune reconnaissance simulée |
@@ -35,6 +35,9 @@ simuler la recherche réelle.
   « Stockage non configuré », « Recherche indisponible »).
 - Confidentialité : note affichée sur la mémoire ; documentation complète
   dans `docs/ai/` et `docs/database/`.
+- Suppression de compte : zone sensible dans Paramètres, confirmation par
+  mot de passe + saisie « SUPPRIMER », message d'état accessible à la
+  connexion, effacement complet (données, sessions, compte).
 
 ## Parcours de référence (§23) — vérifié
 

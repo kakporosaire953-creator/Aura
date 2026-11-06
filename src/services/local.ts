@@ -555,3 +555,16 @@ export function majPreferences(corps: Partial<CompteV1['preferences']>): CompteV
   persister(d);
   return d.compte.preferences;
 }
+
+/** Suppression de compte (mode simulation) : effacement du stockage local. */
+export function supprimerCompte(): void {
+  try {
+    localStorage.removeItem(CLE);
+    localStorage.removeItem('aura_sim_session');
+    localStorage.removeItem('aura_sim_comptes');
+    localStorage.removeItem('aura_sim_avertisse');
+    localStorage.removeItem('aura_sim_message');
+  } catch {
+    /* stockage indisponible */
+  }
+}
