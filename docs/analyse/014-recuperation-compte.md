@@ -264,7 +264,7 @@ telle quelle.
 |---|---|
 | Branche de session | `arena/a5ec05d0-aura` |
 | Base | `main` = `e96234507b42f1b46339c9770a967427e905083a` |
-| Commit de la mission | _(voir le message de clôture — SHA consigné après le commit)_ |
-| Pull request | _(ouverte vers `main`, **non fusionnée** — URL consignée après création)_ |
+| Commit de la mission | `77fe3e0dd106c30a9a7df27a6e6dd82a92ab9496` |
+| Pull request | [#28](https://github.com/kakporosaire953-creator/Aura/pull/28) — vers `main`, **non fusionnée** |
 | Déploiement | **aucun** : pas de fusion, pas de promotion en production |
 | Variables de production | **aucune modification** |
