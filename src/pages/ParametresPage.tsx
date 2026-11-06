@@ -1,19 +1,53 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useT, usePrefs } from '../app/prefs';
 import { useSession } from '../app/session';
 import { simulationActivee, definirSimulation } from '../app/simulation';
+import * as api from '../services/api';
+import type { CompteV1 } from '../services/types';
 
 /**
- * Paramètres — uniquement des réglages réels : langue, thème,
- * simulation, session, liens. Aucun faux réglage.
+ * Paramètres — réglages réels uniquement : compte, profil contextuel
+ * (AURA Local), préférences de réponse, apparence, simulation, session.
+ * Les formulaires écrivent via l'API v1 (persistance serveur) ; en mode
+ * simulation, dans le stockage local étiqueté.
  */
 export const ParametresPage: React.FC = () => {
   const t = useT();
   const { lang, setLang, theme, setTheme } = usePrefs();
-  const { statut, compte, deconnecter } = useSession();
+  const { statut, compte, deconnecter, rafraichir } = useSession();
   const navigate = useNavigate();
   const sim = simulationActivee();
+
+  const [profil, setProfil] = useState<CompteV1['profil'] | null>(null);
+  const [prefs, setPrefs] = useState<CompteV1['preferences'] | null>(null);
+  const [etatSauvegarde, setEtatSauvegarde] = useState<'idle' | 'envoi' | 'fait' | 'erreur'>('idle');
+  const [erreur, setErreur] = useState<string | null>(null);
+
+  useEffect(() => {
+    void (async () => {
+      const r = await api.lireCompte();
+      if (r.ok) {
+        setProfil(r.donnees.compte.profil);
+        setPrefs(r.donnees.compte.preferences);
+      }
+    })();
+  }, []);
+
+  const enregistrer = async () => {
+    if (!profil || !prefs) return;
+    setEtatSauvegarde('envoi');
+    setErreur(null);
+    const [r1, r2] = await Promise.all([api.majCompte({ profil }), api.majPreferences(prefs)]);
+    if (r1.ok && r2.ok) {
+      setEtatSauvegarde('fait');
+      await rafraichir();
+      setTimeout(() => setEtatSauvegarde('idle'), 2000);
+    } else {
+      setEtatSauvegarde('erreur');
+      setErreur((!r1.ok && r1.erreur) || (!r2.ok && r2.erreur) || t.accueil.erreurGenerique);
+    }
+  };
 
   return (
     <div className="module-page-parametres module">
@@ -37,23 +71,201 @@ export const ParametresPage: React.FC = () => {
         </div>
       </section>
 
+      {/* — Profil contextuel (AURA Local) — */}
+      {profil && (
+        <section className="param-section">
+          <h2>
+            <i className="fa-solid fa-earth-africa" /> {t.ws.profilContextuel}
+          </h2>
+          <p className="corps">{t.ws.profilSous}</p>
+          <div className="formulaire">
+            <div className="champs-ligne">
+              <label className="champ">
+                <span>{t.ws.paysLabel}</span>
+                <input
+                  type="text"
+                  maxLength={60}
+                  value={profil.pays ?? ''}
+                  onChange={(e) => setProfil({ ...profil, pays: e.target.value || null })}
+                  placeholder="Bénin, France…"
+                />
+              </label>
+              <label className="champ">
+                <span>{t.ws.villeLabel}</span>
+                <input
+                  type="text"
+                  maxLength={80}
+                  value={profil.region ?? ''}
+                  onChange={(e) => setProfil({ ...profil, region: e.target.value || null })}
+                  placeholder="Cotonou…"
+                />
+              </label>
+            </div>
+            <div className="champs-ligne">
+              <label className="champ">
+                <span>{t.ws.deviseLabel}</span>
+                <input
+                  type="text"
+                  maxLength={10}
+                  value={profil.devise ?? ''}
+                  onChange={(e) => setProfil({ ...profil, devise: e.target.value.toUpperCase() || null })}
+                  placeholder="XOF"
+                />
+              </label>
+              <label className="champ">
+                <span>{t.ws.fuseauLabel}</span>
+                <input
+                  type="text"
+                  maxLength={60}
+                  value={profil.fuseau ?? ''}
+                  onChange={(e) => setProfil({ ...profil, fuseau: e.target.value || null })}
+                  placeholder="Africa/Porto-Novo"
+                />
+              </label>
+            </div>
+            <div className="champs-ligne">
+              <label className="champ">
+                <span>{t.ws.languePrincipaleLabel}</span>
+                <select
+                  value={profil.languePrincipale}
+                  onChange={(e) =>
+                    setProfil({ ...profil, languePrincipale: e.target.value as 'fr' | 'en' })
+                  }
+                >
+                  <option value="fr">Français</option>
+                  <option value="en">English</option>
+                </select>
+              </label>
+              <label className="champ">
+                <span>{t.ws.languesSecondairesLabel}</span>
+                <input
+                  type="text"
+                  maxLength={120}
+                  value={profil.languesSecondaires.join(', ')}
+                  onChange={(e) =>
+                    setProfil({
+                      ...profil,
+                      languesSecondaires: e.target.value
+                        .split(',')
+                        .map((s) => s.trim())
+                        .filter(Boolean)
+                        .slice(0, 6),
+                    })
+                  }
+                  placeholder="fon, anglais…"
+                />
+              </label>
+            </div>
+            <div className="champs-ligne">
+              <label className="champ">
+                <span>{t.ws.unitesLabel}</span>
+                <select
+                  value={profil.unites}
+                  onChange={(e) =>
+                    setProfil({ ...profil, unites: e.target.value as 'metriques' | 'imperiales' })
+                  }
+                >
+                  <option value="metriques">{t.ws.metriques}</option>
+                  <option value="imperiales">{t.ws.imperiales}</option>
+                </select>
+              </label>
+              <label className="champ">
+                <span>{t.ws.domaineLabel}</span>
+                <input
+                  type="text"
+                  maxLength={120}
+                  value={profil.domaine ?? ''}
+                  onChange={(e) => setProfil({ ...profil, domaine: e.target.value || null })}
+                  placeholder="Éducation, commerce…"
+                />
+              </label>
+            </div>
+          </div>
+          <p className="module-note">
+            <i className="fa-solid fa-circle-info" /> {t.ws.localNote}
+          </p>
+        </section>
+      )}
+
+      {/* — Préférences de réponse — */}
+      {prefs && (
+        <section className="param-section">
+          <h2>{t.ws.preferencesTitre}</h2>
+          <div className="param-ligne">
+            <span className="param-label">{t.ws.tonLabel}</span>
+            <div className="param-choix" role="group" aria-label={t.ws.tonLabel}>
+              {(['concis', 'detaille', 'pedagogique'] as const).map((ton) => (
+                <button
+                  key={ton}
+                  type="button"
+                  className={prefs.tonReponse === ton ? 'actif' : ''}
+                  onClick={() => setPrefs({ ...prefs, tonReponse: ton })}
+                >
+                  {ton === 'concis' ? t.ws.tonConcis : ton === 'detaille' ? t.ws.tonDetaille : t.ws.tonPedagogique}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="param-ligne">
+            <span className="param-label">{t.ws.langueReponseLabel}</span>
+            <div className="param-choix" role="group" aria-label={t.ws.langueReponseLabel}>
+              {(['auto', 'fr', 'en'] as const).map((l) => (
+                <button
+                  key={l}
+                  type="button"
+                  className={prefs.langueReponse === l ? 'actif' : ''}
+                  onClick={() => setPrefs({ ...prefs, langueReponse: l })}
+                >
+                  {l === 'auto' ? t.ws.langueAuto : l === 'fr' ? 'Français' : 'English'}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="param-ligne">
+            <span className="param-label">{t.ws.utiliserMemoireLabel}</span>
+            <div className="param-choix">
+              <button
+                type="button"
+                className={prefs.utiliserMemoire ? 'actif' : ''}
+                onClick={() => setPrefs({ ...prefs, utiliserMemoire: true })}
+              >
+                <i className="fa-solid fa-toggle-on" /> {t.ws.memoireActive}
+              </button>
+              <button
+                type="button"
+                className={!prefs.utiliserMemoire ? 'actif' : ''}
+                onClick={() => setPrefs({ ...prefs, utiliserMemoire: false })}
+              >
+                <i className="fa-solid fa-toggle-off" /> {t.ws.memoireInactive}
+              </button>
+            </div>
+          </div>
+          <div className="param-actions">
+            <button type="button" className="btn-primaire" onClick={() => void enregistrer()} disabled={etatSauvegarde === 'envoi'}>
+              {etatSauvegarde === 'fait' ? (
+                <>
+                  <i className="fa-solid fa-check" /> {t.ws.enregistre}
+                </>
+              ) : (
+                <>
+                  <i className="fa-solid fa-floppy-disk" /> {t.ws.enregistrer}
+                </>
+              )}
+            </button>
+            {erreur && <p className="form-erreur">{erreur}</p>}
+          </div>
+        </section>
+      )}
+
       <section className="param-section">
         <h2>{t.parametres.apparence}</h2>
         <div className="param-ligne">
           <span className="param-label">{t.parametres.themeLabel}</span>
           <div className="param-choix" role="group" aria-label={t.parametres.themeLabel}>
-            <button
-              type="button"
-              className={theme === 'light' ? 'actif' : ''}
-              onClick={() => setTheme('light')}
-            >
+            <button type="button" className={theme === 'light' ? 'actif' : ''} onClick={() => setTheme('light')}>
               <i className="fa-solid fa-sun" /> {t.parametres.themeClair}
             </button>
-            <button
-              type="button"
-              className={theme === 'dark' ? 'actif' : ''}
-              onClick={() => setTheme('dark')}
-            >
+            <button type="button" className={theme === 'dark' ? 'actif' : ''} onClick={() => setTheme('dark')}>
               <i className="fa-solid fa-moon" /> {t.parametres.themeSombre}
             </button>
           </div>

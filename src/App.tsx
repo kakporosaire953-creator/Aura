@@ -13,6 +13,8 @@ import { StudioPage } from './pages/StudioPage';
 import { MissionsPage } from './pages/MissionsPage';
 import { HistoriquePage } from './pages/HistoriquePage';
 import { ParametresPage } from './pages/ParametresPage';
+import { ProjetsPage, ProjetDetailPage } from './pages/ProjetsPage';
+import { MemoirePage } from './pages/MemoirePage';
 import { WorkspaceLayout } from './components/layout/WorkspaceLayout';
 import { NotFoundPage } from './pages/NotFoundPage';
 
@@ -48,10 +50,14 @@ export const App: React.FC = () => {
             <Route element={<WorkspaceLayout />}>
               <Route path="/app" element={<EspacePage />} />
               <Route path="/chat" element={<ChatPage />} />
+              <Route path="/chat/:id" element={<ChatPage />} />
+              <Route path="/projets" element={<ProjetsPage />} />
+              <Route path="/projets/:id" element={<ProjetDetailPage />} />
               <Route path="/historique" element={<HistoriquePage />} />
               <Route path="/explore" element={<ExplorePage />} />
               <Route path="/studio" element={<StudioPage />} />
               <Route path="/missions" element={<MissionsPage />} />
+              <Route path="/memoire" element={<MemoirePage />} />
               <Route path="/parametres" element={<ParametresPage />} />
             </Route>
             <Route path="*" element={<NotFoundPage />} />

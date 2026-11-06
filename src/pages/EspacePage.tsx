@@ -2,25 +2,20 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useSession, appelerAuth } from '../app/session';
 import { useT, usePrefs } from '../app/prefs';
-import { simulationActivee, RECENTS_DEMO, type RecentDemo } from '../app/simulation';
-import { listerFils, ilYATexte, type FilLocal } from '../app/historique';
-
-type ActionRapide = {
-  titre: string;
-  desc: string;
-  icone: string;
-  prompt: string;
-};
+import { simulationActivee } from '../app/simulation';
+import * as api from '../services/api';
+import type { Conversation, Creation, Mission, Projet } from '../services/types';
 
 /**
- * Accueil du workspace — salutation, composeur, actions rapides,
- * activité récente. Tout ce qui est simulé porte son badge ; le
- * composeur mène au vrai chat (réponse simulée ou moteur réel).
+ * Vue d'ensemble — centre de pilotage personnel : salutation, composeur,
+ * actions rapides, continuité de travail. Toutes les données proviennent
+ * des services (API v1 ou stockage simulé étiqueté) — aucune statistique
+ * ni activité inventée.
  */
 export const EspacePage: React.FC = () => {
   const t = useT();
   const { lang } = usePrefs();
-  const { statut, compte, rafraichir, deconnecter } = useSession();
+  const { statut, compte, rafraichir } = useSession();
   const navigate = useNavigate();
   const sim = simulationActivee();
 
@@ -28,53 +23,43 @@ export const EspacePage: React.FC = () => {
   const [objectif, setObjectif] = useState('');
   const [sauvegarde, setSauvegarde] = useState<'idle' | 'envoi' | 'fait' | 'erreur'>('idle');
   const [erreur, setErreur] = useState<string | null>(null);
-  const [fils, setFils] = useState<FilLocal[]>([]);
-  const [modele, setModele] = useState<string | null>(null);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [missions, setMissions] = useState<Mission[]>([]);
+  const [projets, setProjets] = useState<Projet[]>([]);
+  const [creations, setCreations] = useState<Creation[]>([]);
+  const [assistantOk, setAssistantOk] = useState<boolean | null>(null);
 
-  // Historique local réel (cet appareil).
+  // Données réelles de l'utilisateur (services).
   useEffect(() => {
-    setFils(listerFils());
+    let vivant = true;
+    void (async () => {
+      const [c, m, p, cr, caps] = await Promise.all([
+        api.listerConversations(),
+        api.listerMissions(),
+        api.listerProjets(),
+        api.listerCreations(),
+        api.lireCapabilities(),
+      ]);
+      if (!vivant) return;
+      if (c.ok) setConversations(c.donnees.conversations.slice(0, 5));
+      if (m.ok) setMissions(m.donnees.missions.filter((x) => x.statut !== 'terminee' && x.statut !== 'archivee').slice(0, 4));
+      if (p.ok) setProjets(p.donnees.projets.slice(0, 3));
+      if (cr.ok) setCreations(cr.donnees.jobs.slice(0, 3));
+      if (caps.ok) setAssistantOk(caps.donnees.assistant.ok);
+    })();
+    return () => {
+      vivant = false;
+    };
   }, []);
 
-  // Nom du moteur réellement configuré (jamais supposé).
-  useEffect(() => {
-    if (sim) return;
-    fetch('/api/status')
-      .then((r) => r.json())
-      .then((d: { config?: { modele?: string } }) => {
-        setModele(d.config?.modele ?? null);
-      })
-      .catch(() => setModele(null));
-  }, [sim]);
-
-  const actions: ActionRapide[] = useMemo(
+  const actions = useMemo(
     () => [
-      {
-        titre: t.accueil.action1Titre,
-        desc: t.accueil.action1Desc,
-        icone: 'fa-wand-magic-sparkles',
-        prompt: t.accueil.action1Prompt,
-      },
-      {
-        titre: t.accueil.action2Titre,
-        desc: t.accueil.action2Desc,
-        icone: 'fa-file-lines',
-        prompt: t.accueil.action2Prompt,
-      },
-      {
-        titre: t.accueil.action3Titre,
-        desc: t.accueil.action3Desc,
-        icone: 'fa-code',
-        prompt: t.accueil.action3Prompt,
-      },
-      {
-        titre: t.accueil.action4Titre,
-        desc: t.accueil.action4Desc,
-        icone: 'fa-graduation-cap',
-        prompt: t.accueil.action4Prompt,
-      },
+      { titre: t.ws.actionQuestion, icone: 'fa-comment-dots', va: () => navigate('/chat', { state: { nouveau: true } }) },
+      { titre: t.ws.actionProjet, icone: 'fa-folder-plus', va: () => navigate('/projets', { state: { creer: true } }) },
+      { titre: t.ws.actionMission, icone: 'fa-list-check', va: () => navigate('/missions', { state: { creer: true } }) },
+      { titre: t.ws.actionDocument, icone: 'fa-file-lines', va: () => navigate('/studio') },
     ],
-    [t],
+    [t, navigate],
   );
 
   if (statut === 'chargement') {
@@ -113,35 +98,19 @@ export const EspacePage: React.FC = () => {
     }
   };
 
-  // Activité récente : vrais fils locaux + démos badgées en simulation.
-  const recents: Array<{
-    genre: 'local' | 'demo';
-    id: string;
-    titre: string;
-    quand: string;
-    type: RecentDemo['type'];
-  }> = [
-    ...fils.slice(0, sim ? 2 : 4).map((f) => ({
-      genre: 'local' as const,
-      id: f.id,
-      titre: f.titre,
-      quand: ilYATexte(f.date, lang),
-      type: 'conversation' as const,
-    })),
-    ...(sim
-      ? RECENTS_DEMO.slice(0, 4 - Math.min(fils.length, 2)).map((r) => ({
-          genre: 'demo' as const,
-          id: r.titre,
-          titre: lang === 'en' ? r.titreEn : r.titre,
-          quand: lang === 'en' ? r.quandEn : r.quandFr,
-          type: r.type,
-        }))
-      : []),
-  ];
-  const typeLabel: Record<RecentDemo['type'], string> = {
-    conversation: t.accueil.typeConversation,
-    projet: t.accueil.typeProjet,
-    mission: t.accueil.typeMission,
+  const quand = (iso: string) => {
+    const ms = Date.now() - new Date(iso).getTime();
+    const min = Math.max(0, Math.round(ms / 60000));
+    if (lang === 'en') {
+      if (min < 60) return `${min} min ago`;
+      const h = Math.round(min / 60);
+      if (h < 24) return `${h}h ago`;
+      return `${Math.round(h / 24)}d ago`;
+    }
+    if (min < 60) return `il y a ${min} min`;
+    const h = Math.round(min / 60);
+    if (h < 24) return `il y a ${h} h`;
+    return `il y a ${Math.round(h / 24)} j`;
   };
 
   return (
@@ -155,12 +124,7 @@ export const EspacePage: React.FC = () => {
 
       <section className="accueil-hero">
         <div className="accueil-logo">
-          <img
-            src="/assets/aura-symbol.png"
-            alt="Aura"
-            width={148}
-            height={148}
-          />
+          <img src="/assets/aura-symbol.png" alt="Aura" width={148} height={148} />
         </div>
         <h1 className="accueil-salut">
           {t.accueil.bonjour} {prenom} !
@@ -169,9 +133,9 @@ export const EspacePage: React.FC = () => {
           {t.accueil.tagline1} <em className="italique-vif">{t.accueil.taglineAccent1}</em>{' '}
           {t.accueil.tagline2} <em className="italique-vif accent2">{t.accueil.taglineAccent2}</em>
         </p>
-        <p className="accueil-sous">{t.accueil.sousTitre}</p>
+        <p className="accueil-sous">{t.ws.introAide}</p>
 
-        {/* Composeur — mène au vrai chat */}
+        {/* Composeur — mène à l'assistant */}
         <form
           className="accueil-composeur"
           onSubmit={(e) => {
@@ -196,7 +160,7 @@ export const EspacePage: React.FC = () => {
           <div className="accueil-composeur-bas">
             <span className="accueil-moteur" title={t.accueil.moteurTitre}>
               <i className="fa-solid fa-bolt" />
-              {sim ? t.accueil.moteurSim : (modele ?? t.accueil.moteurNon)}
+              {sim ? t.accueil.moteurSim : assistantOk ? 'Aura' : t.accueil.moteurNon}
             </span>
             <div className="accueil-pastilles">
               <Link to="/explore" className="accueil-pastille">
@@ -226,15 +190,14 @@ export const EspacePage: React.FC = () => {
       </section>
 
       {/* Actions rapides */}
-      <section className="accueil-actions" aria-label={t.accueil.actionsTitre}>
+      <section className="accueil-actions" aria-label={t.ws.actionsRapides}>
         {actions.map((a) => (
-          <button key={a.titre} type="button" className="accueil-action" onClick={() => setSaisie(a.prompt)}>
+          <button key={a.titre} type="button" className="accueil-action" onClick={a.va}>
             <span className="accueil-action-haut">
               <i className={`fa-solid ${a.icone}`} />
               <i className="fa-solid fa-arrow-right accueil-action-fleche" />
             </span>
             <strong>{a.titre}</strong>
-            <span>{a.desc}</span>
           </button>
         ))}
       </section>
@@ -263,39 +226,78 @@ export const EspacePage: React.FC = () => {
         </section>
       )}
 
-      {/* Vos récents */}
+      {/* Continuité de travail — données réelles */}
       <section className="accueil-recents">
         <header className="accueil-recents-haut">
           <h2>
-            <i className="fa-solid fa-clock" /> {t.accueil.recentsTitre}
+            <i className="fa-solid fa-clock" /> {t.ws.continuTitre}
           </h2>
           <Link to="/historique" className="accueil-voir-tout">
             {t.accueil.voirTout} <i className="fa-solid fa-arrow-right" />
           </Link>
         </header>
-        {recents.length === 0 ? (
-          <p className="accueil-recents-vide">{t.accueil.recentsVides}</p>
+
+        {conversations.length + missions.length + projets.length + creations.length === 0 ? (
+          <p className="accueil-recents-vide">{t.ws.continuVide}</p>
         ) : (
           <div className="accueil-recents-liste">
-            {recents.map((r) => (
-              <Link key={r.genre + r.id} to="/historique" className="accueil-recent">
+            {conversations.map((c) => (
+              <Link key={c.id} to={`/chat/${c.id}`} className="accueil-recent">
                 <span className="accueil-recent-icone">
                   <i className="fa-solid fa-comment-dots" />
                 </span>
                 <span className="accueil-recent-texte">
-                  <strong>{r.titre}</strong>
+                  <strong>{c.titre}</strong>
                   <em>
-                    {typeLabel[r.type]} · {r.quand}
+                    {t.accueil.typeConversation} · {quand(c.maj)}
                   </em>
                 </span>
-                {r.genre === 'demo' && <span className="badge-sim">{t.simulation.badge}</span>}
+                <i className="fa-solid fa-chevron-right accueil-recent-fleche" />
+              </Link>
+            ))}
+            {projets.map((p) => (
+              <Link key={p.id} to={`/projets/${p.id}`} className="accueil-recent">
+                <span className="accueil-recent-icone">
+                  <i className="fa-solid fa-folder-open" />
+                </span>
+                <span className="accueil-recent-texte">
+                  <strong>{p.nom}</strong>
+                  <em>
+                    {t.accueil.typeProjet} · {quand(p.maj)}
+                  </em>
+                </span>
+                <i className="fa-solid fa-chevron-right accueil-recent-fleche" />
+              </Link>
+            ))}
+            {missions.map((m) => (
+              <Link key={m.id} to="/missions" className="accueil-recent">
+                <span className="accueil-recent-icone">
+                  <i className="fa-solid fa-list-check" />
+                </span>
+                <span className="accueil-recent-texte">
+                  <strong>{m.titre}</strong>
+                  <em>
+                    {t.accueil.typeMission} · {quand(m.maj)}
+                  </em>
+                </span>
+                <i className="fa-solid fa-chevron-right accueil-recent-fleche" />
+              </Link>
+            ))}
+            {creations.map((c) => (
+              <Link key={c.id} to="/studio" className="accueil-recent">
+                <span className="accueil-recent-icone">
+                  <i className="fa-solid fa-file-lines" />
+                </span>
+                <span className="accueil-recent-texte">
+                  <strong>{c.titre}</strong>
+                  <em>
+                    Studio · {quand(c.maj)}
+                  </em>
+                </span>
                 <i className="fa-solid fa-chevron-right accueil-recent-fleche" />
               </Link>
             ))}
           </div>
-        )}
-        {!sim && fils.length === 0 && (
-          <p className="module-note">{t.accueil.recentsNote}</p>
         )}
       </section>
     </div>

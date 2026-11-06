@@ -6,11 +6,15 @@ import { useSession } from '../../app/session';
 import { simulationActivee, definirSimulation } from '../../app/simulation';
 
 /**
- * Coque du workspace — sidebar persistante + barre haute + contenu.
- * Responsive : rail réductible (desktop), tiroir (tablette/mobile),
- * barre d'onglets basse (téléphone). Respecte la règle d'honnêteté :
- * le bandeau simulation reste visible en haut de chaque écran.
+ * Coque du workspace — sidebar structurée (sections évolutives), barre
+ * haute (fil d'Ariane, création rapide, profil) et zone de contenu.
+ * Responsive : rail réductible (desktop), tiroir (tablette/mobile), barre
+ * d'onglets basse (téléphone). La navigation est décrite par des données :
+ * ajouter un module n'exige pas de modifier la structure du dashboard.
  */
+
+type EntreeNav = { to: string; icone: string; label: string; fin?: boolean };
+
 export const WorkspaceLayout: React.FC = () => {
   const t = useT();
   const { theme, toggleTheme, lang, setLang } = usePrefs();
@@ -26,22 +30,26 @@ export const WorkspaceLayout: React.FC = () => {
   });
   const [tiroir, setTiroir] = useState(false);
   const [menuProfil, setMenuProfil] = useState(false);
-  const [cloche, setCloche] = useState(false);
+  const [menuCreation, setMenuCreation] = useState(false);
   const profilRef = useRef<HTMLDivElement | null>(null);
+  const creationRef = useRef<HTMLDivElement | null>(null);
   const sim = simulationActivee();
 
   // Fermer les menus au changement de page.
   useEffect(() => {
     setTiroir(false);
     setMenuProfil(false);
-    setCloche(false);
+    setMenuCreation(false);
   }, [location.pathname]);
 
-  // Fermer au clic extérieur (menu profil).
+  // Fermer au clic extérieur.
   useEffect(() => {
     const auClic = (e: MouseEvent) => {
       if (profilRef.current && !profilRef.current.contains(e.target as Node)) {
         setMenuProfil(false);
+      }
+      if (creationRef.current && !creationRef.current.contains(e.target as Node)) {
+        setMenuCreation(false);
       }
     };
     document.addEventListener('mousedown', auClic);
@@ -60,25 +68,45 @@ export const WorkspaceLayout: React.FC = () => {
     });
   };
 
-  const principaux = [
-    { to: '/app', icone: 'fa-house', label: t.workspace.accueil, fin: true },
-    { to: '/chat', icone: 'fa-comment-dots', label: t.workspace.nouveauChat },
-    { to: '/historique', icone: 'fa-clock-rotate-left', label: t.workspace.historique },
-    { to: '/missions', icone: 'fa-list-check', label: t.workspace.missions },
-    { to: '/studio', icone: 'fa-wand-magic-sparkles', label: t.workspace.studio },
-    { to: '/explore', icone: 'fa-compass', label: t.workspace.explore },
+  // Navigation principale — données : ajouter une entrée suffit.
+  const groupes: Array<{ titre: string; entrees: EntreeNav[] }> = [
+    {
+      titre: t.ws.navPrincipal,
+      entrees: [
+        { to: '/app', icone: 'fa-house', label: t.ws.vueEnsemble, fin: true },
+        { to: '/chat', icone: 'fa-comment-dots', label: t.ws.assistant },
+        { to: '/projets', icone: 'fa-folder-open', label: t.ws.projetsNav },
+        { to: '/explore', icone: 'fa-compass', label: t.ws.explorerNav },
+        { to: '/missions', icone: 'fa-list-check', label: t.ws.missionsNav },
+        { to: '/studio', icone: 'fa-wand-magic-sparkles', label: t.ws.studioNav },
+        { to: '/historique', icone: 'fa-clock-rotate-left', label: t.ws.historiqueNav },
+      ],
+    },
+    {
+      titre: t.ws.navPersonnel,
+      entrees: [
+        { to: '/memoire', icone: 'fa-brain', label: t.ws.memoireNav },
+        { to: '/parametres', icone: 'fa-sliders', label: t.ws.parametresNav },
+      ],
+    },
   ];
 
-  const sections: Record<string, string> = {
-    '/app': t.workspace.accueil,
-    '/chat': t.workspace.chat,
-    '/historique': t.workspace.historique,
-    '/missions': t.workspace.missions,
-    '/studio': t.workspace.studio,
-    '/explore': t.workspace.explore,
-    '/parametres': t.workspace.parametres,
-  };
-  const section = sections[location.pathname] ?? t.workspace.accueil;
+  const tousLesLiens = groupes.flatMap((g) => g.entrees);
+  const entreeActive =
+    tousLesLiens.find((e) =>
+      e.fin ? location.pathname === e.to : location.pathname.startsWith(e.to),
+    ) ?? tousLesLiens[0];
+  const section = entreeActive.label;
+
+  // Fil d'Ariane léger : section > détail (projets/:id, chat/:id).
+  const segments = location.pathname.split('/').filter(Boolean);
+  const filAriane: Array<{ label: string; to?: string }> = [{ label: t.ws.vueEnsemble, to: '/app' }];
+  if (entreeActive.to !== '/app') {
+    filAriane.push({ label: section, to: entreeActive.to });
+  }
+  if (segments.length > 2 && location.pathname.startsWith('/projets/')) {
+    filAriane.push({ label: segments[2] });
+  }
 
   const prenom = (compte?.nom ?? '').trim().split(' ')[0];
 
@@ -108,9 +136,45 @@ export const WorkspaceLayout: React.FC = () => {
           >
             <i className="fa-solid fa-bars-staggered" />
           </button>
-          <span className="ws-fil">{section}</span>
+          <nav className="ws-fil" aria-label="Fil d’Ariane">
+            {filAriane.map((f, i) => (
+              <React.Fragment key={`${f.label}-${i}`}>
+                {i > 0 && <span className="ws-fil-sep" aria-hidden="true">/</span>}
+                {f.to && i < filAriane.length - 1 ? (
+                  <Link to={f.to}>{f.label}</Link>
+                ) : (
+                  <span aria-current="page">{f.label}</span>
+                )}
+              </React.Fragment>
+            ))}
+          </nav>
         </div>
         <div className="ws-topbar-droite">
+          <div className="ws-menu-wrap" ref={creationRef}>
+            <button
+              type="button"
+              className="ws-creation"
+              aria-expanded={menuCreation}
+              aria-label={t.ws.actionsRapides}
+              onClick={() => setMenuCreation((v) => !v)}
+            >
+              <i className="fa-solid fa-plus" />
+              <span className="ws-creation-label">{t.ws.nouvelleConv}</span>
+            </button>
+            {menuCreation && (
+              <div className="ws-panneau ws-panneau-creation">
+                <button type="button" onClick={() => navigate('/chat', { state: { nouveau: true } })}>
+                  <i className="fa-solid fa-comment-dots" /> {t.ws.nouvelleConv}
+                </button>
+                <button type="button" onClick={() => navigate('/projets', { state: { creer: true } })}>
+                  <i className="fa-solid fa-folder-plus" /> {t.ws.nouveauProjet}
+                </button>
+                <button type="button" onClick={() => navigate('/missions', { state: { creer: true } })}>
+                  <i className="fa-solid fa-list-check" /> {t.ws.nouvelleMission}
+                </button>
+              </div>
+            )}
+          </div>
           <button
             type="button"
             className={`bascule-sim${sim ? ' actif' : ''}`}
@@ -127,25 +191,6 @@ export const WorkspaceLayout: React.FC = () => {
           >
             <i className={`fa-solid ${theme === 'dark' ? 'fa-sun' : 'fa-moon'}`} />
           </button>
-          <span className="ws-plan">
-            <span className="ws-plan-point" />
-            {t.workspace.planGratuit}
-          </span>
-          <div className="ws-menu-wrap">
-            <button
-              type="button"
-              className="ws-cercle ws-cloche"
-              aria-label={t.workspace.notifications}
-              onClick={() => setCloche((v) => !v)}
-            >
-              <i className="fa-solid fa-bell" />
-            </button>
-            {cloche && (
-              <div className="ws-panneau" role="status">
-                {t.workspace.aucuneNotif}
-              </div>
-            )}
-          </div>
           <div className="ws-menu-wrap" ref={profilRef}>
             <button
               type="button"
@@ -225,32 +270,28 @@ export const WorkspaceLayout: React.FC = () => {
         </div>
 
         <nav className="ws-nav-side" aria-label={t.workspace.menu}>
-          {principaux.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.fin}
-              className={({ isActive }) => (isActive ? 'actif' : undefined)}
-            >
-              <i className={`fa-solid ${item.icone}`} />
-              <span>{item.label}</span>
-            </NavLink>
+          {groupes.map((g) => (
+            <div className="ws-nav-groupe" key={g.titre}>
+              <p className="ws-nav-groupe-titre">{g.titre}</p>
+              {g.entrees.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.fin}
+                  className={({ isActive }) => (isActive ? 'actif' : undefined)}
+                >
+                  <i className={`fa-solid ${item.icone}`} />
+                  <span>{item.label}</span>
+                </NavLink>
+              ))}
+            </div>
           ))}
         </nav>
 
         <div className="ws-sidebar-bas">
-          <Link to="/#tarifs" className="ws-plus">
-            <i className="fa-solid fa-crown" />
-            <strong>{t.workspace.plus}</strong>
-            <span>{t.workspace.plusSous}</span>
-            <em>{t.workspace.plusBtn} →</em>
+          <Link to="/memoire" className={`ws-lien-simple${location.pathname === '/memoire' ? ' actif' : ''}`}>
+            <i className="fa-solid fa-brain" /> <span>{t.ws.memoireNav}</span>
           </Link>
-          <NavLink
-            to="/parametres"
-            className={({ isActive }) => `ws-lien-simple${isActive ? ' actif' : ''}`}
-          >
-            <i className="fa-solid fa-gear" /> <span>{t.workspace.parametres}</span>
-          </NavLink>
           <Link to="/parametres" className="ws-user">
             <span className="ws-avatar" aria-hidden="true">
               {(prenom || '?').slice(0, 1).toUpperCase()}
@@ -275,13 +316,13 @@ export const WorkspaceLayout: React.FC = () => {
       )}
 
       {/* — Contenu — */}
-        <main className="ws-main" id="contenu">
+      <main className="ws-main" id="contenu">
         <Outlet />
       </main>
 
       {/* — Barre d'onglets basse (téléphone) — */}
       <nav className="ws-bottom" aria-label={t.workspace.menu}>
-        {principaux.slice(0, 5).map((item) => (
+        {groupes[0].entrees.slice(0, 5).map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
