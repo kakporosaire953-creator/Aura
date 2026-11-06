@@ -163,31 +163,33 @@ export const EspacePage: React.FC = () => {
               <Icone nom="bolt" />
               {sim ? t.accueil.moteurSim : assistantOk ? 'Aura' : t.accueil.moteurNon}
             </span>
-            <div className="accueil-pastilles">
-              <Link to="/explore" className="accueil-pastille">
-                <Icone nom="magnifying-glass" /> {t.accueil.chipRecherche}
-              </Link>
-              <button
-                type="button"
-                className="accueil-pastille"
-                onClick={() => setSaisie(t.accueil.action3Prompt)}
-              >
-                <Icone nom="code" /> {t.accueil.chipCode}
-              </button>
-              <Link to="/missions" className="accueil-pastille">
-                <Icone nom="list-check" /> {t.accueil.chipMissions}
-              </Link>
-              <button
-                type="submit"
-                className="accueil-envoi"
-                aria-label={t.accueil.envoyer}
-                disabled={!saisie.trim()}
-              >
-                <Icone nom="arrow-right" />
-              </button>
-            </div>
+            <button
+              type="submit"
+              className="accueil-envoi"
+              aria-label={t.accueil.envoyer}
+              disabled={!saisie.trim()}
+            >
+              <Icone nom="arrow-right" />
+            </button>
           </div>
         </form>
+
+        {/* Raccourcis sous le champ, comme une rangée de pastilles */}
+        <div className="accueil-pastilles">
+          <Link to="/explore" className="accueil-pastille">
+            <Icone nom="magnifying-glass" /> {t.accueil.chipRecherche}
+          </Link>
+          <button
+            type="button"
+            className="accueil-pastille"
+            onClick={() => setSaisie(t.accueil.action3Prompt)}
+          >
+            <Icone nom="code" /> {t.accueil.chipCode}
+          </button>
+          <Link to="/missions" className="accueil-pastille">
+            <Icone nom="list-check" /> {t.accueil.chipMissions}
+          </Link>
+        </div>
       </section>
 
       {/* Actions rapides */}

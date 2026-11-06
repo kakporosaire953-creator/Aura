@@ -328,10 +328,15 @@ export const WorkspaceLayout: React.FC = () => {
             key={item.to}
             to={item.to}
             end={item.fin}
+            title={item.label}
             className={({ isActive }) => (isActive ? 'actif' : undefined)}
           >
-            <Icone nom={item.icone} />
-            <span>{item.label}</span>
+            <span className="ws-bottom-icone">
+              <Icone nom={item.icone} />
+            </span>
+            {/* Icônes seules à l'écran ; le libellé reste lisible par les
+                lecteurs d'écran (nom accessible du lien). */}
+            <span className="ws-bottom-libelle">{item.label}</span>
           </NavLink>
         ))}
       </nav>
