@@ -7,6 +7,7 @@ import { Dialogue } from '../components/ui/Primitives';
 import * as api from '../services/api';
 import type { CompteV1 } from '../services/types';
 import { Icone } from '../components/ui/Icone';
+import { SecuriteCompte } from '../components/auth/SecuriteCompte';
 
 /**
  * Paramètres — réglages réels uniquement : compte, profil contextuel
@@ -78,6 +79,9 @@ export const ParametresPage: React.FC = () => {
           <strong>{compte?.email ?? '—'}</strong>
         </div>
       </section>
+
+      {/* — Sécurité : adresse, mot de passe, sessions actives — */}
+      <SecuriteCompte />
 
       {/* — Profil contextuel (AURA Local) — */}
       {profil && (

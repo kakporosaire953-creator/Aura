@@ -41,19 +41,55 @@ export async function verifierMotDePasse(
 
 export const DUREE_SESSION_MS = 7 * 24 * 60 * 60 * 1000;
 
-export function creerSession(): { jeton: string; session: Session } {
+export function creerSession(agent?: string | null): { jeton: string; session: Session } {
   const jeton = randomBytes(32).toString('base64url');
+  const maintenant = Date.now();
+  const normalise = (agent ?? '').replace(/\s+/g, ' ').trim().slice(0, 160);
   const session: Session = {
     id: createHash('sha256').update(jeton).digest('hex'),
     userId: '',
-    expire: Date.now() + DUREE_SESSION_MS,
-    cree: new Date().toISOString(),
+    expire: maintenant + DUREE_SESSION_MS,
+    cree: new Date(maintenant).toISOString(),
+    derniereActivite: maintenant,
+    ...(normalise ? { agent: normalise } : {}),
   };
   return { jeton, session };
 }
 
 export function empreinteJeton(jeton: string): string {
   return createHash('sha256').update(jeton).digest('hex');
+}
+
+/** Empreinte d'une valeur quelconque (adresse e-mail liée à un jeton). */
+export function empreinteValeur(valeur: string): string {
+  return createHash('sha256').update(valeur.trim().toLowerCase()).digest('hex');
+}
+
+/* ─────────────── Jetons à usage unique : durées et génération ─────────────── */
+
+function dureeEnv(nom: string, defaut: number, min: number, max: number): number {
+  const brut = Number(process.env[nom]);
+  if (!Number.isFinite(brut)) return defaut;
+  return Math.min(max, Math.max(min, Math.floor(brut)));
+}
+
+/**
+ * Durées de vie des jetons — centralisées ici, réglables par variable
+ * d'environnement dans des bornes sûres (jamais 0, jamais « infinie »).
+ */
+export const DUREE_JETON_VERIFICATION_MS =
+  dureeEnv('AURA_JETON_VERIFICATION_HEURES', 24, 1, 168) * 60 * 60 * 1000;
+
+export const DUREE_JETON_REINITIALISATION_MS =
+  dureeEnv('AURA_JETON_REINITIALISATION_MINUTES', 30, 5, 120) * 60 * 1000;
+
+/**
+ * Jeton opaque de 32 octets d'entropie. Seule son empreinte SHA-256 sera
+ * stockée ; la valeur brute ne quitte le serveur que dans l'e-mail.
+ */
+export function creerJeton(): { jeton: string; id: string } {
+  const jeton = randomBytes(32).toString('base64url');
+  return { jeton, id: empreinteJeton(jeton) };
 }
 
 /* ───────────────────────── Cookies ───────────────────────── */
@@ -114,6 +150,11 @@ export function serialiserCookie(
 /* ───────────────────────── Validation ───────────────────────── */
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+/** Validation de syntaxe uniquement — ne dit jamais si l'adresse a un compte. */
+export function emailValide(email: string): boolean {
+  return EMAIL_RE.test((email ?? '').trim().toLowerCase());
+}
 
 export type Saisie = { email: string; password: string; nom?: string };
 

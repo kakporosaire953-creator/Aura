@@ -23,7 +23,10 @@ Erreurs uniformes : `{ "error": string, "code": string, "champs"?: { champ: mess
 Limitation de débit (compteur partagé dans le stockage, repli mémoire si le
 stockage tombe) : connexion 20 / 10 min par IP et 10 / 10 min par adresse,
 inscription 30 / 10 min par IP et 10 / heure par adresse, suppression de
-compte 5 / 15 min, chat 40 / 5 min par compte.
+compte 5 / 15 min, chat 40 / 5 min par compte, mot de passe oublié
+10 / 15 min par IP et 3 / heure par adresse, renvoi de vérification
+5 / 15 min par IP et 3 / heure par adresse, vérification 30 / 10 min,
+réinitialisation 20 / 10 min, changement de mot de passe 5 / 15 min par compte.
 
 ## Historique (compatibilité conservée)
 
@@ -33,6 +36,10 @@ compte 5 / 15 min, chat 40 / 5 min par compte.
 | POST | `/api/auth/register` | inscription (email, password ≥ 8, nom) → cookie |
 | POST | `/api/auth/login` | connexion → cookie (message d'erreur unique) |
 | POST | `/api/auth/logout` | déconnexion (session supprimée serveur) |
+| POST | `/api/auth/forgot-password` | `{ email, langue? }` → **202 identique** dans tous les cas ; `503 mail-indisponible` sans fournisseur |
+| POST | `/api/auth/reset-password` | `{ token, password }` → mot de passe changé, **toutes les sessions fermées** |
+| POST | `/api/auth/verify-email` | `{ token }` → adresse confirmée (usage unique) |
+| POST | `/api/auth/resend-verification` | `{ email, langue? }` → **202 identique**, même sans compte |
 | GET | `/api/me` | compte courant |
 | PATCH | `/api/me/onboarding` | objectif de première utilisation |
 | POST | `/api/chat` | message → réponse (non persistée) |
@@ -48,6 +55,18 @@ compte 5 / 15 min, chat 40 / 5 min par compte.
 | PATCH | `/me` | `nom`, `profil{pays,region,languePrincipale,languesSecondaires,devise,fuseau,unites,domaine}` |
 | GET | `/preferences` | préférences de réponse |
 | PATCH | `/preferences` | `tonReponse`, `utiliserMemoire`, `langueReponse` |
+
+### Sécurité du compte
+| GET | `/me/sessions` | sessions ouvertes : `id` (préfixe d'empreinte), `libelle`, `courante`, `cree`, `derniereActivite`, `expire` |
+| DELETE | `/me/sessions/:id` | ferme une session distante ; `400 session-courante` pour la sienne, `404` sinon |
+| POST | `/me/sessions/revoquer-autrui` | ferme toutes les sessions sauf l'appareil courant → `{ sessionsFermees }` |
+| POST | `/me/password` | `{ actuel, nouveau }` ; `401 mot-de-passe` si l'actuel est faux, `400 identique` ; ferme les autres sessions |
+| POST | `/me/email/renvoyer` | renvoie le lien de confirmation ; `409 deja-verifie`, `503 mail-indisponible` |
+
+Réponses propres à la récupération : `400 { code: "jeton-invalide" }`
+(inexistant ou déjà utilisé), `400 { code: "jeton-expire" }` (lien périmé),
+`503 { code: "mail-indisponible" }` (aucun fournisseur configuré — aucun
+jeton n'est créé et aucun e-mail n'est annoncé comme parti).
 
 ### Conversations
 | GET | `/conversations` | `?q=`, `?projectId=`, `?archivees=1` |

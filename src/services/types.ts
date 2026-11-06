@@ -33,6 +33,19 @@ export type CompteV1 = {
   onboarding: Onboarding;
   profil: ProfilContextuel;
   preferences: PreferencesUtilisateur;
+  /** Adresse confirmée par e-mail — jamais bloquant pour utiliser le compte.
+   *  Absent = non confirmé (comptes créés avant la vérification). */
+  emailVerifie?: boolean;
+};
+
+/** Session ouverte sur le compte, telle que présentée à son propriétaire. */
+export type SessionActive = {
+  id: string;
+  libelle: string;
+  courante: boolean;
+  cree: string;
+  derniereActivite: string;
+  expire: string;
 };
 
 export type Conversation = {

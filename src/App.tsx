@@ -34,6 +34,9 @@ import { ProjetsPage, ProjetDetailPage } from './pages/ProjetsPage';
 import { MemoirePage } from './pages/MemoirePage';
 import { WorkspaceLayout } from './components/layout/WorkspaceLayout';
 import { NotFoundPage } from './pages/NotFoundPage';
+import { MotDePasseOubliePage } from './pages/MotDePasseOubliePage';
+import { ReinitialiserPage } from './pages/ReinitialiserPage';
+import { VerifierEmailPage } from './pages/VerifierEmailPage';
 
 const ScrollToTop: React.FC = () => {
   const location = useLocation();
@@ -64,6 +67,9 @@ export const App: React.FC = () => {
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<AuthPage />} />
             <Route path="/register" element={<AuthPage />} />
+            <Route path="/mot-de-passe-oublie" element={<MotDePasseOubliePage />} />
+            <Route path="/reinitialiser" element={<ReinitialiserPage />} />
+            <Route path="/verifier-email" element={<VerifierEmailPage />} />
             <Route path="/documentation" element={<Suspense fallback={<ChargementPage />}><DocumentationPage /></Suspense>} />
             <Route path="/documentation/:slug" element={<Suspense fallback={<ChargementPage />}><DocumentationArticlePage /></Suspense>} />
             <Route element={<RoutePrivee />}>

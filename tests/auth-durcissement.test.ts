@@ -292,6 +292,12 @@ describe('Limitation de débit — compteur partagé', () => {
       incr: async () => {
         throw new Error('Stockage KV indisponible (réseau).');
       },
+      ecrireTtl: async () => {
+        throw new Error('Stockage KV indisponible (réseau).');
+      },
+      reserver: async () => {
+        throw new Error('Stockage KV indisponible (réseau).');
+      },
     };
     const v = await compterTentative(enPanne, 'test-panne-' + Math.random(), 3, 60_000);
     assert.equal(v.bloque, false);

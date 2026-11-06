@@ -27,6 +27,18 @@ import {
   profilParDefaut,
 } from './db/entrepots';
 import type { Compte, ComptePublic } from './db/types';
+
+/** En-tête d'agent tronqué : sert uniquement à décrire une session à son propriétaire. */
+function userAgent(req: Request): string | null {
+  const brut = req.headers['user-agent'];
+  const valeur = Array.isArray(brut) ? brut[0] : brut;
+  return valeur ? valeur.replace(/\s+/g, ' ').trim().slice(0, 160) : null;
+}
+
+function langueDe(req: Request): 'fr' | 'en' {
+  const corps = (req.body ?? {}) as { langue?: unknown };
+  return langueDepuis(corps.langue);
+}
 import { validerMessages } from './chat';
 import * as serviceIa from './ai/service';
 import { ErreurAi } from './ai/errors';
@@ -39,6 +51,9 @@ import {
   depasse,
 } from './v1/middlewares';
 import { ipClient } from './v1/limite';
+import { createRoutesRecuperation, envoyerVerificationCompte } from './auth/recuperation';
+import { mailConfigure } from './mail/adaptateur';
+import { langueDepuis } from './mail/gabarits';
 
 const comptes = entrepotComptes();
 
@@ -71,6 +86,7 @@ function versPublic(u: Compte): ComptePublic {
     onboarding: u.onboarding,
     profil: u.profil,
     preferences: u.preferences,
+    emailVerifie: u.emailVerifie === true,
   };
 }
 
@@ -129,6 +145,10 @@ export function createApiApp(): express.Router {
 
   // API v1 — modules fonctionnels du workspace.
   api.use('/v1', createApiV1());
+
+  /* Récupération de compte : routes publiques (mot de passe oublié,
+     réinitialisation, vérification d'adresse, renvoi). */
+  api.use('/auth', createRoutesRecuperation());
 
   // État réel du produit — jamais de fausse fonctionnalité.
   api.get('/status', asyncRoute(async (_req, res) => {
@@ -200,13 +220,18 @@ export function createApiApp(): express.Router {
       profil: profilParDefaut(),
       preferences: preferencesParDefaut(),
     };
-    const { jeton, session } = creerSession();
+    utilisateur.emailVerifie = false;
+    const { jeton, session } = creerSession(userAgent(req));
     session.userId = utilisateur.id;
     await comptes.creer(utilisateur);
     await comptes.creerSession(session);
 
     definirSession(res, jeton);
-    res.status(201).json({ compte: versPublic(utilisateur) });
+    // Envoi de vérification en tâche de fond : la vérification n'est pas
+    // bloquante, et un échec d'envoi ne fait jamais échouer l'inscription.
+    void envoyerVerificationCompte(utilisateur, langueDe(req)).catch(() => {});
+
+    res.status(201).json({ compte: versPublic(utilisateur), mailConfigure: mailConfigure() });
   }));
 
   /* ── Connexion ── */
@@ -242,7 +267,7 @@ export function createApiApp(): express.Router {
       return;
     }
 
-    const { jeton, session } = creerSession();
+    const { jeton, session } = creerSession(userAgent(req));
     session.userId = utilisateur.id;
     await comptes.creerSession(session);
 

@@ -26,7 +26,9 @@ npm run lint     # vérification TypeScript (tsc --noEmit)
 ```
 
 ```bash
-npm test           # tests unitaires et d'intégration (base de test isolée)
+npm test           # tests unitaires, d'intégration et d'interaction (base de test isolée)
+                   # 176 tests ; l'interface est testée dans un DOM simulé (jsdom),
+                   # pas dans un vrai navigateur — voir docs/analyse/015-tests-navigateur.md
 npm run verif:prod # construit, puis vérifie que la production ne peut pas
                    # activer le mode simulation (voir scripts/verifier-prod.cjs)
 ```
@@ -39,6 +41,8 @@ npm run verif:prod # construit, puis vérifie que la production ne peut pas
 | `KV_REST_API_URL` / `KV_REST_API_TOKEN` | Persistance des comptes (Vercel KV). Sans elles, l'API répond honnêtement un 503 « non configuré » |
 | `AURA_DATA_DIR` | Dossier du pilote fichier (développement, auto-hébergement) |
 | `AURA_TRUST_PROXY=1` | À poser seulement derrière un proxy de confiance (Vercel le fait automatiquement). Sans proxy, aucune confiance n'est accordée à `x-forwarded-for` |
+| `AURA_MAIL_PROVIDER`, `AURA_MAIL_API_KEY`, `AURA_MAIL_FROM`, `AURA_PUBLIC_ORIGIN` | Envoi des e-mails de vérification et de récupération (Resend en REST). Sans configuration complète, ces routes répondent `503` — aucun envoi simulé (voir `docs/architecture/EMAIL-TRANSACTIONNEL.md`) |
+| `AURA_JETON_VERIFICATION_HEURES`, `AURA_JETON_REINITIALISATION_MINUTES` | Durées de vie des jetons (24 h / 30 min par défaut, bornées côté serveur) |
 
 Aucun secret n'est stocké dans le code ni dans une variable `VITE_*`.
 
@@ -48,6 +52,9 @@ Aucun secret n'est stocké dans le code ni dans une variable `VITE_*`.
 |---|---|---|
 | `/` | Accueil (hero, fil narratif, capacités, galerie, tarifs) | Réel |
 | `/login`, `/register` | Authentification (entrée en démonstration en développement seulement) | Réel (serveur) |
+| `/mot-de-passe-oublie` | Demande de réinitialisation (réponse identique quelle que soit l'adresse) | Réel (serveur) |
+| `/reinitialiser` | Nouveau mot de passe depuis le lien reçu (usage unique) | Réel (serveur) |
+| `/verifier-email` | Confirmation d'adresse depuis le lien reçu | Réel (serveur) |
 | `/documentation` | 6 rubriques avec statut honnête (en rédaction / à venir) | Partiel |
 | `/app` | Espace de travail (accueil, composeur, récents) | Réel + démo badgée |
 | `/chat` | Conversation (moteur IA multi-fournisseurs côté serveur, historique local) | Réel |
@@ -55,11 +62,14 @@ Aucun secret n'est stocké dans le code ni dans une variable `VITE_*`.
 | `/explore` | Recherche | **Simulée** (résultats de démonstration badgés) |
 | `/studio` | Génération de visuels | **Simulée** (aperçus prédéfinis badgés) |
 | `/missions` | Tableau de projets (créer, déplacer, progresser, supprimer) | Réel (local) |
-| `/parametres` | Langue, thème, simulation, session | Réel |
+| `/parametres` | Langue, thème, simulation, session, sécurité (mot de passe, sessions actives, adresse) | Réel |
 | `*` | 404 | Réel |
 
 Points d'API : `GET /api/status` (état honnête du moteur), `POST /api/chat`,
-`/api/auth/*`, `/api/me` (+ onboarding).
+`/api/auth/*` (dont `forgot-password`, `reset-password`, `verify-email`,
+`resend-verification`), `/api/me` (+ onboarding), et côté v1 `POST /me/password`,
+`GET /me/sessions`, `DELETE /me/sessions/:id`, `POST /me/sessions/revoquer-autrui`,
+`POST /me/email/renvoyer`. Détail : `docs/api/README.md`.
 
 ## Modes : réel et démonstration
 
