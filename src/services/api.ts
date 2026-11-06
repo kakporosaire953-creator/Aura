@@ -19,6 +19,7 @@ import type {
   Mission,
   PieceJointeChat,
   PrioriteMission,
+  SessionActive,
   Projet,
   PropositionMission,
   Recherche,
@@ -472,4 +473,103 @@ export async function supprimerCompte(password: string): Promise<ReponseApi<void
     return succes(undefined);
   }
   return apiAppel('/me', { methode: 'DELETE', corps: { password } });
+}
+
+/* ───────────────────────── Sécurité & récupération ───────────────────────── */
+
+/**
+ * Appel hors /api/v1 : les routes de récupération sont publiques
+ * (/api/auth/...). Même contrat d'erreur que `apiAppel`.
+ */
+async function appelRacine<T>(
+  route: string,
+  opts: { methode?: string; corps?: unknown } = {},
+): Promise<ReponseApi<T>> {
+  try {
+    const r = await fetch(route, {
+      method: opts.methode ?? 'POST',
+      credentials: 'same-origin',
+      headers: opts.corps !== undefined ? { 'Content-Type': 'application/json' } : {},
+      body: opts.corps !== undefined ? JSON.stringify(opts.corps) : undefined,
+    });
+    const d = (await r.json().catch(() => ({}))) as T & { error?: string; code?: string };
+    if (r.ok) return succes(d);
+    return echec(d.error ?? 'Le service ne répond pas.', d.code, r.status);
+  } catch {
+    return echec('Le service ne répond pas.', 'reseau');
+  }
+}
+
+function indisponibleEnSimulation<T>(): ReponseApi<T> {
+  return echec(
+    'Action indisponible en mode démonstration : elle touche à la sécurité réelle du compte.',
+    'simulation',
+    0,
+  );
+}
+
+/**
+ * Demande de réinitialisation. Le serveur répond toujours de la même façon :
+ * l'interface ne peut donc pas en déduire l'existence d'un compte.
+ */
+export async function demanderReinitialisation(
+  email: string,
+  langue: 'fr' | 'en',
+): Promise<ReponseApi<{ ok: boolean }>> {
+  if (simulationActivee()) return indisponibleEnSimulation();
+  return appelRacine('/api/auth/forgot-password', { corps: { email, langue } });
+}
+
+/** Réinitialisation par jeton — usage unique, toutes les sessions fermées. */
+export async function reinitialiserMotDePasse(
+  token: string,
+  password: string,
+): Promise<ReponseApi<{ ok: boolean; sessionsFermees: number }>> {
+  if (simulationActivee()) return indisponibleEnSimulation();
+  return appelRacine('/api/auth/reset-password', { corps: { token, password } });
+}
+
+/** Confirmation d'adresse depuis le lien reçu par e-mail. */
+export async function verifierEmail(
+  token: string,
+): Promise<ReponseApi<{ compte: CompteV1 }>> {
+  if (simulationActivee()) return indisponibleEnSimulation();
+  return appelRacine('/api/auth/verify-email', { corps: { token } });
+}
+
+/** Renvoi du lien de confirmation depuis une session ouverte. */
+export async function renvoyerVerification(
+  langue: 'fr' | 'en',
+): Promise<ReponseApi<{ ok: boolean; expireDansMinutes: number }>> {
+  if (simulationActivee()) return indisponibleEnSimulation();
+  return apiAppel('/me/email/renvoyer', { methode: 'POST', corps: { langue } });
+}
+
+/** Sessions ouvertes sur le compte (appareil, création, dernière activité). */
+export async function listerSessions(): Promise<ReponseApi<{ sessions: SessionActive[] }>> {
+  if (simulationActivee()) return indisponibleEnSimulation();
+  return apiAppel('/me/sessions');
+}
+
+/** Ferme une session distante (la session courante ne se ferme pas ici). */
+export async function revoquerSession(id: string): Promise<ReponseApi<{ ok: boolean }>> {
+  if (simulationActivee()) return indisponibleEnSimulation();
+  return apiAppel(`/me/sessions/${encodeURIComponent(id)}`, { methode: 'DELETE' });
+}
+
+/** Ferme toutes les sessions sauf l'appareil courant. */
+export async function revoquerAutresSessions(): Promise<
+  ReponseApi<{ ok: boolean; sessionsFermees: number }>
+> {
+  if (simulationActivee()) return indisponibleEnSimulation();
+  return apiAppel('/me/sessions/revoquer-autrui', { methode: 'POST', corps: {} });
+}
+
+/** Changement de mot de passe : mot de passe actuel exigé, autres sessions fermées. */
+export async function changerMotDePasse(
+  actuel: string,
+  nouveau: string,
+): Promise<ReponseApi<{ ok: boolean; sessionsFermees: number }>> {
+  if (simulationActivee()) return indisponibleEnSimulation();
+  return apiAppel('/me/password', { methode: 'POST', corps: { actuel, nouveau } });
 }

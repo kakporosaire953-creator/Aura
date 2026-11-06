@@ -36,6 +36,7 @@ import { ErreurAi } from '../ai/errors';
 import { enregistrerUsage, consommationParFournisseur } from '../ai/usage';
 import type { ImageAi, MessageAi } from '../ai/types';
 import { createRoutesTravail } from './routesTravail';
+import { createRoutesCompte } from './routesCompte';
 import { createRoutesCreation } from './routesCreation';
 import {
   empreinteJeton,
@@ -148,6 +149,8 @@ export function createApiV1(): express.Router {
   v1.use('/conversations/:id/messages', express.json({ limit: '6mb' }));
   v1.use(express.json({ limit: '64kb' }));
   v1.use(attacherCompteV1);
+  // Sécurité du compte : mot de passe, sessions actives, renvoi de vérification.
+  v1.use(createRoutesCompte());
 
   /* ── Compte & profil ── */
 

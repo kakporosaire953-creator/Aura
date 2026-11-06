@@ -12,11 +12,13 @@ import {
   type EntrepotComptes,
   type EntrepotDonnees,
 } from '../db/entrepots';
-import type { Compte, ComptePublic } from '../db/types';
+import type { Compte, ComptePublic, Session } from '../db/types';
 import { compterTentative, ipClient, empreinteIdentifiant } from './limite';
 
 export type ReqV1 = Request & {
   compte?: Compte;
+  /** Session courante — sert à lister et révoquer les autres appareils. */
+  session?: Session;
   comptes?: EntrepotComptes;
   donnees?: EntrepotDonnees;
   /** Le cookie de session était présent mais ne correspond à aucune session valide. */
@@ -34,6 +36,7 @@ export function versPublicV1(c: Compte): ComptePublic {
     onboarding: c.onboarding,
     profil: c.profil,
     preferences: c.preferences,
+    emailVerifie: c.emailVerifie === true,
   };
 }
 
@@ -55,7 +58,10 @@ export async function attacherCompteV1(req: ReqV1, _res: Response, next: NextFun
         const compte = await req.comptes.parId(session.userId);
         if (compte) {
           req.compte = compte;
+          req.session = session;
           req.donnees = entrepotDonnees(compte.id);
+          // Dernière activité au plus une fois toutes les 5 minutes.
+          void req.comptes.marquerActivite(session).catch(() => {});
         } else {
           req.sessionExpiree = true;
         }
@@ -103,12 +109,28 @@ export type Portee =
   | 'register-ip'
   | 'register-email'
   | 'compte'
-  | 'chat';
+  | 'chat'
+  | 'forgot-ip'
+  | 'forgot-email'
+  | 'resend-ip'
+  | 'resend-email'
+  | 'verify-ip'
+  | 'reset-ip';
 
 export type RegleLimite = { portee: Portee; max: number; fenetreMs: number };
 
 export const REGLES: Record<
-  'loginIp' | 'loginEmail' | 'registerIp' | 'registerEmail' | 'suppression',
+  | 'loginIp'
+  | 'loginEmail'
+  | 'registerIp'
+  | 'registerEmail'
+  | 'suppression'
+  | 'oubliIp'
+  | 'oubliEmail'
+  | 'renvoiIp'
+  | 'renvoiEmail'
+  | 'verificationIp'
+  | 'reinitialisationIp',
   RegleLimite
 > = {
   loginIp: { portee: 'login-ip', max: 20, fenetreMs: 10 * 60 * 1000 },
@@ -116,6 +138,13 @@ export const REGLES: Record<
   registerIp: { portee: 'register-ip', max: 30, fenetreMs: 10 * 60 * 1000 },
   registerEmail: { portee: 'register-email', max: 10, fenetreMs: 60 * 60 * 1000 },
   suppression: { portee: 'compte', max: 5, fenetreMs: 15 * 60 * 1000 },
+  // Récupération de compte : les demandes sont rares par nature.
+  oubliIp: { portee: 'forgot-ip', max: 10, fenetreMs: 15 * 60 * 1000 },
+  oubliEmail: { portee: 'forgot-email', max: 3, fenetreMs: 60 * 60 * 1000 },
+  renvoiIp: { portee: 'resend-ip', max: 5, fenetreMs: 15 * 60 * 1000 },
+  renvoiEmail: { portee: 'resend-email', max: 3, fenetreMs: 60 * 60 * 1000 },
+  verificationIp: { portee: 'verify-ip', max: 30, fenetreMs: 10 * 60 * 1000 },
+  reinitialisationIp: { portee: 'reset-ip', max: 20, fenetreMs: 10 * 60 * 1000 },
 };
 
 /** Message commun — jamais d'indice sur le compteur exact restant. */

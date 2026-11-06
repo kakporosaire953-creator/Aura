@@ -164,6 +164,68 @@ export interface Content {
     reessayer: string;
     sessionExpiree: string;
   };
+  securite: {
+    oubliTitre1: string;
+    oubliTitre2: string;
+    oubliSous: string;
+    oubliSubmit: string;
+    oubliEnvoi: string;
+    oubliEnvoye: string;
+    oubliNote: string;
+    resetTitre1: string;
+    resetTitre2: string;
+    resetSous: string;
+    resetNouveau: string;
+    resetConfirmer: string;
+    resetSubmit: string;
+    resetEnvoi: string;
+    resetFait: string;
+    resetAllerConnexion: string;
+    resetInvalide: string;
+    resetExpire: string;
+    resetCourt: string;
+    resetDifferents: string;
+    verifTitre: string;
+    verifEnCours: string;
+    verifOk: string;
+    verifOkSous: string;
+    verifEchec: string;
+    verifEchecSous: string;
+    verifContinuer: string;
+    mdpTitre: string;
+    mdpSous: string;
+    mdpActuel: string;
+    mdpNouveau: string;
+    mdpConfirmer: string;
+    mdpBouton: string;
+    mdpEnvoi: string;
+    mdpFait: string;
+    mdpIncorrect: string;
+    mdpCourt: string;
+    mdpIdentique: string;
+    mdpDifferents: string;
+    sessionsTitre: string;
+    sessionsSous: string;
+    sessionsVide: string;
+    sessionCourante: string;
+    sessionDerniereActivite: string;
+    sessionRevoquer: string;
+    sessionsRevoquerAutres: string;
+    sessionsFermees: string;
+    emailVerifie: string;
+    emailNonVerifie: string;
+    emailBandeau: string;
+    emailRenvoyer: string;
+    emailEnvoye: string;
+    emailDejaVerifie: string;
+    mailIndisponible: string;
+    erreur: string;
+    limite: string;
+    chargement: string;
+    retourConnexion: string;
+    lienInvalide: string;
+  };
+
   espace: {
     kicker: string;
     titre1: string;
@@ -912,6 +974,73 @@ const contentFr: Content = {
     reessayer: 'Réessayer',
     sessionExpiree: 'Votre session a expiré. Reconnectez-vous pour reprendre le fil.',
   },
+  securite: {
+    oubliTitre1: 'Mot de passe',
+    oubliTitre2: 'oublié',
+    oubliSous:
+      "Indiquez l'adresse de votre compte : si elle existe, un lien de réinitialisation vous parviendra dans les minutes qui suivent.",
+    oubliSubmit: 'Recevoir le lien',
+    oubliEnvoi: 'Envoi…',
+    oubliEnvoye:
+      "Si un compte est associé à cette adresse, un e-mail vient de partir. Le lien est valable 30 minutes et ne sert qu'une fois.",
+    oubliNote:
+      "Nous ne dirons jamais ici si une adresse possède un compte : cette page répond de la même façon dans tous les cas.",
+    resetTitre1: 'Choisissez un',
+    resetTitre2: 'nouveau mot de passe',
+    resetSous:
+      'Ce lien ne peut servir qu’une fois. Après le changement, toutes les sessions ouvertes sur votre compte seront fermées.',
+    resetNouveau: 'Nouveau mot de passe',
+    resetConfirmer: 'Confirmer le mot de passe',
+    resetSubmit: 'Enregistrer le mot de passe',
+    resetEnvoi: 'Enregistrement…',
+    resetFait: 'Mot de passe modifié. Toutes les sessions ont été fermées.',
+    resetAllerConnexion: 'Se connecter',
+    resetInvalide: 'Ce lien n’est pas valide ou a déjà été utilisé. Demandez-en un nouveau.',
+    resetExpire: 'Ce lien a expiré. Demandez-en un nouveau.',
+    resetCourt: 'Choisissez au moins 8 caractères.',
+    resetDifferents: 'Les deux mots de passe ne correspondent pas.',
+    verifTitre: 'Confirmation de votre adresse',
+    verifEnCours: 'Vérification du lien…',
+    verifOk: 'Adresse confirmée',
+    verifOkSous: 'Votre adresse est confirmée : vous pourrez récupérer votre compte si nécessaire.',
+    verifEchec: 'Lien inutilisable',
+    verifEchecSous: 'Ce lien a expiré ou a déjà servi. Demandez un nouvel envoi depuis vos paramètres.',
+    verifContinuer: 'Ouvrir mon espace',
+    mdpTitre: 'Mot de passe',
+    mdpSous: 'Changer votre mot de passe ferme toutes les autres sessions, sans vous déconnecter.',
+    mdpActuel: 'Mot de passe actuel',
+    mdpNouveau: 'Nouveau mot de passe',
+    mdpConfirmer: 'Confirmer le nouveau mot de passe',
+    mdpBouton: 'Changer le mot de passe',
+    mdpEnvoi: 'Changement…',
+    mdpFait: 'Mot de passe changé.',
+    mdpIncorrect: 'Mot de passe actuel incorrect.',
+    mdpCourt: 'Choisissez au moins 8 caractères.',
+    mdpIdentique: 'Choisissez un mot de passe différent de l’actuel.',
+    mdpDifferents: 'Les deux mots de passe ne correspondent pas.',
+    sessionsTitre: 'Sessions actives',
+    sessionsSous: 'Appareils connectés à votre compte. Fermez ce que vous ne reconnaissez pas.',
+    sessionsVide: 'Aucune autre session ouverte.',
+    sessionCourante: 'Cet appareil',
+    sessionDerniereActivite: 'Dernière activité',
+    sessionRevoquer: 'Fermer',
+    sessionsRevoquerAutres: 'Fermer toutes les autres sessions',
+    sessionsFermees: 'session(s) fermée(s)',
+    emailVerifie: 'Adresse confirmée',
+    emailNonVerifie: 'Adresse non confirmée',
+    emailBandeau: 'Confirmez votre adresse pour pouvoir récupérer votre compte plus tard.',
+    emailRenvoyer: 'Renvoyer le lien',
+    emailEnvoye: 'Lien envoyé. Pensez à vérifier vos indésirables.',
+    emailDejaVerifie: 'Cette adresse est déjà confirmée.',
+    mailIndisponible:
+      "L'envoi d'e-mails n'est pas configuré sur cet environnement : aucun message ne peut partir pour l'instant.",
+    erreur: 'Le service ne répond pas. Réessayez.',
+    limite: 'Trop de tentatives. Réessayez dans quelques minutes.',
+    chargement: 'Chargement…',
+    retourConnexion: 'Retour à la connexion',
+    lienInvalide: 'Lien incomplet ou invalide.',
+  },
+
   espace: {
     kicker: 'Votre espace',
     titre1: 'Le fil',
@@ -1648,6 +1777,73 @@ const contentEn: Content = {
     reessayer: 'Try again',
     sessionExpiree: 'Your session has expired. Sign in again to pick up the thread.',
   },
+  securite: {
+    oubliTitre1: 'Forgotten',
+    oubliTitre2: 'password',
+    oubliSous:
+      'Enter your account address: if it exists, a reset link will reach you within minutes.',
+    oubliSubmit: 'Send the link',
+    oubliEnvoi: 'Sending…',
+    oubliEnvoye:
+      'If an account matches this address, an email has just been sent. The link is valid for 30 minutes and works only once.',
+    oubliNote:
+      'We never reveal whether an address has an account: this page answers the same way every time.',
+    resetTitre1: 'Choose a',
+    resetTitre2: 'new password',
+    resetSous:
+      'This link works only once. After the change, every session open on your account will be closed.',
+    resetNouveau: 'New password',
+    resetConfirmer: 'Confirm password',
+    resetSubmit: 'Save password',
+    resetEnvoi: 'Saving…',
+    resetFait: 'Password changed. All sessions have been closed.',
+    resetAllerConnexion: 'Sign in',
+    resetInvalide: 'This link is not valid or has already been used. Request a new one.',
+    resetExpire: 'This link has expired. Request a new one.',
+    resetCourt: 'Choose at least 8 characters.',
+    resetDifferents: 'The two passwords do not match.',
+    verifTitre: 'Confirming your address',
+    verifEnCours: 'Checking the link…',
+    verifOk: 'Address confirmed',
+    verifOkSous: 'Your address is confirmed: you will be able to recover your account if needed.',
+    verifEchec: 'Unusable link',
+    verifEchecSous: 'This link expired or was already used. Request a new one from your settings.',
+    verifContinuer: 'Open my workspace',
+    mdpTitre: 'Password',
+    mdpSous: 'Changing your password closes every other session, without signing you out.',
+    mdpActuel: 'Current password',
+    mdpNouveau: 'New password',
+    mdpConfirmer: 'Confirm new password',
+    mdpBouton: 'Change password',
+    mdpEnvoi: 'Changing…',
+    mdpFait: 'Password changed.',
+    mdpIncorrect: 'Current password is incorrect.',
+    mdpCourt: 'Choose at least 8 characters.',
+    mdpIdentique: 'Choose a password different from the current one.',
+    mdpDifferents: 'The two passwords do not match.',
+    sessionsTitre: 'Active sessions',
+    sessionsSous: 'Devices signed in to your account. Close anything you do not recognise.',
+    sessionsVide: 'No other open session.',
+    sessionCourante: 'This device',
+    sessionDerniereActivite: 'Last activity',
+    sessionRevoquer: 'Close',
+    sessionsRevoquerAutres: 'Close all other sessions',
+    sessionsFermees: 'session(s) closed',
+    emailVerifie: 'Address confirmed',
+    emailNonVerifie: 'Address not confirmed',
+    emailBandeau: 'Confirm your address so you can recover your account later.',
+    emailRenvoyer: 'Resend the link',
+    emailEnvoye: 'Link sent. Check your spam folder.',
+    emailDejaVerifie: 'This address is already confirmed.',
+    mailIndisponible:
+      'Email delivery is not configured on this environment: no message can be sent right now.',
+    erreur: 'The service is not responding. Try again.',
+    limite: 'Too many attempts. Try again in a few minutes.',
+    chargement: 'Loading…',
+    retourConnexion: 'Back to sign in',
+    lienInvalide: 'Incomplete or invalid link.',
+  },
+
   espace: {
     kicker: 'Your space',
     titre1: 'The thread',

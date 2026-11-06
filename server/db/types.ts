@@ -39,6 +39,14 @@ export type Compte = {
   onboarding: Onboarding;
   profil: ProfilContextuel;
   preferences: PreferencesUtilisateur;
+  /**
+   * Vérification d'adresse — champs optionnels : les comptes créés avant
+   * la mission 08 n'en ont pas et restent pleinement utilisables.
+   * Absent = non vérifié, mais jamais bloquant (décision produit : la
+   * vérification est une information, pas une condition d'accès).
+   */
+  emailVerifie?: boolean;
+  emailVerifieLe?: string | null;
 };
 
 export type ComptePublic = {
@@ -49,6 +57,7 @@ export type ComptePublic = {
   onboarding: Onboarding;
   profil: ProfilContextuel;
   preferences: PreferencesUtilisateur;
+  emailVerifie: boolean;
 };
 
 export type Session = {
@@ -56,6 +65,35 @@ export type Session = {
   userId: Identifiant;
   expire: number;
   cree: string;
+  /**
+   * Appareil déclaré à la connexion (en-tête `User-Agent`, tronqué).
+   * Information déclarative, jamais une identification : elle sert
+   * seulement à reconnaître une session dans la liste.
+   */
+  agent?: string | null;
+  /** Dernière requête authentifiée, mise à jour au plus une fois par 5 min. */
+  derniereActivite?: number;
+};
+
+/* ── Jetons à usage unique (vérification d'e-mail, réinitialisation) ── */
+
+export type TypeJeton = 'verification' | 'reinitialisation';
+
+/**
+ * Jeton de vérification ou de réinitialisation.
+ *
+ * `id` est l'empreinte SHA-256 du jeton brut : la valeur transmise par
+ * e-mail n'existe nulle part dans le stockage, ni dans les journaux.
+ */
+export type Jeton = {
+  id: string;
+  type: TypeJeton;
+  userId: Identifiant;
+  cree: number;
+  expire: number;
+  utiliseLe: string | null;
+  /** Empreinte de l'adresse au moment de l'émission (changement d'adresse = invalidation). */
+  empreinteEmail: string;
 };
 
 /* ── Conversations & messages ── */

@@ -32,6 +32,8 @@ export const WorkspaceLayout: React.FC = () => {
   const [tiroir, setTiroir] = useState(false);
   const [menuProfil, setMenuProfil] = useState(false);
   const [menuCreation, setMenuCreation] = useState(false);
+  // Bandeau de vérification d'adresse : informatif, refermable, jamais bloquant.
+  const [masqueVerif, setMasqueVerif] = useState(false);
   const profilRef = useRef<HTMLDivElement | null>(null);
   const creationRef = useRef<HTMLDivElement | null>(null);
   const sim = simulationActivee();
@@ -321,6 +323,23 @@ export const WorkspaceLayout: React.FC = () => {
 
       {/* — Contenu — */}
       <main className="ws-main" id="contenu">
+        {statut === 'connecte' && !sim && compte?.emailVerifie !== true && !masqueVerif && (
+          <div className="bandeau-verif" role="status">
+            <span>
+              <Icone nom="paper-plane" /> {t.securite.emailBandeau}
+            </span>
+            <span className="bandeau-verif-actions">
+              <Link to="/parametres">{t.securite.emailRenvoyer}</Link>
+              <button
+                type="button"
+                onClick={() => setMasqueVerif(true)}
+                aria-label={t.workspace.fermer}
+              >
+                ×
+              </button>
+            </span>
+          </div>
+        )}
         <Outlet />
       </main>
 

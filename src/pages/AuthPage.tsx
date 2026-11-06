@@ -238,6 +238,12 @@ export const AuthPage: React.FC = () => {
               />
             </div>
 
+            {!inscription && (
+              <p className="auth-oubli">
+                <Link to="/mot-de-passe-oublie">{t.securite.oubliTitre1} {t.securite.oubliTitre2} ?</Link>
+              </p>
+            )}
+
             {erreur && (
               <p className="form-erreur" role="alert">
                 <Icone nom="circle-exclamation" /> {erreur}

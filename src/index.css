@@ -7374,3 +7374,152 @@ button:disabled,
 .selecteur-mode.est-desactive select {
   cursor: not-allowed;
 }
+
+/* ---------- Compte : récupération & sécurité (mission 08) ---------- */
+
+.compte-page {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: clamp(1.5rem, 5vw, 4rem) 1.25rem;
+  background: var(--ivoire);
+}
+
+.compte-boite {
+  width: min(460px, 100%);
+}
+
+.compte-boite h1 {
+  margin: 1.15rem 0 0.65rem;
+  font-size: clamp(1.95rem, 3.4vw, 2.6rem);
+}
+
+.compte-boite .sous-titre {
+  font-size: 1rem;
+}
+
+.compte-logo {
+  display: inline-block;
+}
+
+.compte-pied {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.auth-oubli {
+  margin: 0.9rem 0 0;
+  text-align: right;
+  font-size: 0.88rem;
+}
+
+.auth-oubli a {
+  font-weight: 700;
+  color: var(--vert-profond);
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.3s ease;
+}
+
+.auth-oubli a:hover {
+  border-bottom-color: currentColor;
+}
+
+/* Bandeau de vérification d'adresse — informatif, refermable. */
+.bandeau-verif {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin: 0 0 1.2rem;
+  padding: 0.75rem 1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(67, 188, 44, 0.32);
+  background: rgba(165, 232, 56, 0.14);
+  font-size: 0.9rem;
+  color: var(--encre-2);
+}
+
+.bandeau-verif > span:first-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55em;
+}
+
+.bandeau-verif-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.bandeau-verif-actions a {
+  font-weight: 700;
+  color: var(--vert-profond);
+  border-bottom: 1px solid currentColor;
+}
+
+.bandeau-verif-actions button {
+  background: none;
+  border: 0;
+  cursor: pointer;
+  font-size: 1.15rem;
+  line-height: 1;
+  color: var(--encre-2);
+  padding: 0.1rem 0.3rem;
+}
+
+/* Sessions actives. */
+.sessions-liste {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.session-ligne {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--brume-2);
+  border-radius: 14px;
+  background: var(--papier);
+}
+
+.session-ligne strong {
+  font-size: 0.95rem;
+}
+
+.session-badge {
+  margin-left: 0.6rem;
+  padding: 0.12rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(165, 232, 56, 0.28);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--vert-profond);
+}
+
+.session-date {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--encre-2);
+  opacity: 0.8;
+}
+
+.etat-ok {
+  color: var(--vert-profond);
+}
+
+.etat-attente {
+  color: var(--feu-profond);
+}

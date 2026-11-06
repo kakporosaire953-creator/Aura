@@ -30,9 +30,11 @@ import {
   type Memoire,
   type Message,
   type Mission,
+  type Jeton,
   type Projet,
   type Recherche,
   type Session,
+  type TypeJeton,
   type SourceRecherche,
   type VersionCreation,
 } from './types';
@@ -214,6 +216,37 @@ export class EntrepotComptes {
     return sessions;
   }
 
+  /** Révoque toutes les sessions du compte, sauf celle indiquée. */
+  async supprimerAutresSessions(userId: string, saufId: string | null): Promise<number> {
+    let revoquees = 0;
+    for (const s of await this.sessionsDe(userId)) {
+      if (s.id === saufId) continue;
+      await this.base.supprimer(CLE.session(s.id));
+      revoquees++;
+    }
+    return revoquees;
+  }
+
+  /** Révoque toutes les sessions du compte (réinitialisation de mot de passe). */
+  async supprimerToutesSessions(userId: string): Promise<number> {
+    return this.supprimerAutresSessions(userId, null);
+  }
+
+  /**
+   * Horodate la dernière activité d'une session, au plus une fois toutes
+   * les 5 minutes. Une panne d'écriture est sans conséquence : l'appelant
+   * ne doit jamais échouer à cause de cette trace.
+   */
+  async marquerActivite(session: Session, maintenant = Date.now()): Promise<void> {
+    const dernier = session.derniereActivite ?? Date.parse(session.cree) ?? 0;
+    if (Number.isFinite(dernier) && maintenant - dernier < 5 * 60 * 1000) return;
+    try {
+      await this.base.ecrire(CLE.session(session.id), { ...session, derniereActivite: maintenant });
+    } catch {
+      /* trace d'activité best-effort */
+    }
+  }
+
   /**
    * Suppression de compte complète : compte, index email, toutes les
    * sessions et l'agrégat de données. Irréversible — appelé uniquement
@@ -234,6 +267,76 @@ export class EntrepotComptes {
       if (s?.userId === userId) await this.base.supprimer(c);
     }
     await this.base.supprimer(CLE.donnees(userId));
+  }
+}
+
+/* ───────────────────────── Jetons à usage unique ───────────────────────── */
+
+/**
+ * Jetons de vérification d'e-mail et de réinitialisation de mot de passe.
+ *
+ * La clé de stockage est l'empreinte SHA-256 du jeton : la valeur envoyée
+ * par e-mail n'existe nulle part en base. L'usage unique est garanti par une
+ * réservation atomique (`SET … NX EX`) : deux requêtes concurrentes portant
+ * le même jeton ne peuvent pas réussir toutes les deux.
+ */
+export class EntrepotJetons {
+  constructor(private readonly base: BaseDeDonnees) {}
+
+  get mode() {
+    return this.base.mode;
+  }
+
+  async creer(jeton: Jeton): Promise<void> {
+    const ttl = Math.max(1, Math.ceil((jeton.expire - Date.now()) / 1000));
+    await this.base.ecrireTtl(CLE.jeton(jeton.id), jeton, ttl);
+    // Index « jeton actif » : un nouvel envoi invalide l'ancien sans balayage.
+    await this.base.ecrireTtl(CLE.jetonActif(jeton.userId, jeton.type), jeton.id, ttl);
+  }
+
+  /** Lecture sans filtre d'expiration — sert à distinguer « inconnu » de « expiré ». */
+  async lireSansFiltre(id: string): Promise<Jeton | null> {
+    if (!id) return null;
+    return this.base.lire<Jeton>(CLE.jeton(id));
+  }
+
+  async parId(id: string): Promise<Jeton | null> {
+    if (!id) return null;
+    const j = await this.base.lire<Jeton>(CLE.jeton(id));
+    if (!j) return null;
+    if (j.expire <= Date.now()) {
+      await this.base.supprimer(CLE.jeton(id));
+      return null;
+    }
+    return j;
+  }
+
+  /** Dernier jeton émis pour ce compte et ce type, s'il est encore valable. */
+  async actif(userId: string, type: TypeJeton): Promise<Jeton | null> {
+    const id = await this.base.lire<string>(CLE.jetonActif(userId, type));
+    if (!id) return null;
+    const j = await this.parId(id);
+    return j && j.type === type && j.userId === userId ? j : null;
+  }
+
+  /**
+   * Réserve le jeton de façon atomique. `true` seulement pour le premier
+   * appelant — c'est le rempart contre la réutilisation et les courses.
+   */
+  async reserver(id: string): Promise<boolean> {
+    return this.base.reserver(CLE.jetonVerrou(id), 120);
+  }
+
+  /** Supprime le jeton et son index après usage. */
+  async terminer(jeton: Jeton): Promise<void> {
+    await this.base.supprimer(CLE.jeton(jeton.id));
+    await this.base.supprimer(CLE.jetonActif(jeton.userId, jeton.type));
+  }
+
+  /** Invalide le jeton actif d'un compte (nouvel envoi, changement d'adresse…). */
+  async revoquerActif(userId: string, type: TypeJeton): Promise<void> {
+    const j = await this.actif(userId, type);
+    if (j) await this.terminer(j);
   }
 }
 
@@ -645,6 +748,10 @@ export function baseDeDonnees(): BaseDeDonnees {
 
 export function entrepotComptes(): EntrepotComptes {
   return new EntrepotComptes(baseDeDonnees());
+}
+
+export function entrepotJetons(): EntrepotJetons {
+  return new EntrepotJetons(baseDeDonnees());
 }
 
 export function entrepotDonnees(userId: string): EntrepotDonnees {

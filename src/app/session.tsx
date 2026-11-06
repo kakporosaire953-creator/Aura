@@ -19,6 +19,8 @@ export type Compte = {
   nom: string;
   cree: string;
   onboarding: { fait: boolean; objectif: string | null };
+  /** Adresse confirmée par e-mail (facultatif : non bloquant, jamais supposé). */
+  emailVerifie?: boolean;
 };
 
 /**

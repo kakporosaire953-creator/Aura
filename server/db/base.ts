@@ -18,6 +18,14 @@ export interface BaseDeDonnees {
   readonly raison?: string;
   lire<T>(cle: string): Promise<T | null>;
   ecrire<T>(cle: string, valeur: T): Promise<void>;
+  /** Écrit avec expiration — utilisé pour les jetons à usage unique. */
+  ecrireTtl<T>(cle: string, valeur: T, ttlSecondes: number): Promise<void>;
+  /**
+   * Réservation atomique (`SET … NX EX`). Renvoie true si la clé vient
+   * d'être créée, false si elle existait déjà. C'est le verrou qui rend
+   * un jeton réellement à usage unique, même sous requêtes concurrentes.
+   */
+  reserver(cle: string, ttlSecondes: number): Promise<boolean>;
   supprimer(cle: string): Promise<void>;
   lister(prefixe: string): Promise<string[]>;
   /**
@@ -38,6 +46,10 @@ export const CLE = {
   donnees: (userId: string) => `aurav1:data:${userId}`,
   // Compteurs de limitation de débit (fenêtre fixe, TTL gérée par le pilote).
   limite: (portee: string) => `aurav1:rl:${portee}`,
+  // Jetons à usage unique — la clé est l'empreinte, jamais le jeton brut.
+  jeton: (empreinte: string) => `aurav1:jeton:${empreinte}`,
+  jetonActif: (userId: string, type: string) => `aurav1:jeton-actif:${userId}:${type}`,
+  jetonVerrou: (empreinte: string) => `aurav1:jeton-verrou:${empreinte}`,
   // Ancien dépôt (comptes.json / aura:comptes) — lu pour migration.
   ancienKv: 'aura:comptes',
 } as const;
@@ -81,6 +93,15 @@ class PiloteFichier implements BaseDeDonnees {
   }
 
   async lire<T>(cle: string): Promise<T | null> {
+    const expiration = this.expirations.get(cle);
+    if (expiration !== undefined) {
+      if (expiration <= Date.now()) {
+        this.expirations.delete(cle);
+        const mm = await this.charger();
+        if (mm.delete(cle)) await this.persister();
+        return null;
+      }
+    }
     const m = await this.charger();
     const brut = m.get(cle);
     if (brut === undefined) return null;
@@ -97,7 +118,26 @@ class PiloteFichier implements BaseDeDonnees {
     await this.persister();
   }
 
+  async ecrireTtl<T>(cle: string, valeur: T, ttlSecondes: number): Promise<void> {
+    const exp = Date.now() + Math.max(1, Math.ceil(ttlSecondes)) * 1000;
+    this.expirations.set(cle, exp);
+    await this.ecrire(cle, valeur);
+  }
+
+  async reserver(cle: string, ttlSecondes: number): Promise<boolean> {
+    const maintenant = Date.now();
+    const exp = this.expirations.get(cle);
+    if (exp !== undefined && exp > maintenant) return false;
+    this.expirations.set(cle, maintenant + Math.max(1, Math.ceil(ttlSecondes)) * 1000);
+    await this.ecrire(cle, 1);
+    return true;
+  }
+
+  /** Expirations logiques du pilote fichier (le fichier reste un simple JSON). */
+  private readonly expirations = new Map<string, number>();
+
   async supprimer(cle: string): Promise<void> {
+    this.expirations.delete(cle);
     const m = await this.charger();
     if (m.delete(cle)) await this.persister();
   }
@@ -169,6 +209,22 @@ class PiloteKV implements BaseDeDonnees {
 
   async ecrire<T>(cle: string, valeur: T): Promise<void> {
     await this.appel(['SET', cle, JSON.stringify(valeur)]);
+  }
+
+  async ecrireTtl<T>(cle: string, valeur: T, ttlSecondes: number): Promise<void> {
+    await this.appel(['SET', cle, JSON.stringify(valeur), 'EX', String(Math.max(1, Math.ceil(ttlSecondes)))]);
+  }
+
+  async reserver(cle: string, ttlSecondes: number): Promise<boolean> {
+    const r = await this.appel([
+      'SET',
+      cle,
+      '1',
+      'NX',
+      'EX',
+      String(Math.max(1, Math.ceil(ttlSecondes))),
+    ]);
+    return r === 'OK';
   }
 
   async supprimer(cle: string): Promise<void> {
@@ -274,6 +330,12 @@ class PiloteIndisponible implements BaseDeDonnees {
     return null;
   }
   async ecrire(): Promise<void> {
+    throw new Error(this.raison);
+  }
+  async ecrireTtl(): Promise<void> {
+    throw new Error(this.raison);
+  }
+  async reserver(): Promise<boolean> {
     throw new Error(this.raison);
   }
   async supprimer(): Promise<void> {

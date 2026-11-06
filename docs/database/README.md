@@ -21,6 +21,7 @@ erDiagram
     USERS ||--o{ STUDIO_JOBS : detient
     STUDIO_JOBS ||--o{ STUDIO_VERSIONS : versionne
     USERS ||--o{ USAGE_EVENTS : trace
+    USERS ||--o{ TOKENS : demande
 ```
 
 Entités (détail des champs : `server/db/types.ts`, source de vérité exécutable) :
@@ -28,7 +29,9 @@ Entités (détail des champs : `server/db/types.ts`, source de vérité exécuta
 - **Users** `id, email (unique), nom, hash, sel, cree` — jamais de mot de passe en clair (scrypt + sel par utilisateur).
 - **UserProfiles** `pays, region, languePrincipale, languesSecondaires[], devise, fuseau, unites, domaine` — profil contextuel AURA Local.
 - **UserPreferences** `tonReponse, utiliserMemoire, langueReponse`.
-- **Sessions** `id (empreinte sha256 du jeton), userId, expire, cree` — le jeton brut ne quitte jamais le cookie HttpOnly.
+- **Sessions** `id (empreinte sha256 du jeton), userId, expire, cree, agent?, derniereActivite?` — le jeton brut ne quitte jamais le cookie HttpOnly ; l'agent et la dernière activité servent uniquement à décrire la session à son propriétaire.
+- **Tokens** `id (empreinte sha256 du jeton), type(verification|reinitialisation), userId, cree, expire, utiliseLe, empreinteEmail` — jetons à usage unique de vérification d'adresse et de réinitialisation. La valeur envoyée par e-mail n'existe nulle part en base.
+- **Users** porte aussi `emailVerifie?`, `emailVerifieLe?` — vérification non bloquante : absent = non confirmé.
 - **Conversations** `id, userId, projectId?, titre, archive, cree, maj`.
 - **Messages** `id, conversationId, userId, role, contenu, statut(envoye|genere|interrompu|erreur), cree, meta{modele, erreur, memoiresUtilisees[]}`.
 - **Projects** `id, userId, nom, description, objectif, categorie, statut(actif|archive), instructions, cree, maj`.
@@ -45,9 +48,17 @@ Pilotes interchangeables derrière `BaseDeDonnees` (`server/db/base.ts`) :
 
 | Pilote | Usage | Clés |
 |---|---|---|
-| `kv` (Vercel KV / Upstash REST) | production | `aurav1:compte:<userId>`, `aurav1:email:<email>` → userId, `aurav1:session:<sha256>`, `aurav1:data:<userId>` |
+| `kv` (Vercel KV / Upstash REST) | production | `aurav1:compte:<userId>`, `aurav1:email:<email>` → userId, `aurav1:session:<sha256>`, `aurav1:jeton:<sha256>`, `aurav1:jeton-actif:<userId>:<type>`, `aurav1:jeton-verrou:<sha256>`, `aurav1:data:<userId>`, `aurav1:rl:<portee>:<id>` |
 | `fichier` (JSON atomique tmp+rename) | dev / auto-hébergement | même espace de clés dans `data/auradb.json` |
 | `indisponible` | Vercel sans KV | refus `503` honnête, jamais de faux stockage |
+
+Jetons — trois clés, jamais le jeton brut :
+
+| Clé | Contenu | Durée de vie |
+|---|---|---|
+| `aurav1:jeton:<sha256>` | enregistrement complet du jeton (empreinte d'adresse incluse) | 24 h (vérification) / 30 min (réinitialisation), posée à l'écriture |
+| `aurav1:jeton-actif:<userId>:<type>` | empreinte du dernier jeton émis pour ce compte | même durée : un nouvel envoi invalide le précédent |
+| `aurav1:jeton-verrou:<sha256>` | verrou de consommation (`SET … NX EX 120`) | 120 s — c'est lui qui rend l'usage unique atomique entre instances |
 
 `aurav1:data:<userId>` est l'agrégat utilisateur (conversations, messages,
 projets, missions, mémoires, recherches, sources, créations, événements),
