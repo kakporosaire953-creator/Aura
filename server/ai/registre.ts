@@ -1,152 +1,98 @@
 /**
- * Registre et routage IA.
+ * Registre de fournisseurs — construction depuis la configuration,
+ * disponibilité (clé présente), désactivation sur erreur d'authentification.
  *
- * - Enregistrement de plusieurs fournisseurs ; sélection par capacité
- *   requise, disponibilité et ordre de préférence.
- * - Repli unique : si le fournisseur principal échoue (hors erreurs de
- *   saisie/blocage), un second fournisseur compatible peut prendre la
- *   relance — une seule fois, jamais de boucle de tentatives.
- * - Journalisation technique sans contenu privé ni clés.
+ * Les noms de fournisseurs et de modèles servent uniquement à la
+ * journalisation technique interne et aux métriques ; ils ne sont jamais
+ * renvoyés vers l'interface utilisateur.
  */
-import { FournisseurGemini } from './gemini';
-import { FournisseurMock } from './mock';
-import {
-  CODES_AI,
-  ErreurAi,
-  type CapacitesAi,
-  type FournisseurAi,
-  type RequeteAi,
-  type RequeteStructuree,
-  type ReponseAi,
-} from './types';
+import { modeMock, ordreFournisseurs, type IdFournisseur } from './config';
+import { FournisseurGemini } from './providers/gemini';
+import { FournisseurGroq } from './providers/groq';
+import { FournisseurOpenRouter } from './providers/openrouter';
+import { FournisseurMock } from './providers/mock';
+import { ordonnerCandidats } from './router';
+import type { CapacitesAi, FournisseurAi } from './types';
 
-export type BesoinAi = {
-  capacites?: (keyof CapacitesAi)[];
-  usage?: 'chat' | 'structure' | 'recherche' | 'creation';
-};
+let instances: FournisseurAi[] | null = null;
+const desactives = new Set<string>();
+let journalFait = false;
 
-let fournisseurs: FournisseurAi[] | null = null;
+function construire(): FournisseurAi[] {
+  const parId: Record<IdFournisseur, () => FournisseurAi> = {
+    gemini: () => new FournisseurGemini(),
+    groq: () => new FournisseurGroq(),
+    openrouter: () => new FournisseurOpenRouter(),
+    mock: () => new FournisseurMock(),
+  };
+  if (modeMock()) {
+    // Tests uniquement — jamais sélectionnable par défaut en production.
+    return [parId.mock()];
+  }
+  return ordreFournisseurs().map((id) => parId[id]());
+}
 
 export function registreFournisseurs(): FournisseurAi[] {
-  if (fournisseurs) return fournisseurs;
-  const liste: FournisseurAi[] = [];
-  const choix = (process.env.AURA_AI_PROVIDER ?? 'auto').toLowerCase();
-  if (choix === 'mock') {
-    liste.push(new FournisseurMock());
-    fournisseurs = liste;
-    return liste;
+  if (!instances) {
+    instances = construire();
+    journaliserConfiguration(instances);
   }
-  // Par défaut : gemini, puis replis futurs enregistrés ici.
-  liste.push(new FournisseurGemini());
-  fournisseurs = liste;
-  return liste;
+  return instances;
 }
 
 /** Réinitialisation (tests uniquement). */
 export function reinitialiserRegistre(): void {
-  fournisseurs = null;
-}
-
-function disponible(f: FournisseurAi): Promise<{ ok: boolean; raison?: string }> {
-  return f.checkAvailability();
-}
-
-/** Premier fournisseur disponible couvrant le besoin. */
-export async function selectionner(besoin: BesoinAi = {}): Promise<FournisseurAi | null> {
-  for (const f of registreFournisseurs()) {
-    const caps = f.getCapabilities();
-    const couvert = (besoin.capacites ?? []).every((c) => caps[c]);
-    if (!couvert) continue;
-    const dispo = await disponible(f);
-    if (dispo.ok) return f;
-  }
-  return null;
+  instances = null;
+  desactives.clear();
+  journalFait = false;
 }
 
 /**
- * Exécute avec repli unique : le premier fournisseur disponible est essayé ;
- * en cas d'erreur technique (5xx, réseau), le suivant compatible l'est une
- * fois. Les erreurs de saisie ou de blocage ne déclenchent pas de repli.
+ * Logs techniques : quels fournisseurs manquent de configuration.
+ * (noms visibles uniquement dans les logs serveur, jamais dans l'API)
  */
-export async function executerAvecRepli(
-  besoin: BesoinAi,
-  action: (f: FournisseurAi) => Promise<ReponseAi>,
-): Promise<ReponseAi> {
-  const candidats: FournisseurAi[] = [];
-  for (const f of registreFournisseurs()) {
-    const caps = f.getCapabilities();
-    if ((besoin.capacites ?? []).every((c) => caps[c]) && (await disponible(f)).ok) {
-      candidats.push(f);
-    }
+function journaliserConfiguration(liste: FournisseurAi[]): void {
+  if (journalFait) return;
+  journalFait = true;
+  for (const f of liste) {
+    void f.checkAvailability().then((d) => {
+      if (!d.ok) console.warn(`[ia] fournisseur '${f.id}' non configuré : ${d.raison ?? 'clé absente'}`);
+    });
   }
-  if (candidats.length === 0) {
-    throw new ErreurAi(
-      'Aucun moteur IA n’est configuré sur cet environnement (GEMINI_API_KEY manquante).',
-      CODES_AI.cleManquante,
-      503,
-    );
-  }
-  let derniere: unknown = null;
-  for (const f of candidats.slice(0, 2)) {
-    try {
-      return await action(f);
-    } catch (e) {
-      derniere = e;
-      const statut = e instanceof ErreurAi ? e.statut : 502;
-      // Erreurs définitives : pas de repli.
-      if (e instanceof ErreurAi && [422, 400, 503].includes(e.statut)) throw e;
-      if (statut < 500 && statut !== 429) throw e;
-    }
-  }
-  if (derniere instanceof Error) throw derniere;
-  throw new ErreurAi('Le moteur IA est indisponible.', CODES_AI.indisponible, 502);
 }
 
-export async function generateResponse(besoin: BesoinAi, req: RequeteAi): Promise<ReponseAi> {
-  return executerAvecRepli({ capacites: ['texte'], ...besoin }, (f) => f.generateResponse(req));
+/** Désactivation durable (erreur d'authentification) jusqu'à réinit. */
+export function desactiverFournisseur(id: string): void {
+  desactives.add(id);
+  console.warn(`[ia] fournisseur '${id}' désactivé (authentification refusée) — bascule sur le suivant`);
 }
 
-export async function streamResponse(
-  besoin: BesoinAi,
-  req: RequeteAi,
-  onChunk: (t: string) => void,
-  signal?: AbortSignal,
-): Promise<ReponseAi> {
-  return executerAvecRepli({ capacites: ['texte', 'streaming'], ...besoin }, (f) =>
-    f.streamResponse(req, onChunk, signal),
+/**
+ * Candidats pour une liste de capacités : configurés (clé présente),
+ * non désactivés, capables — dans l'ordre déterministe de la configuration.
+ */
+export async function candidatsPour(
+  requises: (keyof CapacitesAi)[],
+): Promise<FournisseurAi[]> {
+  const capables = ordonnerCandidats(registreFournisseurs(), requises).filter(
+    (f) => !desactives.has(f.id),
   );
+  const disponibles: FournisseurAi[] = [];
+  for (const f of capables) {
+    const d = await f.checkAvailability();
+    if (d.ok) disponibles.push(f);
+  }
+  return disponibles;
 }
 
-export async function generateStructuredOutput<T>(
-  besoin: BesoinAi,
-  req: RequeteStructuree,
-): Promise<T> {
-  const f = await selectionner({ capacites: ['texte', 'sortieStructuree'], ...besoin });
-  if (!f) {
-    throw new ErreurAi(
-      'Aucun moteur IA n’est configuré sur cet environnement (GEMINI_API_KEY manquante).',
-      CODES_AI.cleManquante,
-      503,
-    );
+/** État technique interne (journalisation, diagnostics). */
+export async function etatTechnique(): Promise<
+  Array<{ id: string; modele: string; configure: boolean; desactive: boolean }>
+> {
+  const out = [];
+  for (const f of registreFournisseurs()) {
+    const d = await f.checkAvailability();
+    out.push({ id: f.id, modele: f.modele, configure: d.ok, desactive: desactives.has(f.id) });
   }
-  return f.generateStructuredOutput<T>(req);
-}
-
-/** État réel des fournisseurs (pour /api/v1/capabilities — sans secrets). */
-export async function etatFournisseurs(): Promise<{
-  fournisseur: string | null;
-  modele: string | null;
-  capacites: CapacitesAi | null;
-  raison: string | null;
-}> {
-  const f = await selectionner({ capacites: ['texte'] });
-  if (!f) {
-    return { fournisseur: null, modele: null, capacites: null, raison: 'Aucun moteur IA configuré (clé serveur manquante).' };
-  }
-  return {
-    fournisseur: f.id,
-    modele: f.modele,
-    capacites: f.getCapabilities(),
-    raison: null,
-  };
+  return out;
 }

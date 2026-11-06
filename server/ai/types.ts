@@ -1,15 +1,25 @@
 /**
- * Couche d'abstraction IA — l'application ne parle jamais directement
- * aux SDK des fournisseurs. Un fournisseur expose ce qu'il sait réellement
- * faire (capacités) ; le routeur sélectionne, avec un repli unique et
- * maîtrisé. Secrets strictement côté serveur.
+ * Contrat commun de la couche IA multi-fournisseurs.
+ *
+ * L'application ne parle jamais directement aux API des fournisseurs :
+ * chaque adaptateur (Gemini, Groq, OpenRouter, mock de test) implémente
+ * `FournisseurAi`, le service central route, et les secrets restent
+ * strictement côté serveur.
  */
 
 export type RoleAi = 'user' | 'assistant' | 'system';
 
+export type ImageAi = {
+  mime: string;
+  /** Données base64 (sans le préfixe data:). */
+  data: string;
+};
+
 export type MessageAi = {
   role: RoleAi;
   content: string;
+  /** Entrées multimodales (uniquement si le fournisseur les accepte). */
+  images?: ImageAi[];
 };
 
 export type CapacitesAi = {
@@ -21,6 +31,10 @@ export type CapacitesAi = {
   outils: boolean;
   audio: boolean;
   embeddings: boolean;
+  /** Génération de code (politique de routage « code »). */
+  code: boolean;
+  /** Recherche sourcée réelle (URLs issues d'un moteur, jamais inventées). */
+  sources: boolean;
 };
 
 export type RequeteAi = {
@@ -34,7 +48,9 @@ export type RequeteAi = {
 export type ReponseAi = {
   texte: string;
   modele: string;
+  /** Identifiant interne du fournisseur — jamais affiché à l'utilisateur. */
   fournisseur: string;
+  usage?: { entrees?: number; sorties?: number };
 };
 
 export type RequeteStructuree = RequeteAi & {
@@ -42,7 +58,23 @@ export type RequeteStructuree = RequeteAi & {
   schema: Record<string, unknown>;
 };
 
+export type ResultatGrounding = {
+  texte: string;
+  sources: Array<{ titre: string; url: string; extrait: string }>;
+};
+
+/** Type de tâche déclaré par les routes (routage déterministe). */
+export type TacheAi =
+  | 'conversation'
+  | 'code'
+  | 'structure'
+  | 'creation'
+  | 'recherche'
+  | 'image'
+  | 'raisonnement';
+
 export interface FournisseurAi {
+  /** Identifiant interne (journalisation, métriques) — jamais dans l'UI. */
   readonly id: string;
   readonly modele: string;
   getCapabilities(): CapacitesAi;
@@ -54,26 +86,6 @@ export interface FournisseurAi {
     signal?: AbortSignal,
   ): Promise<ReponseAi>;
   generateStructuredOutput<T>(req: RequeteStructuree): Promise<T>;
+  /** Recherche sourcée — capacité `sources` (actuellement : grounding web). */
+  rechercherAvecSources?(question: string, system: string): Promise<ResultatGrounding>;
 }
-
-export class ErreurAi extends Error {
-  constructor(
-    message: string,
-    readonly code: string,
-    readonly statut: number,
-  ) {
-    super(message);
-  }
-}
-
-/** Erreurs typées transportées telles quelles jusqu'au client. */
-export const CODES_AI = {
-  cleManquante: 'cle-manquante',
-  indisponible: 'modele-indisponible',
-  limite: 'limite-modele',
-  bloque: 'bloque',
-  vide: 'vide',
-  annule: 'annule',
-  timeout: 'timeout',
-  sortieInvalide: 'sortie-invalide',
-} as const;

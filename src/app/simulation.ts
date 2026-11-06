@@ -160,7 +160,7 @@ export function ouvrirDemo(): void {
 
 const REPONSES_FR = [
   "Voici une réponse de démonstration : en mode simulation, je montre comment la conversation s'affichera une fois les vraies APIs branchées. L'interface, elle, est déjà définitive.",
-  'Bien sûr. Dans la vraie version, cette réponse viendrait du moteur Gemini côté serveur — la mise en page, les bulles et le rythme seront exactement ceux que vous voyez ici.',
+  'Bien sûr. Dans la vraie version, cette réponse viendrait du moteur IA côté serveur — la mise en page, les bulles et le rythme seront exactement ceux que vous voyez ici.',
   'Exemple simulé : « Clarifier une idée, c\'est d\'abord nommer le problème, puis la personne qui le vit, puis le résultat attendu. » — contenu de démonstration.',
   'Je simule ici une réponse plus longue pour que vous puissiez juger le rendu des paragraphes, la largeur des bulles et le confort de lecture sur cette interface.\n\nLa vraie réponse sera générée en direct.',
   'Réponse simulée : tout ce que vous voyez dans cette conversation est local à votre navigateur, rien n\'est envoyé nulle part.',
@@ -169,7 +169,7 @@ const REPONSES_FR = [
 
 const REPONSES_EN = [
   'Here is a demo answer: in simulation mode, I show how the conversation will look once the real APIs are wired. The interface itself is final.',
-  'Sure. In the real version, this answer would come from the Gemini engine server-side — the layout, bubbles and pacing will be exactly what you see here.',
+  'Sure. In the real version, this answer would come from the server-side AI engine — the layout, bubbles and pacing will be exactly what you see here.',
   'Simulated example: "Clarifying an idea starts with naming the problem, then who lives it, then the expected outcome." — demo content.',
   'I am simulating a longer answer here so you can judge paragraph rendering, bubble width and reading comfort on this interface.\n\nThe real answer will be generated live.',
   'Simulated answer: everything in this conversation stays in your browser, nothing is sent anywhere.',

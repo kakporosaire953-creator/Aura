@@ -32,7 +32,7 @@ par `tsc`, le build et des parcours manuels/navigateur.
 
 | Variable | Rôle |
 |---|---|
-| `GEMINI_API_KEY` | Clé serveur du moteur de chat (jamais exposée au client) |
+| `GEMINI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY` | Clés serveur des fournisseurs IA (jamais exposées au client — voir `docs/architecture/AI-MULTI-PROVIDER.md`) |
 | `KV_REST_API_URL` / `KV_REST_API_TOKEN` | Persistance des comptes (Vercel KV). Sans elles, l'API répond honnêtement un 503 « non configuré » |
 
 Aucun secret n'est stocké dans le code ni dans une variable `VITE_*`.
@@ -45,7 +45,7 @@ Aucun secret n'est stocké dans le code ni dans une variable `VITE_*`.
 | `/login`, `/register` | Authentification (+ entrée volontaire en démonstration) | Réel (serveur) / démo badgée |
 | `/documentation` | 6 rubriques avec statut honnête (en rédaction / à venir) | Partiel |
 | `/app` | Espace de travail (accueil, composeur, récents) | Réel + démo badgée |
-| `/chat` | Conversation (Gemini côté serveur, historique local) | Réel |
+| `/chat` | Conversation (moteur IA multi-fournisseurs côté serveur, historique local) | Réel |
 | `/historique` | Fils conservés dans le navigateur | Réel (local) |
 | `/explore` | Recherche | **Simulée** (résultats de démonstration badgés) |
 | `/studio` | Génération de visuels | **Simulée** (aperçus prédéfinis badgés) |

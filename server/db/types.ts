@@ -213,7 +213,7 @@ export type Creation = {
 export type EvenementUsage = {
   id: Identifiant;
   userId: Identifiant;
-  genre: 'chat' | 'recherche' | 'creation' | 'mission_aide' | 'autre';
+  genre: 'chat' | 'recherche' | 'creation' | 'mission_aide' | 'ia' | 'autre';
   cree: string;
   meta: Record<string, number | string | boolean> | null;
 };
