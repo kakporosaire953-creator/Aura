@@ -4,6 +4,7 @@ import { BandeauSimulation } from './SiteChrome';
 import { useT, usePrefs } from '../../app/prefs';
 import { useSession } from '../../app/session';
 import { simulationActivee, definirSimulation } from '../../app/simulation';
+import { Icone } from '../ui/Icone';
 
 /**
  * Coque du workspace — sidebar structurée (sections évolutives), barre
@@ -73,20 +74,20 @@ export const WorkspaceLayout: React.FC = () => {
     {
       titre: t.ws.navPrincipal,
       entrees: [
-        { to: '/app', icone: 'fa-house', label: t.ws.vueEnsemble, fin: true },
-        { to: '/chat', icone: 'fa-comment-dots', label: t.ws.assistant },
-        { to: '/projets', icone: 'fa-folder-open', label: t.ws.projetsNav },
-        { to: '/explore', icone: 'fa-compass', label: t.ws.explorerNav },
-        { to: '/missions', icone: 'fa-list-check', label: t.ws.missionsNav },
-        { to: '/studio', icone: 'fa-wand-magic-sparkles', label: t.ws.studioNav },
-        { to: '/historique', icone: 'fa-clock-rotate-left', label: t.ws.historiqueNav },
+        { to: '/app', icone: 'house', label: t.ws.vueEnsemble, fin: true },
+        { to: '/chat', icone: 'comment-dots', label: t.ws.assistant },
+        { to: '/projets', icone: 'folder-open', label: t.ws.projetsNav },
+        { to: '/explore', icone: 'compass', label: t.ws.explorerNav },
+        { to: '/missions', icone: 'list-check', label: t.ws.missionsNav },
+        { to: '/studio', icone: 'wand-magic-sparkles', label: t.ws.studioNav },
+        { to: '/historique', icone: 'clock-rotate-left', label: t.ws.historiqueNav },
       ],
     },
     {
       titre: t.ws.navPersonnel,
       entrees: [
-        { to: '/memoire', icone: 'fa-brain', label: t.ws.memoireNav },
-        { to: '/parametres', icone: 'fa-sliders', label: t.ws.parametresNav },
+        { to: '/memoire', icone: 'brain', label: t.ws.memoireNav },
+        { to: '/parametres', icone: 'sliders', label: t.ws.parametresNav },
       ],
     },
   ];
@@ -126,7 +127,7 @@ export const WorkspaceLayout: React.FC = () => {
             aria-label={t.workspace.menu}
             onClick={() => setTiroir(true)}
           >
-            <i className="fa-solid fa-bars" />
+            <Icone nom="bars" />
           </button>
           <button
             type="button"
@@ -134,7 +135,7 @@ export const WorkspaceLayout: React.FC = () => {
             aria-label={t.workspace.replier}
             onClick={basculerRail}
           >
-            <i className="fa-solid fa-bars-staggered" />
+            <Icone nom="bars-staggered" />
           </button>
           <nav className="ws-fil" aria-label="Fil d’Ariane">
             {filAriane.map((f, i) => (
@@ -158,19 +159,19 @@ export const WorkspaceLayout: React.FC = () => {
               aria-label={t.ws.actionsRapides}
               onClick={() => setMenuCreation((v) => !v)}
             >
-              <i className="fa-solid fa-plus" />
+              <Icone nom="plus" />
               <span className="ws-creation-label">{t.ws.nouvelleConv}</span>
             </button>
             {menuCreation && (
               <div className="ws-panneau ws-panneau-creation">
                 <button type="button" onClick={() => navigate('/chat', { state: { nouveau: true } })}>
-                  <i className="fa-solid fa-comment-dots" /> {t.ws.nouvelleConv}
+                  <Icone nom="comment-dots" /> {t.ws.nouvelleConv}
                 </button>
                 <button type="button" onClick={() => navigate('/projets', { state: { creer: true } })}>
-                  <i className="fa-solid fa-folder-plus" /> {t.ws.nouveauProjet}
+                  <Icone nom="folder-plus" /> {t.ws.nouveauProjet}
                 </button>
                 <button type="button" onClick={() => navigate('/missions', { state: { creer: true } })}>
-                  <i className="fa-solid fa-list-check" /> {t.ws.nouvelleMission}
+                  <Icone nom="list-check" /> {t.ws.nouvelleMission}
                 </button>
               </div>
             )}
@@ -181,7 +182,7 @@ export const WorkspaceLayout: React.FC = () => {
             title={sim ? t.simulation.quitter : t.simulation.reprendre}
             onClick={() => definirSimulation(!sim)}
           >
-            <i className="fa-solid fa-flask" />
+            <Icone nom="flask" />
           </button>
           <button
             type="button"
@@ -189,7 +190,7 @@ export const WorkspaceLayout: React.FC = () => {
             aria-label={theme === 'dark' ? t.workspace.modeClair : t.workspace.modeSombre}
             onClick={toggleTheme}
           >
-            <i className={`fa-solid ${theme === 'dark' ? 'fa-sun' : 'fa-moon'}`} />
+            <Icone nom={theme === 'dark' ? 'sun' : 'moon'} />
           </button>
           <div className="ws-menu-wrap" ref={profilRef}>
             <button
@@ -201,7 +202,7 @@ export const WorkspaceLayout: React.FC = () => {
               <span className="ws-avatar" aria-hidden="true">
                 {(prenom || '?').slice(0, 1).toUpperCase()}
               </span>
-              <i className="fa-solid fa-chevron-down ws-profil-fleche" />
+              <Icone nom="chevron-down" className="ws-profil-fleche" />
             </button>
             {menuProfil && (
               <div className="ws-panneau ws-panneau-profil">
@@ -210,7 +211,7 @@ export const WorkspaceLayout: React.FC = () => {
                   <span>{compte?.email ?? ''}</span>
                 </div>
                 <Link to="/parametres" className="ws-panneau-lien">
-                  <i className="fa-solid fa-gear" /> {t.workspace.parametres}
+                  <Icone nom="gear" /> {t.workspace.parametres}
                 </Link>
                 <div className="ws-panneau-langues" role="group" aria-label="Langue">
                   <button
@@ -237,12 +238,12 @@ export const WorkspaceLayout: React.FC = () => {
                       navigate('/login');
                     }}
                   >
-                    <i className="fa-solid fa-arrow-right-from-bracket" />{' '}
+                    <Icone nom="arrow-right-from-bracket" />{' '}
                     {t.workspace.deconnexion}
                   </button>
                 ) : (
                   <Link to="/login" className="ws-panneau-lien">
-                    <i className="fa-solid fa-arrow-right-to-bracket" />{' '}
+                    <Icone nom="arrow-right-to-bracket" />{' '}
                     {t.workspace.seConnecter}
                   </Link>
                 )}
@@ -265,7 +266,7 @@ export const WorkspaceLayout: React.FC = () => {
             aria-label={t.workspace.fermer}
             onClick={() => setTiroir(false)}
           >
-            <i className="fa-solid fa-xmark" />
+            <Icone nom="xmark" />
           </button>
         </div>
 
@@ -280,7 +281,7 @@ export const WorkspaceLayout: React.FC = () => {
                   end={item.fin}
                   className={({ isActive }) => (isActive ? 'actif' : undefined)}
                 >
-                  <i className={`fa-solid ${item.icone}`} />
+                  <Icone nom={item.icone} />
                   <span>{item.label}</span>
                 </NavLink>
               ))}
@@ -290,7 +291,7 @@ export const WorkspaceLayout: React.FC = () => {
 
         <div className="ws-sidebar-bas">
           <Link to="/memoire" className={`ws-lien-simple${location.pathname === '/memoire' ? ' actif' : ''}`}>
-            <i className="fa-solid fa-brain" /> <span>{t.ws.memoireNav}</span>
+            <Icone nom="brain" /> <span>{t.ws.memoireNav}</span>
           </Link>
           <Link to="/parametres" className="ws-user">
             <span className="ws-avatar" aria-hidden="true">
@@ -300,7 +301,7 @@ export const WorkspaceLayout: React.FC = () => {
               <strong>{compte?.nom ?? t.workspace.nonConnecte}</strong>
               <em>{compte?.email ?? t.workspace.seConnecter}</em>
             </span>
-            <i className="fa-solid fa-chevron-right" />
+            <Icone nom="chevron-right" />
           </Link>
         </div>
       </aside>
@@ -329,7 +330,7 @@ export const WorkspaceLayout: React.FC = () => {
             end={item.fin}
             className={({ isActive }) => (isActive ? 'actif' : undefined)}
           >
-            <i className={`fa-solid ${item.icone}`} />
+            <Icone nom={item.icone} />
             <span>{item.label}</span>
           </NavLink>
         ))}

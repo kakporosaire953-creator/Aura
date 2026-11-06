@@ -10,6 +10,7 @@ import {
 } from '../components/ui/Primitives';
 import * as api from '../services/api';
 import type { Conversation, Creation, Memoire, Mission, Projet, Recherche } from '../services/types';
+import { Icone } from '../components/ui/Icone';
 
 /**
  * Projets — gestion réelle (API v1) : création, modification, archivage,
@@ -83,7 +84,7 @@ export const ProjetsPage: React.FC = () => {
           <p className="page-module-sous">{t.ws.instructionsAide}</p>
         </div>
         <button type="button" className="btn-principal" onClick={() => setDialogue({ ...FORM_VIDE })}>
-          <i className="fa-solid fa-plus" /> {t.ws.projetNouveau}
+          <Icone nom="plus" /> {t.ws.projetNouveau}
         </button>
       </header>
 
@@ -93,7 +94,7 @@ export const ProjetsPage: React.FC = () => {
         <EtatChargement />
       ) : projets.length === 0 ? (
         <EtatVide
-          icone="fa-folder-open"
+          icone="folder-open"
           titre={t.ws.projetsTitre}
           texte={t.ws.continuVide}
           action={
@@ -107,7 +108,7 @@ export const ProjetsPage: React.FC = () => {
           {projets.map((p) => (
             <Link key={p.id} to={`/projets/${p.id}`} className={`projet-carte${p.statut === 'archive' ? ' archive' : ''}`}>
               <div className="projet-carte-haut">
-                <i className="fa-solid fa-folder-open" />
+                <Icone nom="folder-open" />
                 {p.statut === 'archive' && <span className="badge">{t.ws.statutArchivee}</span>}
               </div>
               <strong>{p.nom}</strong>
@@ -270,7 +271,7 @@ export const ProjetDetailPage: React.FC = () => {
       <header className="page-module-haut">
         <div>
           <Link to="/projets" className="lien-retour">
-            <i className="fa-solid fa-arrow-left" /> {t.ws.projetsTitre}
+            <Icone nom="arrow-left" /> {t.ws.projetsTitre}
           </Link>
           <h1 className="page-module-titre">{projet.nom}</h1>
           {projet.statut === 'archive' && <span className="badge">{t.ws.statutArchivee}</span>}
@@ -285,7 +286,7 @@ export const ProjetDetailPage: React.FC = () => {
                 .then((r) => r.ok && setProjet(r.donnees.projet))
             }
           >
-            <i className="fa-solid fa-box-archive" />{' '}
+            <Icone nom="box-archive" />{' '}
             {projet.statut === 'archive' ? t.ws.desarchiver : t.ws.archiver}
           </button>
           <button
@@ -301,7 +302,7 @@ export const ProjetDetailPage: React.FC = () => {
               })
             }
           >
-            <i className="fa-solid fa-pen" /> {t.ws.renommer}
+            <Icone nom="pen" /> {t.ws.renommer}
           </button>
           <button
             type="button"
@@ -312,7 +313,7 @@ export const ProjetDetailPage: React.FC = () => {
               navigate('/projets');
             }}
           >
-            <i className="fa-solid fa-trash" />
+            <Icone nom="trash" />
           </button>
         </div>
       </header>
@@ -364,7 +365,7 @@ export const ProjetDetailPage: React.FC = () => {
           ) : (
             conversations.map((c) => (
               <Link key={c.id} to={`/chat/${c.id}`} className="ligne-simple">
-                <i className="fa-solid fa-comment-dots" />
+                <Icone nom="comment-dots" />
                 <strong>{c.titre}</strong>
                 <em>{new Date(c.maj).toLocaleDateString()}</em>
               </Link>
@@ -375,7 +376,7 @@ export const ProjetDetailPage: React.FC = () => {
             className="btn-principal"
             onClick={() => navigate('/chat', { state: { nouveau: true, projectId: projet.id } })}
           >
-            <i className="fa-solid fa-plus" /> {t.ws.nouvelleConv}
+            <Icone nom="plus" /> {t.ws.nouvelleConv}
           </button>
         </div>
       )}
@@ -387,7 +388,7 @@ export const ProjetDetailPage: React.FC = () => {
           ) : (
             missions.map((m) => (
               <Link key={m.id} to="/missions" className="ligne-simple">
-                <i className="fa-solid fa-list-check" />
+                <Icone nom="list-check" />
                 <strong>{m.titre}</strong>
                 <em>{t.ws[`statut${m.statut === 'a_faire' ? 'AFaire' : m.statut === 'en_cours' ? 'EnCours' : m.statut === 'en_attente' ? 'EnAttente' : m.statut === 'terminee' ? 'Terminee' : 'Archivee'}` as keyof typeof t.ws]}</em>
               </Link>
@@ -403,7 +404,7 @@ export const ProjetDetailPage: React.FC = () => {
           ) : (
             creations.map((c) => (
               <Link key={c.id} to="/studio" className="ligne-simple">
-                <i className="fa-solid fa-file-lines" />
+                <Icone nom="file-lines" />
                 <strong>{c.titre}</strong>
                 <em>{c.type}</em>
               </Link>
@@ -419,7 +420,7 @@ export const ProjetDetailPage: React.FC = () => {
           ) : (
             recherches.map((r) => (
               <Link key={r.id} to="/explore" className="ligne-simple">
-                <i className="fa-solid fa-magnifying-glass" />
+                <Icone nom="magnifying-glass" />
                 <strong>{r.requete}</strong>
                 <em>{new Date(r.cree).toLocaleDateString()}</em>
               </Link>
@@ -435,7 +436,7 @@ export const ProjetDetailPage: React.FC = () => {
           ) : (
             memoires.map((m) => (
               <div key={m.id} className="ligne-simple">
-                <i className="fa-solid fa-brain" />
+                <Icone nom="brain" />
                 <strong>{m.contenu}</strong>
                 <em>{m.actif ? t.ws.memoireActive : t.ws.memoireInactive}</em>
               </div>

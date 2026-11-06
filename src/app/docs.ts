@@ -71,7 +71,7 @@ const fr: DocsLangue = {
   articles: [
     {
       slug: 'demarrage',
-      icone: 'fa-rocket',
+      icone: 'rocket',
       titre: 'Démarrage',
       resume: 'Créer son compte, comprendre l’espace de travail et lancer sa première conversation.',
       duree: '4 min',
@@ -189,7 +189,7 @@ const fr: DocsLangue = {
     },
     {
       slug: 'conversation',
-      icone: 'fa-comments',
+      icone: 'comments',
       titre: 'L’assistant et le fil',
       resume: 'Conversations, contexte, arrêt de génération, régénération et historique.',
       duree: '5 min',
@@ -291,7 +291,7 @@ const fr: DocsLangue = {
     },
     {
       slug: 'projets-missions',
-      icone: 'fa-diagram-project',
+      icone: 'diagram-project',
       titre: 'Projets et missions',
       resume: 'Organiser son travail : projets, propositions de missions, validation et mémoire.',
       duree: '5 min',
@@ -385,7 +385,7 @@ const fr: DocsLangue = {
     },
     {
       slug: 'explorer',
-      icone: 'fa-magnifying-glass',
+      icone: 'magnifying-glass',
       titre: 'Explorer et recherche sourcée',
       resume: 'Interroger le web, lire les sources citées et vérifier l’information.',
       duree: '4 min',
@@ -461,7 +461,7 @@ const fr: DocsLangue = {
     },
     {
       slug: 'studio',
-      icone: 'fa-wand-magic-sparkles',
+      icone: 'wand-magic-sparkles',
       titre: 'Studio et créations',
       resume: 'Produire des contenus structurés à partir d’un brief.',
       duree: '4 min',
@@ -537,7 +537,7 @@ const fr: DocsLangue = {
     },
     {
       slug: 'compte-securite',
-      icone: 'fa-shield-halved',
+      icone: 'shield-halved',
       titre: 'Compte, données et sécurité',
       resume: 'Paramètres, préférences, export PDF, suppression de compte et traitement des données.',
       duree: '5 min',
@@ -615,7 +615,7 @@ const fr: DocsLangue = {
     },
     {
       slug: 'api',
-      icone: 'fa-code',
+      icone: 'code',
       titre: 'API pour développeurs',
       resume: 'Points d’entrée v1, authentification par session et exemples vérifiables.',
       duree: '7 min',
@@ -755,7 +755,7 @@ const en: DocsLangue = {
   articles: [
     {
       slug: 'demarrage',
-      icone: 'fa-rocket',
+      icone: 'rocket',
       titre: 'Getting started',
       resume: 'Create your account, understand the workspace and start your first conversation.',
       duree: '4 min',
@@ -864,7 +864,7 @@ const en: DocsLangue = {
     },
     {
       slug: 'conversation',
-      icone: 'fa-comments',
+      icone: 'comments',
       titre: 'Assistant and thread',
       resume: 'Conversations, context, stopping a generation, regenerating and history.',
       duree: '5 min',
@@ -966,7 +966,7 @@ const en: DocsLangue = {
     },
     {
       slug: 'projets-missions',
-      icone: 'fa-diagram-project',
+      icone: 'diagram-project',
       titre: 'Projects and missions',
       resume: 'Organise your work: projects, mission suggestions, validation and memory.',
       duree: '5 min',
@@ -1039,7 +1039,7 @@ const en: DocsLangue = {
     },
     {
       slug: 'explorer',
-      icone: 'fa-magnifying-glass',
+      icone: 'magnifying-glass',
       titre: 'Explorer and sourced search',
       resume: 'Query the web, read cited sources and verify information.',
       duree: '4 min',
@@ -1111,7 +1111,7 @@ const en: DocsLangue = {
     },
     {
       slug: 'studio',
-      icone: 'fa-wand-magic-sparkles',
+      icone: 'wand-magic-sparkles',
       titre: 'Studio and creations',
       resume: 'Produce structured content from a brief.',
       duree: '4 min',
@@ -1183,7 +1183,7 @@ const en: DocsLangue = {
     },
     {
       slug: 'compte-securite',
-      icone: 'fa-shield-halved',
+      icone: 'shield-halved',
       titre: 'Account, data and security',
       resume: 'Settings, preferences, PDF export, account deletion and data processing.',
       duree: '5 min',
@@ -1253,7 +1253,7 @@ const en: DocsLangue = {
     },
     {
       slug: 'api',
-      icone: 'fa-code',
+      icone: 'code',
       titre: 'Developer API',
       resume: 'v1 endpoints, session authentication and verifiable examples.',
       duree: '7 min',

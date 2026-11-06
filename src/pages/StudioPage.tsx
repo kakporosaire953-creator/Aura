@@ -10,6 +10,7 @@ import {
 import { Markdown } from '../components/ui/Markdown';
 import * as api from '../services/api';
 import type { Creation, TypeCreation } from '../services/types';
+import { Icone } from '../components/ui/Icone';
 
 /**
  * Studio — création de livrables réelle (génération par le moteur IA
@@ -19,15 +20,15 @@ import type { Creation, TypeCreation } from '../services/types';
  */
 
 const TYPES: Array<{ cle: TypeCreation; icone: string }> = [
-  { cle: 'document', icone: 'fa-file-lines' },
-  { cle: 'resume', icone: 'fa-align-left' },
-  { cle: 'rapport', icone: 'fa-chart-column' },
-  { cle: 'texte_professionnel', icone: 'fa-envelope' },
-  { cle: 'publication', icone: 'fa-newspaper' },
-  { cle: 'presentation', icone: 'fa-display' },
-  { cle: 'code', icone: 'fa-code' },
-  { cle: 'plan', icone: 'fa-sitemap' },
-  { cle: 'creatif', icone: 'fa-palette' },
+  { cle: 'document', icone: 'file-lines' },
+  { cle: 'resume', icone: 'align-left' },
+  { cle: 'rapport', icone: 'chart-column' },
+  { cle: 'texte_professionnel', icone: 'envelope' },
+  { cle: 'publication', icone: 'newspaper' },
+  { cle: 'presentation', icone: 'display' },
+  { cle: 'code', icone: 'code' },
+  { cle: 'plan', icone: 'sitemap' },
+  { cle: 'creatif', icone: 'palette' },
 ];
 
 function libelleType(t: ReturnType<typeof useT>, cle: TypeCreation): string {
@@ -144,7 +145,7 @@ export const StudioPage: React.FC = () => {
               className={`studio-type${type === x.cle ? ' actif' : ''}`}
               onClick={() => setType(x.cle)}
             >
-              <i className={`fa-solid ${x.icone}`} />
+              <Icone nom={x.icone} />
               <span>{libelleType(t, x.cle)}</span>
             </button>
           ))}
@@ -181,18 +182,18 @@ export const StudioPage: React.FC = () => {
         >
           {enCours ? (
             <>
-              <i className="fa-solid fa-circle-notch fa-spin" /> {t.studio.generation}
+              <Icone nom="spinner" tourne /> {t.studio.generation}
             </>
           ) : (
             <>
-              <i className="fa-solid fa-wand-magic-sparkles" /> {t.ws.generer}
+              <Icone nom="studio" /> {t.ws.generer}
             </>
           )}
         </button>
       </section>
 
       {creations.length === 0 && !active ? (
-        <EtatVide icone="fa-wand-magic-sparkles" titre={t.ws.aucuneCreation} texte={t.studio.sous} />
+        <EtatVide icone="studio" titre={t.ws.aucuneCreation} texte={t.studio.sous} />
       ) : (
         <div className="studio-espace">
           <aside className="studio-historique" aria-label={t.ws.versionsTitre}>
@@ -244,7 +245,7 @@ export const StudioPage: React.FC = () => {
                     {active.versions.length > 0 && (
                       <>
                         <a className="btn-simple" href={api.urlExportCreation(active.id)} download>
-                          <i className="fa-solid fa-download" /> {t.ws.exporter}
+                          <Icone nom="download" /> {t.ws.exporter}
                         </a>
                         <button
                           type="button"
@@ -252,7 +253,7 @@ export const StudioPage: React.FC = () => {
                           onClick={() => window.print()}
                           title={t.ws.exportPdf}
                         >
-                          <i className="fa-solid fa-print" /> {t.ws.exportPdf}
+                          <Icone nom="print" /> {t.ws.exportPdf}
                         </button>
                       </>
                     )}
@@ -266,7 +267,7 @@ export const StudioPage: React.FC = () => {
                         void rafraichir();
                       }}
                     >
-                      <i className="fa-solid fa-trash" />
+                      <Icone nom="trash" />
                     </button>
                   </div>
                 </header>
@@ -296,7 +297,7 @@ export const StudioPage: React.FC = () => {
                     onClick={() => void reviser()}
                     disabled={!revision.trim() || enCours}
                   >
-                    <i className="fa-solid fa-rotate" /> {t.ws.reviser}
+                    <Icone nom="rotate" /> {t.ws.reviser}
                   </button>
                 </div>
               </>

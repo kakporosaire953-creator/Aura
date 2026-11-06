@@ -4,6 +4,7 @@ import { SiteNav, SiteFooter } from '../components/layout/SiteChrome';
 import { useRevealAll } from '../components/motion/useReveal';
 import { usePrefs } from '../app/prefs';
 import { DOCS } from '../app/docs';
+import { Icone } from '../components/ui/Icone';
 
 /** Hub de la documentation : guides réellement rédigés. */
 export const DocumentationPage: React.FC = () => {
@@ -41,7 +42,7 @@ export const DocumentationPage: React.FC = () => {
                   {d.articles.map((a) => (
                     <li key={a.slug}>
                       <Link to={`/documentation/${a.slug}`}>
-                        <i className={`fa-solid ${a.icone}`} aria-hidden /> {a.titre}
+                        <Icone nom={a.icone} /> {a.titre}
                       </Link>
                     </li>
                   ))}
@@ -53,7 +54,7 @@ export const DocumentationPage: React.FC = () => {
                   <article className="doc-carte" key={a.slug} data-reveal>
                     <div className="doc-carte-haut">
                       <span className="doc-icone" aria-hidden>
-                        <i className={`fa-solid ${a.icone}`} />
+                        <Icone nom={a.icone} />
                       </span>
                       <span className="doc-num">
                         {d.article.duree} : {a.duree}
@@ -64,7 +65,7 @@ export const DocumentationPage: React.FC = () => {
                     </h3>
                     <p>{a.resume}</p>
                     <Link to={`/documentation/${a.slug}`} className="doc-lire">
-                      {d.hub.lire} <i className="fa-solid fa-arrow-right" aria-hidden />
+                      {d.hub.lire} <Icone nom="arrow-right" />
                     </Link>
                   </article>
                 ))}

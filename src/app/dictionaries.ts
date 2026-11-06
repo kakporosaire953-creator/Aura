@@ -522,7 +522,7 @@ export interface Content {
 const etapesFr: Etape[] = [
   {
     num: '01',
-    icone: 'fa-lightbulb',
+    icone: 'lightbulb',
     titre: 'Réfléchir',
     texte:
       "Tout commence par une conversation. L'idée se clarifie, se découpe, se confronte — jusqu'à ce que le vrai projet apparaisse.",
@@ -530,7 +530,7 @@ const etapesFr: Etape[] = [
   },
   {
     num: '02',
-    icone: 'fa-earth-africa',
+    icone: 'earth-africa',
     titre: 'Rechercher',
     texte:
       "Aura Explore interroge le web et ne renvoie que des réponses sourcées et traçables. La confiance naît de la preuve.",
@@ -538,7 +538,7 @@ const etapesFr: Etape[] = [
   },
   {
     num: '03',
-    icone: 'fa-wand-magic-sparkles',
+    icone: 'wand-magic-sparkles',
     titre: 'Créer',
     texte:
       "Du brief au projet structuré : designs, documents, code. Aura Studio construit, itère, versionne — sous vos yeux.",
@@ -546,7 +546,7 @@ const etapesFr: Etape[] = [
   },
   {
     num: '04',
-    icone: 'fa-rocket',
+    icone: 'rocket',
     titre: 'Développer',
     texte:
       "Le résultat se livre : code exécutable, exports propres, mission close. De l'idée au résultat, sans rupture de fil.",
@@ -557,7 +557,7 @@ const etapesFr: Etape[] = [
 const etapesEn: Etape[] = [
   {
     num: '01',
-    icone: 'fa-lightbulb',
+    icone: 'lightbulb',
     titre: 'Think',
     texte:
       'It all starts with a conversation. The idea becomes clear, is broken down, is challenged — until the real project emerges.',
@@ -565,7 +565,7 @@ const etapesEn: Etape[] = [
   },
   {
     num: '02',
-    icone: 'fa-earth-africa',
+    icone: 'earth-africa',
     titre: 'Research',
     texte:
       'Aura Explore searches the web and returns only sourced, traceable answers. Trust is born from evidence.',
@@ -573,7 +573,7 @@ const etapesEn: Etape[] = [
   },
   {
     num: '03',
-    icone: 'fa-wand-magic-sparkles',
+    icone: 'wand-magic-sparkles',
     titre: 'Create',
     texte:
       'From brief to structured project: designs, documents, code. Aura Studio builds, iterates, versions — before your eyes.',
@@ -581,7 +581,7 @@ const etapesEn: Etape[] = [
   },
   {
     num: '04',
-    icone: 'fa-rocket',
+    icone: 'rocket',
     titre: 'Deliver',
     texte:
       'The result ships: clean code, clean exports, mission closed. From idea to result, without losing the thread.',
@@ -650,7 +650,7 @@ const contentFr: Content = {
     lignes: [
       {
         idx: '01',
-        icone: 'fa-comments',
+        icone: 'comments',
         titre: 'Conversations',
         texte:
           "Un fil de pensée qui garde le contexte, explique ses choix et se souvient de vos projets. Pas un chatbot de plus : un partenaire de travail.",
@@ -658,7 +658,7 @@ const contentFr: Content = {
       },
       {
         idx: '02',
-        icone: 'fa-magnifying-glass-chart',
+        icone: 'magnifying-glass-chart',
         titre: 'Recherche sourcée',
         texte:
           "Explore fouille le web et cite ses sources à chaque affirmation. Les réponses se vérifient, se comparent, se partagent.",
@@ -666,7 +666,7 @@ const contentFr: Content = {
       },
       {
         idx: '03',
-        icone: 'fa-wand-magic-sparkles',
+        icone: 'wand-magic-sparkles',
         titre: 'Studio de création',
         texte:
           "Générez des sites, documents et visuels qui deviennent de vrais projets : versions, aperçus multi-écrans, exports propres.",
@@ -674,7 +674,7 @@ const contentFr: Content = {
       },
       {
         idx: '04',
-        icone: 'fa-list-check',
+        icone: 'list-check',
         titre: 'Missions & projets',
         texte:
           "Découpez un objectif en missions suivies, avec étapes, livrables et quotas clairs. L'ambition devient un plan exécutable.",
@@ -750,21 +750,21 @@ const contentFr: Content = {
       'AURA ne peut pas se contenter des usages des grandes plateformes internationales : il doit progressivement comprendre les réalités, les besoins et les contextes de ses utilisateurs, à commencer par le Bénin. Voici la direction — honnêtement présentée, avec ce qui existe et ce qui reste à construire.',
     axes: [
       {
-        icone: 'fa-map-location-dot',
+        icone: 'map-location-dot',
         titre: 'Comprendre le contexte béninois',
         texte:
           'Culture et patrimoine, géographie, éducation, entrepreneuriat, services administratifs : AURA devra s’appuyer sur des sources fiables et actualisées — recherche documentaire, base de connaissances locale, sources officielles — et reconnaître ses incertitudes plutôt que d’inventer.',
         statut: 'En préparation',
       },
       {
-        icone: 'fa-language',
+        icone: 'language',
         titre: 'Les langues locales',
         texte:
           'Le Fon constitue une piste prioritaire à étudier ; les autres langues suivront selon les besoins des utilisateurs et les ressources disponibles. Compréhension, traduction, expressions locales : aucune langue ne sera annoncée comme prise en charge avant d’avoir été testée avec des locuteurs compétents.',
         statut: 'Phase d’étude',
       },
       {
-        icone: 'fa-microphone',
+        icone: 'microphone',
         titre: 'La voix, naturellement',
         texte:
           'Parler à AURA dans sa langue : dictée (parole → texte), compréhension, réponse, puis lecture vocale. Accents, bruit ambiant, confidentialité et consentement des enregistrements sont au cœur de cette évolution — aucun bouton microphone fantôme ne sera affiché avant que cela fonctionne réellement.',
@@ -799,7 +799,7 @@ const contentFr: Content = {
     items: [
       {
         num: '01',
-        icone: 'fa-rocket',
+        icone: 'rocket',
         titre: 'Démarrage',
         texte:
           "Créer son espace, comprendre le fil et poser sa première intention. Les premiers gestes, pas à pas, sans jargon.",
@@ -807,7 +807,7 @@ const contentFr: Content = {
       },
       {
         num: '02',
-        icone: 'fa-film',
+        icone: 'film',
         titre: 'Le fil Aura',
         texte:
           "Conversation, contexte, mémoire de projet : bien penser avec Aura, garder le fil du début à la fin.",
@@ -815,7 +815,7 @@ const contentFr: Content = {
       },
       {
         num: '03',
-        icone: 'fa-magnifying-glass',
+        icone: 'magnifying-glass',
         titre: 'Recherche sourcée',
         texte:
           "Interroger le web, lire les citations, vérifier, comparer, citer. La confiance naît de la preuve.",
@@ -823,7 +823,7 @@ const contentFr: Content = {
       },
       {
         num: '04',
-        icone: 'fa-wand-magic-sparkles',
+        icone: 'wand-magic-sparkles',
         titre: 'Studio & créations',
         texte:
           "Générer, itérer, versionner, prévisualiser et exporter proprement — du prompt au livrable.",
@@ -831,7 +831,7 @@ const contentFr: Content = {
       },
       {
         num: '05',
-        icone: 'fa-users',
+        icone: 'users',
         titre: 'Comptes & équipes',
         texte:
           "Profils, espaces partagés, rôles et tranquillité des données. Travailler ensemble, sereinement.",
@@ -839,7 +839,7 @@ const contentFr: Content = {
       },
       {
         num: '06',
-        icone: 'fa-code',
+        icone: 'code',
         titre: 'API & développeurs',
         texte:
           "Brancher Aura dans vos outils — avec des limites claires et une documentation honnête.",
@@ -982,22 +982,22 @@ const contentFr: Content = {
     {
       nom: 'Chat',
       sous: 'Converser avec Aura, du fil au résultat',
-      icone: 'fa-comments',
+      icone: 'comments',
     },
     {
       nom: 'Explore',
       sous: 'Rechercher avec des sources vérifiables',
-      icone: 'fa-magnifying-glass',
+      icone: 'magnifying-glass',
     },
     {
       nom: 'Studio',
       sous: 'Générer des créations à votre image',
-      icone: 'fa-wand-magic-sparkles',
+      icone: 'wand-magic-sparkles',
     },
     {
       nom: 'Missions',
       sous: 'Suivre vos projets de bout en bout',
-      icone: 'fa-list-check',
+      icone: 'list-check',
     },
   ],
   explore: {
@@ -1026,7 +1026,7 @@ const contentFr: Content = {
     consigneLabel: 'Votre consigne',
     placeholder: 'Ex. : une affiche chaleureuse pour un atelier créatif à Cotonou…',
     styleLabel: 'Style',
-    styles: ['Ruban', 'Éditorial', 'Sculpture', 'Naturel'],
+    styles: ['Ruban', 'Éditorial', 'Sculpture', 'Naturel', 'Publication', 'Présentation', 'Code', 'Plan', 'Créatif'],
     formatLabel: 'Format',
     formats: ['Carré', 'Paysage', 'Portrait'],
     generer: 'Générer',
@@ -1364,7 +1364,7 @@ const contentEn: Content = {
     lignes: [
       {
         idx: '01',
-        icone: 'fa-comments',
+        icone: 'comments',
         titre: 'Conversations',
         texte:
           'A train of thought that keeps context, explains its choices and remembers your projects. Not another chatbot: a working partner.',
@@ -1372,7 +1372,7 @@ const contentEn: Content = {
       },
       {
         idx: '02',
-        icone: 'fa-magnifying-glass-chart',
+        icone: 'magnifying-glass-chart',
         titre: 'Sourced research',
         texte:
           'Explore searches the web and cites its sources for every claim. Answers you can verify, compare and share.',
@@ -1380,7 +1380,7 @@ const contentEn: Content = {
       },
       {
         idx: '03',
-        icone: 'fa-wand-magic-sparkles',
+        icone: 'wand-magic-sparkles',
         titre: 'Creation studio',
         texte:
           'Generate sites, documents and visuals that become real projects: versions, multi-screen previews, clean exports.',
@@ -1388,7 +1388,7 @@ const contentEn: Content = {
       },
       {
         idx: '04',
-        icone: 'fa-list-check',
+        icone: 'list-check',
         titre: 'Missions & projects',
         texte:
           'Break a goal into tracked missions, with steps, deliverables and clear quotas. Ambition becomes an executable plan.',
@@ -1464,21 +1464,21 @@ const contentEn: Content = {
       'AURA cannot settle for the habits of large international platforms: it must gradually understand the realities, needs and contexts of its users, starting with Benin. Here is the direction — presented honestly, with what exists and what remains to be built.',
     axes: [
       {
-        icone: 'fa-map-location-dot',
+        icone: 'map-location-dot',
         titre: 'Understanding the Beninese context',
         texte:
           'Culture and heritage, geography, education, entrepreneurship, public services: AURA will rely on reliable, up-to-date sources — documentary research, local knowledge bases, official sources — and will acknowledge its uncertainties rather than inventing.',
         statut: 'In preparation',
       },
       {
-        icone: 'fa-language',
+        icone: 'language',
         titre: 'Local languages',
         texte:
           'Fon is a priority language to study; others will follow based on user needs and available resources. Understanding, translation, local expressions: no language will be announced as supported before being tested with fluent speakers.',
         statut: 'Study phase',
       },
       {
-        icone: 'fa-microphone',
+        icone: 'microphone',
         titre: 'Voice, naturally',
         texte:
           'Talk to AURA in your language: dictation (speech to text), understanding, response, then spoken playback. Accents, ambient noise, privacy and consent for recordings are at the heart of this evolution — no phantom microphone button will be shown before it truly works.',
@@ -1512,7 +1512,7 @@ const contentEn: Content = {
     items: [
       {
         num: '01',
-        icone: 'fa-rocket',
+        icone: 'rocket',
         titre: 'Getting started',
         texte:
           'Create your space, understand the thread and set your first intention. The first steps, step by step, no jargon.',
@@ -1520,7 +1520,7 @@ const contentEn: Content = {
       },
       {
         num: '02',
-        icone: 'fa-film',
+        icone: 'film',
         titre: 'The Aura thread',
         texte:
           'Conversation, context, project memory: think well with Aura, keep the thread from start to finish.',
@@ -1528,7 +1528,7 @@ const contentEn: Content = {
       },
       {
         num: '03',
-        icone: 'fa-magnifying-glass',
+        icone: 'magnifying-glass',
         titre: 'Sourced research',
         texte:
           'Search the web, read citations, verify, compare, quote. Trust is born from evidence.',
@@ -1536,7 +1536,7 @@ const contentEn: Content = {
       },
       {
         num: '04',
-        icone: 'fa-wand-magic-sparkles',
+        icone: 'wand-magic-sparkles',
         titre: 'Studio & creations',
         texte:
           'Generate, iterate, version, preview and export cleanly — from prompt to deliverable.',
@@ -1544,7 +1544,7 @@ const contentEn: Content = {
       },
       {
         num: '05',
-        icone: 'fa-users',
+        icone: 'users',
         titre: 'Accounts & teams',
         texte:
           'Profiles, shared spaces, roles and peaceful data. Work together, serenely.',
@@ -1552,7 +1552,7 @@ const contentEn: Content = {
       },
       {
         num: '06',
-        icone: 'fa-code',
+        icone: 'code',
         titre: 'API & developers',
         texte:
           'Plug Aura into your tools — with clear limits and honest documentation.',
@@ -1695,22 +1695,22 @@ const contentEn: Content = {
     {
       nom: 'Chat',
       sous: 'Talk with Aura, from thread to result',
-      icone: 'fa-comments',
+      icone: 'comments',
     },
     {
       nom: 'Explore',
       sous: 'Research with verifiable sources',
-      icone: 'fa-magnifying-glass',
+      icone: 'magnifying-glass',
     },
     {
       nom: 'Studio',
       sous: 'Generate creations in your image',
-      icone: 'fa-wand-magic-sparkles',
+      icone: 'wand-magic-sparkles',
     },
     {
       nom: 'Missions',
       sous: 'Track your projects end to end',
-      icone: 'fa-list-check',
+      icone: 'list-check',
     },
   ],
   explore: {
@@ -1739,7 +1739,7 @@ const contentEn: Content = {
     consigneLabel: 'Your prompt',
     placeholder: 'E.g. : a warm poster for a creative workshop in Cotonou…',
     styleLabel: 'Style',
-    styles: ['Ribbon', 'Editorial', 'Sculpture', 'Natural'],
+    styles: ['Ribbon', 'Editorial', 'Sculpture', 'Natural', 'Publication', 'Presentation', 'Code', 'Plan', 'Creative'],
     formatLabel: 'Format',
     formats: ['Square', 'Landscape', 'Portrait'],
     generer: 'Generate',

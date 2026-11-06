@@ -7,6 +7,7 @@ import { Markdown } from '../components/ui/Markdown';
 import { EtatChargement, EtatErreur, EtatVide, Dialogue } from '../components/ui/Primitives';
 import * as api from '../services/api';
 import type { Conversation, MessageChat } from '../services/types';
+import { Icone } from '../components/ui/Icone';
 
 /**
  * Assistant — conversations persistées côté serveur (API v1), réponses
@@ -57,7 +58,7 @@ const MessageBulle: React.FC<{
             )}
             {message.meta?.memoiresUtilisees && message.meta.memoiresUtilisees.length > 0 && (
               <p className="msg-contexte">
-                <i className="fa-solid fa-brain" aria-hidden="true" /> {t.ws.contexteUtilise} :{' '}
+                <Icone nom="brain" /> {t.ws.contexteUtilise} :{' '}
                 {message.meta.memoiresUtilisees.length} {t.ws.memoiresUtilisees}
               </p>
             )}
@@ -76,17 +77,17 @@ const MessageBulle: React.FC<{
             }}
             aria-label={t.ws.copier}
           >
-            <i className={`fa-solid ${copie ? 'fa-check' : 'fa-copy'}`} />{' '}
+            <Icone nom={copie ? 'check' : 'copy'} />{' '}
             {copie ? t.ws.copie : ''}
           </button>
           {'speechSynthesis' in window && (
             <button type="button" onClick={lire} aria-label={t.ws.lireVoix}>
-              <i className={`fa-solid ${lecture ? 'fa-stop' : 'fa-volume-high'}`} />
+              <Icone nom={lecture ? 'stop' : 'volume-high'} />
             </button>
           )}
           {onRegenerer && (
             <button type="button" onClick={onRegenerer} aria-label={t.ws.regenerer}>
-              <i className="fa-solid fa-rotate" />
+              <Icone nom="rotate" />
             </button>
           )}
         </div>
@@ -382,7 +383,7 @@ export const ChatPage: React.FC = () => {
               saisieRef.current?.focus();
             }}
           >
-            <i className="fa-solid fa-plus" /> {t.ws.nouvelleConv}
+            <Icone nom="plus" /> {t.ws.nouvelleConv}
           </button>
           <input
             type="search"
@@ -409,7 +410,7 @@ export const ChatPage: React.FC = () => {
                   aria-label={t.ws.renommer}
                   onClick={() => setRenommage({ id: c.id, titre: c.titre })}
                 >
-                  <i className="fa-solid fa-pen" />
+                  <Icone nom="pen" />
                 </button>
                 <button
                   type="button"
@@ -425,7 +426,7 @@ export const ChatPage: React.FC = () => {
                     void rafraichirListe();
                   }}
                 >
-                  <i className="fa-solid fa-trash" />
+                  <Icone nom="trash" />
                 </button>
               </span>
             </div>
@@ -512,7 +513,7 @@ export const ChatPage: React.FC = () => {
                 aria-label={t.ws.dicter}
                 title={t.ws.dicter}
               >
-                <i className="fa-solid fa-microphone" />
+                <Icone nom="microphone" />
               </button>
             )}
             {etat === 'envoi' ? (
@@ -521,11 +522,11 @@ export const ChatPage: React.FC = () => {
                 className="btn-principal chat-arret"
                 onClick={() => abortRef.current?.abort()}
               >
-                <i className="fa-solid fa-stop" /> <span>{t.ws.arreter}</span>
+                <Icone nom="stop" /> <span>{t.ws.arreter}</span>
               </button>
             ) : (
               <button type="submit" className="btn-principal chat-envoi" disabled={!saisie.trim()}>
-                <i className="fa-solid fa-paper-plane" /> <span>{t.chat.envoyer}</span>
+                <Icone nom="paper-plane" /> <span>{t.chat.envoyer}</span>
               </button>
             )}
           </div>
@@ -576,7 +577,7 @@ export const ChatPage: React.FC = () => {
 
       {/* Lien discret vers l'historique complet */}
       <Link to="/historique" className="chat-lien-historique">
-        <i className="fa-solid fa-clock-rotate-left" /> {t.ws.historiqueNav}
+        <Icone nom="clock-rotate-left" /> {t.ws.historiqueNav}
       </Link>
     </div>
   );

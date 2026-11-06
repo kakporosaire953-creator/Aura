@@ -4,6 +4,7 @@
  * sans jamais injecter de HTML : aucune surface XSS par conception.
  */
 import React, { useState } from 'react';
+import { Icone } from '../ui/Icone';
 
 type Bloc =
   | { genre: 'para'; lignes: string[] }
@@ -184,7 +185,7 @@ const BlocCode: React.FC<{ contenu: string; langue: string }> = ({ contenu, lang
             setTimeout(() => setCopie(false), 1500);
           }}
         >
-          <i className={`fa-solid ${copie ? 'fa-check' : 'fa-copy'}`} aria-hidden="true" />{' '}
+          <Icone nom={copie ? 'check' : 'copy'} />{' '}
           {copie ? '✓' : '⧉'}
         </button>
       </div>

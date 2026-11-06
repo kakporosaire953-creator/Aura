@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { SiteNav, SiteFooter } from '../components/layout/SiteChrome';
 import { usePrefs } from '../app/prefs';
 import { DOCS, type BlocDoc } from '../app/docs';
+import { Icone } from '../components/ui/Icone';
 
 const Bloc: React.FC<{ bloc: BlocDoc }> = ({ bloc }) => {
   switch (bloc.type) {
@@ -33,10 +34,7 @@ const Bloc: React.FC<{ bloc: BlocDoc }> = ({ bloc }) => {
     case 'note':
       return (
         <p className={`doc-note doc-note-${bloc.ton}`}>
-          <i
-            className={`fa-solid ${bloc.ton === 'limite' ? 'fa-circle-exclamation' : 'fa-circle-info'}`}
-            aria-hidden
-          />
+          <Icone nom={bloc.ton === 'limite' ? 'circle-exclamation' : 'circle-info'} />
           <span>{bloc.texte}</span>
         </p>
       );
@@ -119,7 +117,7 @@ export const DocumentationArticlePage: React.FC = () => {
           <div className="wrap">
             <nav className="doc-fil" aria-label={d.article.retour}>
               <Link to="/documentation">
-                <i className="fa-solid fa-arrow-left" aria-hidden /> {d.article.retour}
+                <Icone nom="arrow-left" /> {d.article.retour}
               </Link>
             </nav>
             <span className="kicker">{article.titre}</span>
@@ -161,7 +159,7 @@ export const DocumentationArticlePage: React.FC = () => {
                     {associes.map((a) => (
                       <li key={a.slug}>
                         <Link to={`/documentation/${a.slug}`}>
-                          <i className={`fa-solid ${a.icone}`} aria-hidden /> {a.titre}
+                          <Icone nom={a.icone} /> {a.titre}
                         </Link>
                       </li>
                     ))}

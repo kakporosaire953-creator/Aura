@@ -9,6 +9,7 @@ import {
 } from '../components/ui/Primitives';
 import * as api from '../services/api';
 import type { Memoire, TypeMemoire } from '../services/types';
+import { Icone } from '../components/ui/Icone';
 
 /**
  * Mémoire AURA — informations mémorisées, transparentes et contrôlées.
@@ -68,11 +69,11 @@ export const MemoirePage: React.FC = () => {
                 void rafraichir();
               }}
             >
-              <i className="fa-solid fa-eraser" /> {t.ws.toutEffacer}
+              <Icone nom="eraser" /> {t.ws.toutEffacer}
             </button>
           )}
           <button type="button" className="btn-principal" onClick={() => setAjout({ contenu: '', type: 'contexte_personnel' })}>
-            <i className="fa-solid fa-plus" /> {t.ws.ajouterMemoire}
+            <Icone nom="plus" /> {t.ws.ajouterMemoire}
           </button>
         </div>
       </header>
@@ -83,7 +84,7 @@ export const MemoirePage: React.FC = () => {
         <EtatChargement />
       ) : memoires.length === 0 ? (
         <EtatVide
-          icone="fa-brain"
+          icone="brain"
           titre={t.ws.memoireVide}
           texte={t.ws.memoireSous}
           action={
@@ -110,7 +111,7 @@ export const MemoirePage: React.FC = () => {
                     void rafraichir();
                   }}
                 >
-                  <i className={`fa-solid ${m.actif ? 'fa-toggle-on' : 'fa-toggle-off'}`} />{' '}
+                  <Icone nom={m.actif ? 'toggle-on' : 'toggle-off'} />{' '}
                   {m.actif ? t.ws.memoireActive : t.ws.memoireInactive}
                 </button>
                 <button
@@ -118,7 +119,7 @@ export const MemoirePage: React.FC = () => {
                   className="btn-simple"
                   onClick={() => setEdition({ id: m.id, contenu: m.contenu, type: m.type })}
                 >
-                  <i className="fa-solid fa-pen" />
+                  <Icone nom="pen" />
                 </button>
                 <button
                   type="button"
@@ -129,7 +130,7 @@ export const MemoirePage: React.FC = () => {
                     void rafraichir();
                   }}
                 >
-                  <i className="fa-solid fa-trash" />
+                  <Icone nom="trash" />
                 </button>
               </div>
             </article>
@@ -138,7 +139,7 @@ export const MemoirePage: React.FC = () => {
       )}
 
       <p className="module-note">
-        <i className="fa-solid fa-shield-halved" /> {t.ws.noteConfidentialite}
+        <Icone nom="shield-halved" /> {t.ws.noteConfidentialite}
         {sim && ' — '}
         {sim && t.simulation.badge}
       </p>

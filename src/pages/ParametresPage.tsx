@@ -6,6 +6,7 @@ import { simulationActivee, definirSimulation } from '../app/simulation';
 import { Dialogue } from '../components/ui/Primitives';
 import * as api from '../services/api';
 import type { CompteV1 } from '../services/types';
+import { Icone } from '../components/ui/Icone';
 
 /**
  * Paramètres — réglages réels uniquement : compte, profil contextuel
@@ -81,7 +82,7 @@ export const ParametresPage: React.FC = () => {
       {profil && (
         <section className="param-section">
           <h2>
-            <i className="fa-solid fa-earth-africa" /> {t.ws.profilContextuel}
+            <Icone nom="earth-africa" /> {t.ws.profilContextuel}
           </h2>
           <p className="corps">{t.ws.profilSous}</p>
           <div className="formulaire">
@@ -188,7 +189,7 @@ export const ParametresPage: React.FC = () => {
             </div>
           </div>
           <p className="module-note">
-            <i className="fa-solid fa-circle-info" /> {t.ws.localNote}
+            <Icone nom="circle-info" /> {t.ws.localNote}
           </p>
         </section>
       )}
@@ -235,14 +236,14 @@ export const ParametresPage: React.FC = () => {
                 className={prefs.utiliserMemoire ? 'actif' : ''}
                 onClick={() => setPrefs({ ...prefs, utiliserMemoire: true })}
               >
-                <i className="fa-solid fa-toggle-on" /> {t.ws.memoireActive}
+                <Icone nom="toggle-on" /> {t.ws.memoireActive}
               </button>
               <button
                 type="button"
                 className={!prefs.utiliserMemoire ? 'actif' : ''}
                 onClick={() => setPrefs({ ...prefs, utiliserMemoire: false })}
               >
-                <i className="fa-solid fa-toggle-off" /> {t.ws.memoireInactive}
+                <Icone nom="toggle-off" /> {t.ws.memoireInactive}
               </button>
             </div>
           </div>
@@ -250,11 +251,11 @@ export const ParametresPage: React.FC = () => {
             <button type="button" className="btn-primaire" onClick={() => void enregistrer()} disabled={etatSauvegarde === 'envoi'}>
               {etatSauvegarde === 'fait' ? (
                 <>
-                  <i className="fa-solid fa-check" /> {t.ws.enregistre}
+                  <Icone nom="check" /> {t.ws.enregistre}
                 </>
               ) : (
                 <>
-                  <i className="fa-solid fa-floppy-disk" /> {t.ws.enregistrer}
+                  <Icone nom="floppy-disk" /> {t.ws.enregistrer}
                 </>
               )}
             </button>
@@ -269,10 +270,10 @@ export const ParametresPage: React.FC = () => {
           <span className="param-label">{t.parametres.themeLabel}</span>
           <div className="param-choix" role="group" aria-label={t.parametres.themeLabel}>
             <button type="button" className={theme === 'light' ? 'actif' : ''} onClick={() => setTheme('light')}>
-              <i className="fa-solid fa-sun" /> {t.parametres.themeClair}
+              <Icone nom="sun" /> {t.parametres.themeClair}
             </button>
             <button type="button" className={theme === 'dark' ? 'actif' : ''} onClick={() => setTheme('dark')}>
-              <i className="fa-solid fa-moon" /> {t.parametres.themeSombre}
+              <Icone nom="moon" /> {t.parametres.themeSombre}
             </button>
           </div>
         </div>
@@ -328,7 +329,7 @@ export const ParametresPage: React.FC = () => {
               navigate('/login');
             }}
           >
-            <i className="fa-solid fa-arrow-right-from-bracket" /> {t.parametres.deconnexion}
+            <Icone nom="arrow-right-from-bracket" /> {t.parametres.deconnexion}
           </button>
         ) : (
           <Link to="/login" className="btn-primaire">
@@ -341,11 +342,11 @@ export const ParametresPage: React.FC = () => {
       {statut === 'connecte' && !sim && (
         <section className="param-section param-danger">
           <h2>
-            <i className="fa-solid fa-triangle-exclamation" /> {t.ws.dangerZone}
+            <Icone nom="triangle-exclamation" /> {t.ws.dangerZone}
           </h2>
           <p className="corps">{t.ws.dangerSous}</p>
           <button type="button" className="btn-danger-simple" onClick={() => setDialogueSuppression(true)}>
-            <i className="fa-solid fa-user-slash" /> {t.ws.supprimerCompte}
+            <Icone nom="user-slash" /> {t.ws.supprimerCompte}
           </button>
         </section>
       )}
@@ -411,7 +412,7 @@ export const ParametresPage: React.FC = () => {
       >
         <div className="formulaire">
           <p className="corps param-danger-texte">
-            <i className="fa-solid fa-triangle-exclamation" aria-hidden="true" />{' '}
+            <Icone nom="triangle-exclamation" />{' '}
             {t.ws.supprimerCompteAvertissement}
           </p>
           <label className="champ">

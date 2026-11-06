@@ -28,6 +28,7 @@ import imgChef from '../assets/galerie/chef-cuisinier.jpg';
 import imgFintech from '../assets/galerie/fintech-epargne.jpg';
 import imgVoyage from '../assets/galerie/voyage-benin.jpg';
 import imgFestival from '../assets/galerie/festival-nuit.jpg';
+import { Icone } from '../components/ui/Icone';
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
@@ -51,10 +52,9 @@ const ANIMATIONS_ETAPE = [
   '/assets/lottie/depart.json',
 ];
 
-type LogoIA = { nom: string; couleur: string; svg?: string; fa?: string };
+type LogoIA = { nom: string; couleur: string; svg: string };
 
 const LOGOS_IA: LogoIA[] = [
-  { nom: 'OpenAI', couleur: '#000000', fa: 'fa-openai' },
   { nom: 'Claude', couleur: '#D97757', svg: siClaude.path },
   { nom: 'Gemini', couleur: '#8E75B2', svg: siGooglegemini.path },
   { nom: 'Mistral', couleur: '#FA520F', svg: siMistralai.path },
@@ -73,17 +73,9 @@ const BandeauLogos: React.FC<{ titre: string }> = ({ titre }) => (
     <div className="logos-ia-piste">
       {[...LOGOS_IA, ...LOGOS_IA].map((logo, i) => (
         <span className="logo-ia" key={`${logo.nom}-${i}`}>
-          {logo.svg ? (
-            <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden>
-              <path d={logo.svg} fill={logo.couleur} />
-            </svg>
-          ) : (
-            <i
-              className={`fa-brands ${logo.fa}`}
-              style={{ color: logo.couleur, fontSize: '25px' }}
-              aria-hidden
-            />
-          )}
+          <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden>
+            <path d={logo.svg} fill={logo.couleur} />
+          </svg>
           <span className="logo-ia-nom">{logo.nom}</span>
         </span>
       ))}
@@ -480,11 +472,11 @@ export const LandingPage: React.FC = () => {
             </p>
             <div className="hero-actions" data-hero>
               <Link to="/register" className="btn btn-ruban">
-                <i className="fa-solid fa-bolt" aria-hidden />
+                <Icone nom="bolt" />
                 <span>{t.hero.cta1}</span>
               </Link>
               <a href="#galerie" className="btn btn-ligne">
-                <i className="fa-solid fa-images" aria-hidden />
+                <Icone nom="images" />
                 <span>{t.hero.cta2}</span>
               </a>
             </div>
@@ -592,7 +584,7 @@ export const LandingPage: React.FC = () => {
                     {e.num}
                   </div>
                   <h3 className="display-lg">
-                    <i className={`fa-solid ${e.icone} etape-icone`} aria-hidden /> {e.titre}
+                    <Icone nom={e.icone} className="etape-icone" /> {e.titre}
                   </h3>
                   <p className="corps">{e.texte}</p>
                   <div className="capacite-mots">
@@ -684,7 +676,7 @@ export const LandingPage: React.FC = () => {
                   {c.idx}
                 </div>
                 <div className="capacite-titre">
-                  <i className={`fa-solid ${c.icone} capacite-icone`} aria-hidden />
+                  <Icone nom={c.icone} className="capacite-icone" />
                   <h3 className="display-md">{c.titre}</h3>
                 </div>
                 <div className="capacite-texte">
@@ -721,7 +713,7 @@ export const LandingPage: React.FC = () => {
               <article className="vision-axe" key={a.titre} data-reveal>
                 <div className="vision-axe-haut">
                   <span className="vision-icone" aria-hidden>
-                    <i className={`fa-solid ${a.icone}`} />
+                    <Icone nom={a.icone} />
                   </span>
                   <span className="vision-statut">{a.statut}</span>
                 </div>
@@ -776,7 +768,7 @@ export const LandingPage: React.FC = () => {
                 <div className="carte-meta">
                   <h3>{c.titre}</h3>
                   <span className="carte-demo">
-                    <i className="fa-solid fa-flask" aria-hidden /> {t.galerie.badge}
+                    <Icone nom="flask" /> {t.galerie.badge}
                   </span>
                 </div>
                 <p className="carte-brief">{c.brief}</p>
@@ -814,7 +806,7 @@ export const LandingPage: React.FC = () => {
             <ul>
               {t.tarifs.inclus.map((f) => (
                 <li key={f}>
-                  <i className="fa-solid fa-check" aria-hidden /> {f}
+                  <Icone nom="check" /> {f}
                 </li>
               ))}
             </ul>
@@ -837,7 +829,7 @@ export const LandingPage: React.FC = () => {
 
           <p className="tarifs-note">{t.tarifs.note}</p>
           <p className="tarifs-paiement">
-            <i className="fa-solid fa-circle-info" aria-hidden /> {t.tarifs.paiementNote}
+            <Icone nom="circle-info" /> {t.tarifs.paiementNote}
           </p>
         </div>
       </section>
@@ -861,7 +853,7 @@ export const LandingPage: React.FC = () => {
                 <span>{t.cta.b1}</span>
               </Link>
               <Link to="/documentation" className="btn btn-ligne">
-                <i className="fa-solid fa-book-open" aria-hidden />
+                <Icone nom="book-open" />
                 <span>{t.cta.b2}</span>
               </Link>
             </div>
