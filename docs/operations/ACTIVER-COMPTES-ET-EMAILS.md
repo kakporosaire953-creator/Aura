@@ -73,14 +73,27 @@ causes probables.
 
 ## 4. Activer le stockage (obligatoire pour les comptes)
 
-1. Tableau de bord Vercel → votre projet → **Storage** → **Create Database**
-   → **KV / Upstash Redis** (l'offre gratuite suffit pour démarrer).
-2. **Connect** la base au projet, environnements **Production** et
-   **Preview**. Vercel injecte `KV_REST_API_URL` et `KV_REST_API_TOKEN`.
-3. **Redéployer** : les variables ne s'appliquent jamais au déploiement en
+1. Tableau de bord Vercel → votre projet → **Storage** (ancien libellé) ou
+   **Marketplace** (libellé actuel) → **Upstash Redis** — c'est le produit
+   autrefois appelé *Vercel KV*. L'offre gratuite suffit pour démarrer.
+2. À la création, choisir une région proche des utilisateurs
+   (`eu-west-1` / Paris convient depuis l'Afrique de l'Ouest) et **Connect**
+   la base au projet pour les environnements **Production** et **Preview**.
+3. L'intégration injecte des variables d'environnement. AURA n'en lit que
+   deux : `KV_REST_API_URL` et `KV_REST_API_TOKEN`.
+   **Vérifier les noms** dans `Settings → Environment Variables` :
+   si l'intégration a créé `UPSTASH_REDIS_REST_URL` /
+   `UPSTASH_REDIS_REST_TOKEN`, recopier les valeurs dans `KV_REST_API_URL` /
+   `KV_REST_API_TOKEN` (alias acceptés : `AURA_KV_URL`, `AURA_KV_TOKEN`).
+4. **Redéployer** : les variables ne s'appliquent jamais au déploiement en
    cours. `Deployments → … → Redeploy`, ou un commit vide sur `main`.
 
-Vérification : `/api/status` doit afficher `features.accounts: "live"`.
+Vérification : `/api/status` doit afficher `features.accounts: "live"` et ne
+plus contenir de champ `setup.accounts`.
+
+> **Ne jamais préfixer une variable par `VITE_`** : Vite expose tout ce qui
+> porte ce préfixe au navigateur. Les clés (KV, Resend, moteur IA) sont lues
+> uniquement côté serveur et doivent rester sans préfixe.
 
 > Auto-hébergement / serveur classique : à défaut de KV, définissez
 > `AURA_DATA_DIR=/var/lib/aura` (dossier persistant). Le pilote fichier écrit
@@ -109,6 +122,22 @@ volontaire : aucun message n'est annoncé comme parti.
 
 > `AURA_PUBLIC_ORIGIN` n'est jamais déduite de l'en-tête `Host` : c'est ce qui
 > empêche un lien de réinitialisation de pointer vers un domaine usurpé.
+
+## 5 bis. Activer le moteur IA (facultatif, indépendant des comptes)
+
+Les comptes fonctionnent sans IA, et l'IA fonctionne sans comptes. Une seule
+clé suffit pour que `features.chat` passe à `live` :
+
+| Variable | Remarque |
+|---|---|
+| `GEMINI_API_KEY` | alias historique : `AURA_GEMINI_API_KEY` |
+| `GROQ_API_KEY` | autre fournisseur possible |
+| `OPENROUTER_API_KEY` | autre fournisseur possible |
+| `AI_DEFAULT_PROVIDER` | `auto` par défaut ; sinon `gemini`, `groq`, `openrouter` |
+
+L'ordre de repli est `gemini,groq,openrouter` (`AI_FALLBACK_ORDER` pour le
+changer). Aucun nom de fournisseur ni de modèle n'est exposé par `/api/status` :
+seul le booléen `config.iaConfiguree` est public.
 
 ## 6. Parcours de vérification manuel, après activation
 
