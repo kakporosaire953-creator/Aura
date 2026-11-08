@@ -9,7 +9,7 @@
  * déclare la recherche indisponible et l'interface n'affiche aucun
  * résultat simulé.
  */
-import * as serviceIa from '../ai/service';
+import * as serviceIa from '../ai/service.js';
 
 export type SourceReelle = { titre: string; url: string; extrait: string };
 export type ResultatRecherche = {

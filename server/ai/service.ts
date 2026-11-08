@@ -11,18 +11,18 @@
  * l'interface : les `ReponseAi` portent ces métadonnées pour les logs et
  * l'usage interne uniquement.
  */
-import { maxReplis } from './config';
-import { ErreurAi, erreurAucunFournisseur, natureDe } from './errors';
-import { executerAvecRepli } from './fallback';
-import { candidatsPour, desactiverFournisseur, signalerQuota } from './registre';
-import { capacitesPour } from './router';
+import { maxReplis } from './config.js';
+import { ErreurAi, erreurAucunFournisseur, natureDe } from './errors.js';
+import { executerAvecRepli } from './fallback.js';
+import { candidatsPour, desactiverFournisseur, signalerQuota } from './registre.js';
+import { capacitesPour } from './router.js';
 import type {
   ReponseAi,
   RequeteAi,
   RequeteStructuree,
   ResultatGrounding,
   TacheAi,
-} from './types';
+} from './types.js';
 
 export type Journalisation = {
   /** Enregistre la consommation (couche usage) — optionnel. */

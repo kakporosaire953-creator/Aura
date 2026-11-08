@@ -19,14 +19,14 @@ import {
   validerInscription,
   verifierMotDePasse,
   DUREE_SESSION_MS,
-} from './accounts';
+} from './accounts.js';
 import {
   entrepotComptes,
   nouvelId,
   preferencesParDefaut,
   profilParDefaut,
-} from './db/entrepots';
-import type { Compte, ComptePublic } from './db/types';
+} from './db/entrepots.js';
+import type { Compte, ComptePublic } from './db/types.js';
 
 /** En-tête d'agent tronqué : sert uniquement à décrire une session à son propriétaire. */
 function userAgent(req: Request): string | null {
@@ -39,21 +39,21 @@ function langueDe(req: Request): 'fr' | 'en' {
   const corps = (req.body ?? {}) as { langue?: unknown };
   return langueDepuis(corps.langue);
 }
-import { validerMessages } from './chat';
-import * as serviceIa from './ai/service';
-import { ErreurAi } from './ai/errors';
-import { createApiV1 } from './v1/routes';
+import { validerMessages } from './chat.js';
+import * as serviceIa from './ai/service.js';
+import { ErreurAi } from './ai/errors.js';
+import { createApiV1 } from './v1/routes.js';
 import {
   REGLES,
   asyncRoute,
   limiteParIp,
   limiteIdentifiant,
   depasse,
-} from './v1/middlewares';
-import { ipClient } from './v1/limite';
-import { createRoutesRecuperation, envoyerVerificationCompte } from './auth/recuperation';
-import { mailConfigure } from './mail/adaptateur';
-import { langueDepuis } from './mail/gabarits';
+} from './v1/middlewares.js';
+import { ipClient } from './v1/limite.js';
+import { createRoutesRecuperation, envoyerVerificationCompte } from './auth/recuperation.js';
+import { mailConfigure } from './mail/adaptateur.js';
+import { langueDepuis } from './mail/gabarits.js';
 
 const comptes = entrepotComptes();
 

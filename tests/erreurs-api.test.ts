@@ -85,3 +85,27 @@ describe('Réponses d’erreur de l’API', () => {
     }
   });
 });
+
+describe('Fonction serverless (api/index.ts)', () => {
+  test('la sonde de vie répond sans charger le routeur', async () => {
+    const express2 = (await import('express')).default;
+    const { default: handler } = await import('../api/index');
+    const app = express2();
+    app.use('/api', (req, res) => void handler(req as never, res as never));
+    const s = await new Promise<Server>((resolve) => {
+      const serveur2 = app.listen(0, '127.0.0.1', () => resolve(serveur2));
+    });
+    try {
+      const port = (s.address() as { port: number }).port;
+      const r = await fetch(`http://127.0.0.1:${port}/api/__ping`);
+      assert.equal(r.status, 200);
+      assert.deepEqual(await r.json(), { ok: true, fonction: 'vivante' });
+
+      // Le routeur complet reste joignable après la sonde.
+      const statut = await fetch(`http://127.0.0.1:${port}/api/status`);
+      assert.equal(statut.status, 200);
+    } finally {
+      await new Promise<void>((resolve) => s.close(() => resolve()));
+    }
+  });
+});

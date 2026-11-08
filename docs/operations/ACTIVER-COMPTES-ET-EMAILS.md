@@ -26,6 +26,17 @@ Trois causes possibles, dans l'ordre de fréquence :
 | 2 | Variables ajoutées **après** le dernier déploiement | `503` persistant malgré la config |
 | 3 | Protection de déploiement Vercel sur le domaine | `401`/`403` sur **toute** page, avant même le site |
 
+## 1 bis. Si `/api/status` renvoie « 500 FUNCTION_INVOCATION_FAILED »
+
+Ce n'est pas un problème de configuration : la fonction serverless ne démarre
+pas. Cause identifiée et corrigée (voir `docs/analyse/016-fonction-serverless-500.md`) :
+le projet est en ESM et les imports relatifs du serveur n'avaient pas
+d'extension. **Fusionnez la PR #29 puis redéployez** — `npm run verif:prod`
+échoue désormais si ce défaut revient.
+
+Après redéploiement, `/api/__ping` doit répondre `{"ok":true,"fonction":"vivante"}`
+et `/api/status` du JSON.
+
 ## 2. Vérifier en 10 secondes, sans rien installer
 
 Ouvrez dans le navigateur :

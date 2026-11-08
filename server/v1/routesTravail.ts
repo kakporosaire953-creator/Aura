@@ -13,18 +13,18 @@ import {
   invalide,
   limiteParCompte,
   type ReqV1,
-} from './middlewares';
-import { nouvelId } from '../db/entrepots';
+} from './middlewares.js';
+import { nouvelId } from '../db/entrepots.js';
 import type {
   Memoire,
   Mission,
   PrioriteMission,
   StatutMission,
   TypeMemoire,
-} from '../db/types';
-import * as serviceIa from '../ai/service';
-import { ErreurAi } from '../ai/errors';
-import { enregistrerUsage } from '../ai/usage';
+} from '../db/types.js';
+import * as serviceIa from '../ai/service.js';
+import { ErreurAi } from '../ai/errors.js';
+import { enregistrerUsage } from '../ai/usage.js';
 
 const STATUTS: readonly StatutMission[] = ['a_faire', 'en_cours', 'en_attente', 'terminee', 'archivee'];
 const PRIORITES: readonly PrioriteMission[] = ['basse', 'moyenne', 'haute', 'urgente'];

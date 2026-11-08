@@ -23,9 +23,9 @@ import {
   empreinteJeton,
   empreinteValeur,
   hacherMotDePasse,
-} from '../accounts';
-import { entrepotComptes, entrepotJetons } from '../db/entrepots';
-import type { Compte, Jeton } from '../db/types';
+} from '../accounts.js';
+import { entrepotComptes, entrepotJetons } from '../db/entrepots.js';
+import type { Compte, Jeton } from '../db/types.js';
 import {
   REGLES,
   asyncRoute,
@@ -33,10 +33,10 @@ import {
   limiteIdentifiant,
   limiteParIp,
   versPublicV1,
-} from '../v1/middlewares';
-import { mailConfigure, raisonMailIndisponible } from '../mail/adaptateur';
-import { langueDepuis, type LangueMail } from '../mail/gabarits';
-import { envoyerReinitialisation, envoyerVerification } from '../mail/service';
+} from '../v1/middlewares.js';
+import { mailConfigure, raisonMailIndisponible } from '../mail/adaptateur.js';
+import { langueDepuis, type LangueMail } from '../mail/gabarits.js';
+import { envoyerReinitialisation, envoyerVerification } from '../mail/service.js';
 
 /* ── Utilitaires ── */
 

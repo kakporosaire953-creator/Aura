@@ -9,9 +9,9 @@
  *   large à travers le catalogue (les capacités varient par modèle) ;
  * - En-têtes d'attribution optionnels (`HTTP-Referer`, `X-OpenRouter-Title`).
  */
-import { configOpenRouter } from '../config';
-import type { CapacitesAi } from '../types';
-import { FournisseurCompatOpenAi } from './openai-compat';
+import { configOpenRouter } from '../config.js';
+import type { CapacitesAi } from '../types.js';
+import { FournisseurCompatOpenAi } from './openai-compat.js';
 
 const CAPACITES: CapacitesAi = {
   texte: true,

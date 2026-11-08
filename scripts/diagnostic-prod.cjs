@@ -102,7 +102,27 @@ async function principal() {
     ligne('attention', 'Aucun en-tête CSP sur le document', 'Il n’est posé que par le serveur ou vercel.json — vérifiez la configuration du domaine.');
   }
 
-  /* 2. État déclaré par l'application. */
+  /* 2. La fonction serverless s'exécute-t-elle ? (/api/__ping ne charge
+        aucune dépendance : c'est le test le plus bas niveau possible.) */
+  const ping = await appel('/api/__ping');
+  const corpsPing = await ping.text();
+  if (ping.status === 200 && corpsPing.includes('vivante')) {
+    ligne('ok', 'La fonction serverless s’exécute', '/api/__ping répond sans charger le routeur');
+  } else if (ping.status === 404) {
+    ligne(
+      'attention',
+      'Sonde /api/__ping absente (HTTP 404)',
+      'Déploiement antérieur à cette version : le diagnostic continue avec les autres routes.',
+    );
+  } else {
+    ligne(
+      'echec',
+      `La fonction serverless ne s’exécute pas (HTTP ${ping.status})`,
+      'C’est un problème de build ou de démarrage, pas de configuration : consultez les Runtime Logs Vercel (onglet Logs du déploiement).',
+    );
+  }
+
+  /* 3. État déclaré par l'application. */
   const statut = await appel('/api/status');
   const etat = await json(statut);
   if (statut.status !== 200) {
@@ -121,7 +141,7 @@ async function principal() {
     );
   }
 
-  /* 3. Le stockage accepte-t-il une écriture potentielle ?
+  /* 4. Le stockage accepte-t-il une écriture potentielle ?
         Mot de passe volontairement trop court : la route répond 400 sans
         créer de compte — sauf si le stockage est indisponible (503). */
   const inscription = await appel('/api/auth/register', {
@@ -142,7 +162,7 @@ async function principal() {
     ligne('attention', `Inscription : réponse inattendue (HTTP ${inscription.status})`);
   }
 
-  /* 4. La connexion refuse-t-elle proprement ? */
+  /* 5. La connexion refuse-t-elle proprement ? */
   const connexion = await appel('/api/auth/login', {
     method: 'POST',
     corps: { email: adresseTest, password: 'MotDePasseQuelconque1!' },
@@ -157,7 +177,7 @@ async function principal() {
     ligne('attention', `Connexion : réponse inattendue (HTTP ${connexion.status})`);
   }
 
-  /* 5. Les routes de récupération sont-elles déployées ?
+  /* 6. Les routes de récupération sont-elles déployées ?
         Un jeton bidon doit produire un refus métier (400), pas un 404. */
   const reinit = await appel('/api/auth/reset-password', {
     method: 'POST',
@@ -174,7 +194,7 @@ async function principal() {
     ligne('attention', `Réinitialisation : réponse inattendue (HTTP ${reinit.status})`);
   }
 
-  /* 6. L'envoi d'e-mails est-il configuré ?
+  /* 7. L'envoi d'e-mails est-il configuré ?
         Une adresse bien formée mais inexistante : 503 = pas de fournisseur,
         202 = fournisseur configuré (aucun message envoyé, aucun compte). */
   const oubli = await appel('/api/auth/forgot-password', {
@@ -213,8 +233,9 @@ function conclure() {
     console.log('Causes les plus fréquentes, dans cet ordre :');
     console.log('  1. Stockage non configuré → Vercel KV (KV_REST_API_URL / KV_REST_API_TOKEN) puis redéploiement.');
     console.log('  2. Fournisseur d’e-mails absent → 503 attendu sur la récupération, comptes pourtant utilisables.');
-    console.log('  3. Protection de déploiement Vercel active sur le domaine public.');
-    console.log('  4. Variables ajoutées après le dernier déploiement → relancer un déploiement.\n');
+    console.log('  3. Fonction /api en échec au démarrage (500 FUNCTION_INVOCATION_FAILED) → Runtime Logs Vercel.');
+    console.log('  4. Protection de déploiement Vercel active sur le domaine public.');
+    console.log('  5. Variables ajoutées après le dernier déploiement → relancer un déploiement.\n');
     process.exit(1);
   }
   console.log(`${attentions} avertissement(s), aucun blocage.\n`);

@@ -15,10 +15,10 @@ import {
   DUREE_JETON_VERIFICATION_MS,
   hacherMotDePasse,
   verifierMotDePasse,
-} from '../accounts';
-import { envoyerVerificationCompte } from '../auth/recuperation';
-import { mailConfigure, raisonMailIndisponible } from '../mail/adaptateur';
-import { langueDepuis } from '../mail/gabarits';
+} from '../accounts.js';
+import { envoyerVerificationCompte } from '../auth/recuperation.js';
+import { mailConfigure, raisonMailIndisponible } from '../mail/adaptateur.js';
+import { langueDepuis } from '../mail/gabarits.js';
 import {
   REGLES,
   asyncRoute,
@@ -28,7 +28,7 @@ import {
   limiteIdentifiant,
   limiteParCompte,
   type ReqV1,
-} from './middlewares';
+} from './middlewares.js';
 
 /** Libellé lisible d'un en-tête d'agent — affiché au propriétaire du compte. */
 export function decrireAgent(agent: string | null | undefined): string {

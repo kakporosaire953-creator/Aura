@@ -4,7 +4,7 @@
  * des statuts d'erreur. Les clés transitent uniquement dans les en-têtes,
  * jamais journalisées.
  */
-import { CODES_AI, ErreurAi, classerStatut } from './errors';
+import { CODES_AI, ErreurAi, classerStatut } from './errors.js';
 
 /** Timeout applicatif (AbortError/TimeoutError) — rattrapé en ErreurAi. */
 export async function appelJson(

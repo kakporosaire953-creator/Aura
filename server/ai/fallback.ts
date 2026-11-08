@@ -13,8 +13,8 @@
  *    dans la limite des candidats) ;
  *  - chaque bascule est journalisée par la couche usage (événement).
  */
-import { estRecuperable, ErreurAi, natureDe } from './errors';
-import type { FournisseurAi } from './types';
+import { estRecuperable, ErreurAi, natureDe } from './errors.js';
+import type { FournisseurAi } from './types.js';
 
 export type OptionsRepli = {
   maxTentatives: number;

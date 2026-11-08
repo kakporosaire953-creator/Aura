@@ -7,9 +7,9 @@
  *   texte) — déclaré honnêtement dans les capacités ;
  * - Erreurs et quotas normalisés par le transport commun.
  */
-import { configGroq } from '../config';
-import type { CapacitesAi } from '../types';
-import { FournisseurCompatOpenAi } from './openai-compat';
+import { configGroq } from '../config.js';
+import type { CapacitesAi } from '../types.js';
+import { FournisseurCompatOpenAi } from './openai-compat.js';
 
 const CAPACITES: CapacitesAi = {
   texte: true,

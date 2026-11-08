@@ -14,13 +14,13 @@ import {
   invalide,
   limiteParCompte,
   type ReqV1,
-} from './middlewares';
-import { nouvelId } from '../db/entrepots';
-import type { SourceRecherche, TypeCreation, VersionCreation } from '../db/types';
-import { choisirConnecteur } from '../search/connecteurs';
-import * as serviceIa from '../ai/service';
-import { ErreurAi } from '../ai/errors';
-import { enregistrerUsage } from '../ai/usage';
+} from './middlewares.js';
+import { nouvelId } from '../db/entrepots.js';
+import type { SourceRecherche, TypeCreation, VersionCreation } from '../db/types.js';
+import { choisirConnecteur } from '../search/connecteurs.js';
+import * as serviceIa from '../ai/service.js';
+import { ErreurAi } from '../ai/errors.js';
+import { enregistrerUsage } from '../ai/usage.js';
 
 const TYPES_CREATION: readonly TypeCreation[] = [
   'document',

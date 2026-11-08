@@ -6,7 +6,7 @@
  * et identifiants techniques. Les clés API ne figurent jamais dans les
  * événements.
  */
-import { nouvelId, type EntrepotDonnees } from '../db/entrepots';
+import { nouvelId, type EntrepotDonnees } from '../db/entrepots.js';
 
 export type TraceUsage = {
   fournisseur: string;

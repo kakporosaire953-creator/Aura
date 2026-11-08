@@ -9,8 +9,9 @@
     "lint": "tsc --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
     "start": "NODE_ENV=production node --env-file-if-exists=.env --import tsx server.ts",
-    "verif:prod": "npm run build && node scripts/verifier-prod.cjs",
-    "diagnostic": "node scripts/diagnostic-prod.cjs"
+    "verif:prod": "npm run build && node scripts/verifier-prod.cjs && npm run verif:fonction",
+    "diagnostic": "node scripts/diagnostic-prod.cjs",
+    "verif:fonction": "node scripts/verifier-fonction.cjs"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
