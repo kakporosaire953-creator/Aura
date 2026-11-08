@@ -8,7 +8,7 @@
  *
  * Changer les priorités = changer la configuration, pas le backend.
  */
-import type { CapacitesAi, FournisseurAi, TacheAi } from './types';
+import type { CapacitesAi, FournisseurAi, TacheAi } from './types.js';
 
 export type PolitiqueTache = {
   capacitesRequises: (keyof CapacitesAi)[];

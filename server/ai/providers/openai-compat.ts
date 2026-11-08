@@ -7,16 +7,16 @@
  * capacités, formats de sortie) mais partage ce transport — pas de
  * duplication, pas de SDK tiers.
  */
-import { CODES_AI, ErreurAi } from '../errors';
-import { timeoutMs } from '../config';
-import { appelJson, lireSSE } from '../transport';
+import { CODES_AI, ErreurAi } from '../errors.js';
+import { timeoutMs } from '../config.js';
+import { appelJson, lireSSE } from '../transport.js';
 import type {
   CapacitesAi,
   FournisseurAi,
   RequeteAi,
   RequeteStructuree,
   ReponseAi,
-} from '../types';
+} from '../types.js';
 
 export type OptionsCompat = {
   id: string;

@@ -17,34 +17,34 @@ import {
   limiteParCompte,
   versPublicV1,
   type ReqV1,
-} from './middlewares';
+} from './middlewares.js';
 import {
   profilParDefaut,
   preferencesParDefaut,
   nouvelId,
-} from '../db/entrepots';
+} from '../db/entrepots.js';
 import type {
   Message,
   PieceJointe,
   PreferencesUtilisateur,
   ProfilContextuel,
   StatutMessage,
-} from '../db/types';
-import { construireContexte, versMessagesModele } from '../services/contexte';
-import * as serviceIa from '../ai/service';
-import { ErreurAi } from '../ai/errors';
-import { enregistrerUsage, consommationParFournisseur } from '../ai/usage';
-import type { ImageAi, MessageAi } from '../ai/types';
-import { createRoutesTravail } from './routesTravail';
-import { createRoutesCompte } from './routesCompte';
-import { createRoutesCreation } from './routesCreation';
+} from '../db/types.js';
+import { construireContexte, versMessagesModele } from '../services/contexte.js';
+import * as serviceIa from '../ai/service.js';
+import { ErreurAi } from '../ai/errors.js';
+import { enregistrerUsage, consommationParFournisseur } from '../ai/usage.js';
+import type { ImageAi, MessageAi } from '../ai/types.js';
+import { createRoutesTravail } from './routesTravail.js';
+import { createRoutesCompte } from './routesCompte.js';
+import { createRoutesCreation } from './routesCreation.js';
 import {
   empreinteJeton,
   lireJetonSession,
   nomCookieSession,
   serialiserCookie,
   verifierMotDePasse,
-} from '../accounts';
+} from '../accounts.js';
 
 const LIMITE_CONTENU = 8000;
 

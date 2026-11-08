@@ -6,7 +6,7 @@
  * les feuilles de style externes), aucune image distante, aucun script.
  * Le nom du fournisseur d'envoi n'apparaît jamais.
  */
-import type { MessageMail } from './adaptateur';
+import type { MessageMail } from './adaptateur.js';
 
 export type LangueMail = 'fr' | 'en';
 

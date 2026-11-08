@@ -15,8 +15,8 @@ import type {
   RequeteStructuree,
   ReponseAi,
   ResultatGrounding,
-} from '../types';
-import { CODES_AI, ErreurAi } from '../errors';
+} from '../types.js';
+import { CODES_AI, ErreurAi } from '../errors.js';
 
 export type EchecSimule = 'quota' | 'auth' | 'reseau' | 'timeout' | 'vide' | 'contenu' | 'sortie';
 

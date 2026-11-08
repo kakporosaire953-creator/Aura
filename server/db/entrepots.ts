@@ -18,7 +18,7 @@ import {
   choisirBase,
   modifier,
   type BaseDeDonnees,
-} from './base';
+} from './base.js';
 import {
   donneesVides,
   SCHEMA_VERSION,
@@ -37,7 +37,7 @@ import {
   type TypeJeton,
   type SourceRecherche,
   type VersionCreation,
-} from './types';
+} from './types.js';
 
 export function nouvelId(prefixe = ''): string {
   const brut = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);

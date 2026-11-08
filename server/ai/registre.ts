@@ -6,13 +6,13 @@
  * journalisation technique interne et aux métriques ; ils ne sont jamais
  * renvoyés vers l'interface utilisateur.
  */
-import { modeMock, ordreFournisseurs, type IdFournisseur } from './config';
-import { FournisseurGemini } from './providers/gemini';
-import { FournisseurGroq } from './providers/groq';
-import { FournisseurOpenRouter } from './providers/openrouter';
-import { FournisseurMock } from './providers/mock';
-import { ordonnerCandidats } from './router';
-import type { CapacitesAi, FournisseurAi } from './types';
+import { modeMock, ordreFournisseurs, type IdFournisseur } from './config.js';
+import { FournisseurGemini } from './providers/gemini.js';
+import { FournisseurGroq } from './providers/groq.js';
+import { FournisseurOpenRouter } from './providers/openrouter.js';
+import { FournisseurMock } from './providers/mock.js';
+import { ordonnerCandidats } from './router.js';
+import type { CapacitesAi, FournisseurAi } from './types.js';
 
 let instances: FournisseurAi[] | null = null;
 const desactives = new Set<string>();

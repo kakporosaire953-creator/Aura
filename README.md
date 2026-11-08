@@ -31,6 +31,9 @@ npm test           # tests unitaires, d'intégration et d'interaction (base de t
                    # pas dans un vrai navigateur — voir docs/analyse/015-tests-navigateur.md
 npm run verif:prod # construit, puis vérifie que la production ne peut pas
                    # activer le mode simulation (voir scripts/verifier-prod.cjs)
+npm run diagnostic -- https://votre-site
+                   # état réel de l'authentification en ligne (lecture seule,
+                   # aucun compte créé) — voir docs/operations/ACTIVER-COMPTES-ET-EMAILS.md
 ```
 
 ## Variables d'environnement

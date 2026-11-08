@@ -6,11 +6,11 @@
  * Sans configuration complète, rien n'est envoyé et l'appelant reçoit
  * un refus explicite — aucun succès n'est jamais simulé.
  */
-import { envoyer, originePublique } from './adaptateur';
-import { gabaritReinitialisation, gabaritVerification, type LangueMail } from './gabarits';
-import type { ResultatEnvoi } from './adaptateur';
+import { envoyer, originePublique } from './adaptateur.js';
+import { gabaritReinitialisation, gabaritVerification, type LangueMail } from './gabarits.js';
+import type { ResultatEnvoi } from './adaptateur.js';
 
-export { mailConfigure, raisonMailIndisponible } from './adaptateur';
+export { mailConfigure, raisonMailIndisponible } from './adaptateur.js';
 
 function lien(chemin: string, jeton: string): string | null {
   const origine = originePublique();

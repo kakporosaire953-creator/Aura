@@ -8,9 +8,9 @@
  * - Recherche sourcée via grounding Google Search (les URLs proviennent
  *   des métadonnées de grounding — jamais inventées par le modèle).
  */
-import { configGemini, configRechercheGemini, timeoutMs } from '../config';
-import { CODES_AI, ErreurAi } from '../errors';
-import { appelJson, erreurDepuisStatut, lireSSE } from '../transport';
+import { configGemini, configRechercheGemini, timeoutMs } from '../config.js';
+import { CODES_AI, ErreurAi } from '../errors.js';
+import { appelJson, erreurDepuisStatut, lireSSE } from '../transport.js';
 import type {
   CapacitesAi,
   FournisseurAi,
@@ -19,7 +19,7 @@ import type {
   RequeteStructuree,
   ReponseAi,
   ResultatGrounding,
-} from '../types';
+} from '../types.js';
 
 const CAPACITES: CapacitesAi = {
   texte: true,

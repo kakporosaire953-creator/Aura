@@ -19,8 +19,8 @@
  */
 import { createHash } from 'node:crypto';
 import type { Request } from 'express';
-import type { BaseDeDonnees } from '../db/base';
-import { CLE } from '../db/base';
+import type { BaseDeDonnees } from '../db/base.js';
+import { CLE } from '../db/base.js';
 
 export type Verdict = {
   /** true si la tentative est refusée. */

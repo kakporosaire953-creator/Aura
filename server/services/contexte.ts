@@ -14,7 +14,7 @@
  * Ce qui n'est JAMAIS envoyé : les autres conversations, les données des
  * autres projets, les mémoires inactives, les mots de passe, les clés.
  */
-import type { Compte, Memoire, Message, Projet } from '../db/types';
+import type { Compte, Memoire, Message, Projet } from '../db/types.js';
 
 export type ContexteModele = {
   system: string;

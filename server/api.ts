@@ -19,14 +19,14 @@ import {
   validerInscription,
   verifierMotDePasse,
   DUREE_SESSION_MS,
-} from './accounts';
+} from './accounts.js';
 import {
   entrepotComptes,
   nouvelId,
   preferencesParDefaut,
   profilParDefaut,
-} from './db/entrepots';
-import type { Compte, ComptePublic } from './db/types';
+} from './db/entrepots.js';
+import type { Compte, ComptePublic } from './db/types.js';
 
 /** En-tête d'agent tronqué : sert uniquement à décrire une session à son propriétaire. */
 function userAgent(req: Request): string | null {
@@ -39,21 +39,21 @@ function langueDe(req: Request): 'fr' | 'en' {
   const corps = (req.body ?? {}) as { langue?: unknown };
   return langueDepuis(corps.langue);
 }
-import { validerMessages } from './chat';
-import * as serviceIa from './ai/service';
-import { ErreurAi } from './ai/errors';
-import { createApiV1 } from './v1/routes';
+import { validerMessages } from './chat.js';
+import * as serviceIa from './ai/service.js';
+import { ErreurAi } from './ai/errors.js';
+import { createApiV1 } from './v1/routes.js';
 import {
   REGLES,
   asyncRoute,
   limiteParIp,
   limiteIdentifiant,
   depasse,
-} from './v1/middlewares';
-import { ipClient } from './v1/limite';
-import { createRoutesRecuperation, envoyerVerificationCompte } from './auth/recuperation';
-import { mailConfigure } from './mail/adaptateur';
-import { langueDepuis } from './mail/gabarits';
+} from './v1/middlewares.js';
+import { ipClient } from './v1/limite.js';
+import { createRoutesRecuperation, envoyerVerificationCompte } from './auth/recuperation.js';
+import { mailConfigure } from './mail/adaptateur.js';
+import { langueDepuis } from './mail/gabarits.js';
 
 const comptes = entrepotComptes();
 
@@ -382,6 +382,37 @@ export function createApiApp(): express.Router {
       res.status(502).json({ error: 'Le moteur IA ne répond pas.', code: 'modele-indisponible' });
     }
   }));
+
+  /* ── Filets de sécurité de l'API ──
+     Toute réponse de /api doit rester du JSON : une page HTML d'erreur est
+     illisible par le client, qui affiche alors « le service ne répond pas »
+     sans pouvoir distinguer une panne d'une route absente. */
+
+  // Route inconnue sous /api : 404 JSON explicite (jamais le SPA).
+  api.use((_req, res) => {
+    res.status(404).json({ error: 'Ressource introuvable.', code: 'introuvable' });
+  });
+
+  // Erreur non capturée : le statut d'origine est respecté (un corps JSON
+  // malformé est une faute du client, pas une panne du serveur).
+  api.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+    if (res.headersSent) return;
+    const statut =
+      typeof (err as { status?: unknown })?.status === 'number'
+        ? (err as { status: number }).status
+        : typeof (err as { statusCode?: unknown })?.statusCode === 'number'
+          ? (err as { statusCode: number }).statusCode
+          : 500;
+    if (statut >= 400 && statut < 500) {
+      res.status(statut).json({ error: 'Requête invalide.', code: 'validation' });
+      return;
+    }
+    console.error(
+      '[api] erreur non gérée —',
+      err instanceof Error ? (err.stack ?? err.message) : err,
+    );
+    res.status(500).json({ error: 'Erreur interne du service.', code: 'interne' });
+  });
 
   return api;
 }

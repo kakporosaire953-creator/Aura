@@ -4,16 +4,16 @@
  * navigateur n'est crus sur parole.
  */
 import type { NextFunction, Request, Response } from 'express';
-import { empreinteJeton, lireJetonSession } from '../accounts';
+import { empreinteJeton, lireJetonSession } from '../accounts.js';
 import {
   baseDeDonnees,
   entrepotComptes,
   entrepotDonnees,
   type EntrepotComptes,
   type EntrepotDonnees,
-} from '../db/entrepots';
-import type { Compte, ComptePublic, Session } from '../db/types';
-import { compterTentative, ipClient, empreinteIdentifiant } from './limite';
+} from '../db/entrepots.js';
+import type { Compte, ComptePublic, Session } from '../db/types.js';
+import { compterTentative, ipClient, empreinteIdentifiant } from './limite.js';
 
 export type ReqV1 = Request & {
   compte?: Compte;

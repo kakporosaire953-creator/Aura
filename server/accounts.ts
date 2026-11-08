@@ -11,7 +11,7 @@
  * les anciens dépôts sont migrés automatiquement à la première lecture.
  */
 import { createHash, randomBytes, scrypt as scryptCb, timingSafeEqual } from 'node:crypto';
-import type { Session } from './db/types';
+import type { Session } from './db/types.js';
 
 export type { Session };
 

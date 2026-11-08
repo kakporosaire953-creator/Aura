@@ -6,31 +6,8 @@ import { useT } from '../app/prefs';
 import { useSession, appelerAuth } from '../app/session';
 import { ouvrirDemo, simulationDisponible } from '../app/simulation';
 import { destinationApresConnexion } from '../app/retour';
+import { messageErreur } from '../app/messages-auth';
 import { Icone } from '../components/ui/Icone';
-
-/** Traduction des codes d'erreur de l'API en messages locaux (fr/en). */
-function messageErreur(
-  code: string | undefined,
-  secours: string,
-  t: ReturnType<typeof useT>,
-): string {
-  switch (code) {
-    case 'identifiants':
-      return t.auth.errIdentifiants;
-    case 'existe':
-      return t.auth.errExiste;
-    case 'validation':
-      return t.auth.errSaisie;
-    case 'stockage-indisponible':
-      return t.auth.errStockage;
-    case 'limite':
-      return t.auth.errLimite;
-    case 'reseau':
-      return t.auth.errServeur;
-    default:
-      return secours || t.auth.errServeur;
-  }
-}
 
 /**
  * Authentification — panneau gauche « film ruban » (boucle de 8 s)
@@ -130,7 +107,7 @@ export const AuthPage: React.FC = () => {
       return;
     }
     setEtat('erreur');
-    setErreur(messageErreur(res.code, res.erreur ?? '', t));
+    setErreur(messageErreur(res.code, res.erreur ?? '', t.auth, res.statut));
     setDetail(res.detail ?? null);
   };
 
