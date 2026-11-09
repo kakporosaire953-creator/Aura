@@ -181,6 +181,8 @@ export async function appelerAuth(
   detail?: Record<string, string>;
   /** Code HTTP observé — 0 quand la requête n'a jamais abouti. */
   statut?: number;
+  /** Résultat de l'envoi du lien de confirmation, à l'inscription. */
+  envoiMail?: { ok: boolean; code?: string };
 }> {
   // Mode simulation : même contrat de réponse, stockage local.
   if (simulationActivee()) {
@@ -209,8 +211,11 @@ export async function appelerAuth(
       error?: string;
       code?: string;
       champs?: Record<string, string>;
+      envoiMail?: { ok: boolean; code?: string };
     };
-    if (r.ok && d.compte) return { ok: true, compte: d.compte };
+    if (r.ok && d.compte) {
+      return { ok: true, compte: d.compte, ...(d.envoiMail ? { envoiMail: d.envoiMail } : {}) };
+    }
     // Réponse sans notre contrat JSON (500 de la fonction, page d'erreur d'un
     // proxy) : on le dit distinctement d'une coupure réseau.
     return {

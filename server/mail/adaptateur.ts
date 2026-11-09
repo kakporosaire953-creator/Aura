@@ -22,7 +22,13 @@ export type MessageMail = {
 
 export type ResultatEnvoi =
   | { ok: true }
-  | { ok: false; raison: string; code: 'mail-indisponible' | 'mail-refuse' };
+  | {
+      ok: false;
+      raison: string;
+      code: 'mail-indisponible' | 'mail-refuse';
+      /** Statut HTTP du fournisseur — pour le diagnostic, jamais pour l'UI. */
+      statut?: number;
+    };
 
 type Configuration = {
   fournisseur: string;
@@ -146,9 +152,27 @@ export async function envoyer(message: MessageMail): Promise<ResultatEnvoi> {
     });
 
     if (!r.ok) {
-      // Seul le statut est journalisé : jamais le corps, jamais l'adresse.
-      console.error(`[mail] envoi refusé par le fournisseur (${r.status}).`);
-      return { ok: false, raison: "L'envoi de l'e-mail a échoué.", code: 'mail-refuse' };
+      // Le statut et le message public du fournisseur sont journalisés
+      // (« domaine non vérifié », « quota dépassé », « clé invalide »…),
+      // après retrait de toute adresse : c'est ce qui permet à l'exploitant
+      // de comprendre un refus sans jamais exposer un destinataire.
+      let detail = '';
+      try {
+        const corps = (await r.json()) as { message?: unknown; name?: unknown };
+        detail = String(corps?.message ?? corps?.name ?? '').slice(0, 200);
+      } catch {
+        /* corps absent ou illisible : le statut suffit */
+      }
+      const sansAdresses = detail.replace(/[^\s@]+@[^\s@]+\.[^\s@]+/g, '[adresse]');
+      console.error(
+        `[mail] envoi refusé par le fournisseur (${r.status})${sansAdresses ? ` — ${sansAdresses}` : ''}`,
+      );
+      return {
+        ok: false,
+        raison: "L'envoi de l'e-mail a échoué.",
+        code: 'mail-refuse',
+        statut: r.status,
+      };
     }
     return { ok: true };
   } catch (e) {

@@ -258,11 +258,19 @@ export function createApiApp(): express.Router {
     await comptes.creerSession(session);
 
     definirSession(res, jeton);
-    // Envoi de vérification en tâche de fond : la vérification n'est pas
-    // bloquante, et un échec d'envoi ne fait jamais échouer l'inscription.
-    void envoyerVerificationCompte(utilisateur, langueDe(req)).catch(() => {});
+    // L'envoi est attendu (au plus 8 s, un seul essai) pour que la réponse
+    // dise la vérité : un compte créé sans lien reçu est une impasse, et
+    // l'interface doit l'annoncer tout de suite plutôt que de laisser
+    // croire qu'un e-mail est parti.
+    const envoi = await envoyerVerificationCompte(utilisateur, langueDe(req)).catch(
+      (): { ok: boolean; code?: string } => ({ ok: false, code: 'mail-refuse' }),
+    );
 
-    res.status(201).json({ compte: versPublic(utilisateur), mailConfigure: mailConfigure() });
+    res.status(201).json({
+      compte: versPublic(utilisateur),
+      mailConfigure: mailConfigure(),
+      envoiMail: envoi.ok ? { ok: true } : { ok: false, code: envoi.code ?? 'mail-refuse' },
+    });
   }));
 
   /* ── Connexion ── */

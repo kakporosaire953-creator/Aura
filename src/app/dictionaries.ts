@@ -167,7 +167,9 @@ export interface Content {
     confirmerSous: string;
     confirmerAide: string;
     confirmerEnvoye: string;
-    confirmerEchec: string;
+    confirmerIndisponible: string;
+    confirmerRefus: string;
+    confirmerLimite: string;
     confirmerRenvoyer: string;
     confirmerDeconnexion: string;
   };
@@ -993,7 +995,12 @@ const contentFr: Content = {
       'Votre espace s’ouvrira dès que vous aurez cliqué sur le lien envoyé par e-mail. C’est ce qui évite qu’une adresse soit utilisée sans l’accord de son propriétaire.',
     confirmerAide: 'Vous n’avez rien reçu ? Vérifiez les indésirables, puis demandez un nouveau lien.',
     confirmerEnvoye: 'Un nouvel e-mail vient de partir. Le lien précédent a été invalidé.',
-    confirmerEchec: 'L’envoi a échoué : l’envoi d’e-mails n’est pas configuré sur cet environnement.',
+    confirmerIndisponible:
+      'L’envoi d’e-mails n’est pas configuré sur cet environnement : aucun lien ne peut partir pour le moment.',
+    confirmerRefus:
+      'L’envoi a échoué de notre côté : le service d’e-mails a refusé le message. Réessayez dans quelques minutes ; si cela persiste, signalez-le.',
+    confirmerLimite:
+      'Trop de demandes de renvoi en peu de temps. Réessayez dans une heure.',
     confirmerRenvoyer: 'Renvoyer le lien',
     confirmerDeconnexion: 'Se déconnecter',
   },
@@ -1812,7 +1819,12 @@ const contentEn: Content = {
       'Your workspace opens as soon as you click the link we emailed you. It is what prevents an address from being used without its owner’s consent.',
     confirmerAide: 'Nothing received? Check your spam folder, then ask for a new link.',
     confirmerEnvoye: 'A new e-mail has just been sent. The previous link is now invalid.',
-    confirmerEchec: 'Sending failed: e-mail delivery is not configured on this environment.',
+    confirmerIndisponible:
+      'E-mail delivery is not configured on this environment: no link can be sent for now.',
+    confirmerRefus:
+      'Sending failed on our side: the e-mail service refused the message. Try again in a few minutes; if it persists, let us know.',
+    confirmerLimite:
+      'Too many resend requests in a short time. Try again in an hour.',
     confirmerRenvoyer: 'Resend the link',
     confirmerDeconnexion: 'Sign out',
   },

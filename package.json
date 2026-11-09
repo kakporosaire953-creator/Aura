@@ -11,7 +11,8 @@
     "start": "NODE_ENV=production node --env-file-if-exists=.env --import tsx server.ts",
     "verif:prod": "npm run build && node scripts/verifier-prod.cjs && npm run verif:fonction",
     "diagnostic": "node scripts/diagnostic-prod.cjs",
-    "verif:fonction": "node scripts/verifier-fonction.cjs"
+    "verif:fonction": "node scripts/verifier-fonction.cjs",
+    "verif:mail": "node --import tsx scripts/verifier-mail.ts"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",

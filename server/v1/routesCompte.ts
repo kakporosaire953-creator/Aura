@@ -215,9 +215,16 @@ export function createRoutesCompte(): express.Router {
       const corps = (req.body ?? {}) as { langue?: unknown };
       const envoi = await envoyerVerificationCompte(compte, langueDepuis(corps.langue));
       if (!envoi.ok) {
-        res.status(503).json({
-          error: raisonMailIndisponible() || "L'envoi de l'e-mail a échoué.",
-          code: 'mail-indisponible',
+        // Deux causes distinctes, deux réponses distinctes. Les confondre
+        // affichait « pas configuré » alors que le fournisseur avait refusé
+        // l'envoi (domaine non vérifié, quota, clé) : fausse piste garantie.
+        const indisponible = envoi.code === 'mail-indisponible';
+        res.status(indisponible ? 503 : 502).json({
+          error: indisponible
+            ? raisonMailIndisponible() ||
+              "L'envoi d'e-mails n'est pas configuré sur cet environnement."
+            : "L'envoi de l'e-mail a été refusé par le service d'e-mails. Réessayez dans quelques minutes.",
+          code: indisponible ? 'mail-indisponible' : 'mail-refuse',
         });
         return;
       }
