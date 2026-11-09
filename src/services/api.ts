@@ -433,9 +433,27 @@ export async function supprimerCreation(id: string): Promise<ReponseApi<void>> {
   return apiAppel(`/studio/jobs/${id}`, { methode: 'DELETE' });
 }
 
-/** Export Markdown du livrable (dernière version). */
-export function urlExportCreation(id: string): string {
-  return `/api/v1/studio/artifacts/${id}`;
+/**
+ * Exports d'un livrable. `version` cible une version précise ; sans elle, le
+ * serveur renvoie la dernière. Markdown, Word et PDF sont produits côté
+ * serveur — le fichier téléchargé correspond exactement à ce qui est affiché.
+ */
+function urlExport(id: string, format: 'md' | 'docx' | 'pdf', version?: number | null): string {
+  const suffixe = format === 'md' ? '' : `/${format}`;
+  const requete = version ? `?version=${encodeURIComponent(String(version))}` : '';
+  return `/api/v1/studio/artifacts/${encodeURIComponent(id)}${suffixe}${requete}`;
+}
+
+export function urlExportCreation(id: string, version?: number | null): string {
+  return urlExport(id, 'md', version);
+}
+
+export function urlExportCreationDocx(id: string, version?: number | null): string {
+  return urlExport(id, 'docx', version);
+}
+
+export function urlExportCreationPdf(id: string, version?: number | null): string {
+  return urlExport(id, 'pdf', version);
 }
 
 /* ───────────────────────── Compte & préférences ───────────────────────── */

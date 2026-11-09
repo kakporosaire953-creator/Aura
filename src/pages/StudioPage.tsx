@@ -14,7 +14,8 @@ import { Icone } from '../components/ui/Icone';
 
 /**
  * Studio — création de livrables réelle (génération par le moteur IA
- * configuré), historique des versions, révision, export Markdown.
+ * configuré), historique des versions, révision, exports Word, PDF et
+ * Markdown produits par le serveur.
  * Les états sont honnêtes : sans moteur, la génération est déclarée
  * indisponible ; aucune création prédéfinie n'est présentée comme générée.
  */
@@ -244,17 +245,28 @@ export const StudioPage: React.FC = () => {
                     )}
                     {active.versions.length > 0 && (
                       <>
-                        <a className="btn-simple" href={api.urlExportCreation(active.id)} download>
-                          <Icone nom="download" /> {t.ws.exporter}
-                        </a>
-                        <button
-                          type="button"
+                        <a
                           className="btn-simple"
-                          onClick={() => window.print()}
-                          title={t.ws.exportPdf}
+                          href={api.urlExportCreationDocx(active.id, versionAffichee?.numero)}
+                          download
                         >
-                          <Icone nom="print" /> {t.ws.exportPdf}
-                        </button>
+                          <Icone nom="download" /> {t.ws.exporterWord}
+                        </a>
+                        <a
+                          className="btn-simple"
+                          href={api.urlExportCreationPdf(active.id, versionAffichee?.numero)}
+                          download
+                        >
+                          <Icone nom="download" /> {t.ws.exportPdf}
+                        </a>
+                        <a
+                          className="btn-simple"
+                          href={api.urlExportCreation(active.id, versionAffichee?.numero)}
+                          download
+                          title={t.ws.exporter}
+                        >
+                          <Icone nom="download" /> Markdown
+                        </a>
                       </>
                     )}
                     <button
