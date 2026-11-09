@@ -127,6 +127,34 @@ describe('Règle de confirmation d’adresse', () => {
   });
 });
 
+describe('État public : /api/status dit ce qui reste à configurer', () => {
+  test('sans fournisseur d’e-mails, l’état le dit sans secret', async () => {
+    configurerMail(false);
+    delete process.env.AURA_VERIFICATION_EMAIL_OBLIGATOIRE;
+    const appel = client();
+    const r = await appel('GET', '/status');
+    assert.equal(r.statut, 200);
+    const config = r.json.config as Json;
+    assert.equal(config.mailConfiguree, false);
+    assert.equal(config.verificationEmail, 'impossible');
+    const setup = r.json.setup as Json;
+    assert.match(String(setup.mail), /non configuré/);
+    // Aucune valeur d'environnement ni nom de fournisseur ne doit fuiter.
+    assert.doesNotMatch(JSON.stringify(r.json), /re_test|resend|AURA_MAIL_API_KEY/i);
+  });
+
+  test('avec fournisseur, la confirmation redevient obligatoire', async () => {
+    configurerMail(true);
+    const appel = client();
+    const r = await appel('GET', '/status');
+    const config = r.json.config as Json;
+    assert.equal(config.mailConfiguree, true);
+    assert.equal(config.verificationEmail, 'obligatoire');
+    assert.equal((r.json.setup as Json).mail, undefined);
+    configurerMail(false);
+  });
+});
+
 describe('Garde de l’interface (règle front, sans navigateur)', () => {
   test('l’écran d’attente ne s’affiche que si la confirmation est exigible', async () => {
     const { confirmationRequise } = await import('../src/app/gardes');

@@ -28,11 +28,20 @@ async function obtenirRouteur(): Promise<RouteurExpress> {
   // pendant la même instance, et la cause reste consultable.
   if (erreurChargement) throw erreurChargement;
   if (!chargement) {
-    chargement = import('../server/api.js')
-      .then((module) => {
-        const app = module.createApiApp() as unknown as RouteurExpress;
-        routeur = app;
-        return app;
+    chargement = Promise.all([import('../server/api.js'), import('express')])
+      .then(([module, express]) => {
+        // Le routeur est monté dans une **application** Express, pas appelé
+        // « nu ». Une application installe `req.path`, `res.json`,
+        // `res.status`… ; un routeur appelé directement ne le fait pas.
+        // Sans ce montage, toute l'API v1 répondait 500 en production alors
+        // qu'elle fonctionnait en développement (voir
+        // tests/fonction-serverless.test.ts).
+        const app = express.default();
+        module.configurerConfianceProxy(app);
+        app.use(module.createApiApp());
+        const monte = app as unknown as RouteurExpress;
+        routeur = monte;
+        return monte;
       })
       .catch((e: unknown) => {
         erreurChargement = e;
