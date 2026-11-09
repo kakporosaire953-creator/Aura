@@ -38,6 +38,8 @@ export function versPublicV1(c: Compte): ComptePublic {
     profil: c.profil,
     preferences: c.preferences,
     emailVerifie: c.emailVerifie === true,
+    googleLie: typeof c.googleSub === 'string' && c.googleSub.length > 0,
+    motDePasseDefini: c.motDePasseDefini !== false,
   };
 }
 
@@ -130,7 +132,8 @@ export type Portee =
   | 'resend-ip'
   | 'resend-email'
   | 'verify-ip'
-  | 'reset-ip';
+  | 'reset-ip'
+  | 'google-ip';
 
 export type RegleLimite = { portee: Portee; max: number; fenetreMs: number };
 
@@ -145,7 +148,8 @@ export const REGLES: Record<
   | 'renvoiIp'
   | 'renvoiEmail'
   | 'verificationIp'
-  | 'reinitialisationIp',
+  | 'reinitialisationIp'
+  | 'googleIp',
   RegleLimite
 > = {
   loginIp: { portee: 'login-ip', max: 20, fenetreMs: 10 * 60 * 1000 },
@@ -160,6 +164,8 @@ export const REGLES: Record<
   renvoiEmail: { portee: 'resend-email', max: 3, fenetreMs: 60 * 60 * 1000 },
   verificationIp: { portee: 'verify-ip', max: 30, fenetreMs: 10 * 60 * 1000 },
   reinitialisationIp: { portee: 'reset-ip', max: 20, fenetreMs: 10 * 60 * 1000 },
+  // Connexion Google : une poignée de tentatives suffit largement.
+  googleIp: { portee: 'google-ip', max: 20, fenetreMs: 10 * 60 * 1000 },
 };
 
 /** Message commun — jamais d'indice sur le compteur exact restant. */

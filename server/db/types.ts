@@ -47,6 +47,17 @@ export type Compte = {
    */
   emailVerifie?: boolean;
   emailVerifieLe?: string | null;
+  /**
+   * Identifiant stable du compte Google (`sub`). Absent = compte ouvert par
+   * mot de passe. Un compte ne peut être rattaché qu'à un seul Google.
+   */
+  googleSub?: string;
+  /**
+   * `false` pour un compte créé via Google sans mot de passe choisi : la
+   * connexion par mot de passe y est impossible tant qu'une réinitialisation
+   * n'en a pas défini un. Absent = vrai (comptes historiques).
+   */
+  motDePasseDefini?: boolean;
 };
 
 export type ComptePublic = {
@@ -58,6 +69,10 @@ export type ComptePublic = {
   profil: ProfilContextuel;
   preferences: PreferencesUtilisateur;
   emailVerifie: boolean;
+  /** Une connexion Google est-elle rattachée à ce compte ? */
+  googleLie: boolean;
+  /** Un mot de passe utilisable existe-t-il ? (faux pour un compte Google seul) */
+  motDePasseDefini: boolean;
 };
 
 export type Session = {

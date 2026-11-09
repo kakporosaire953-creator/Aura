@@ -250,6 +250,9 @@ export function createRoutesRecuperation(): express.Router {
       const { hash, sel } = await hacherMotDePasse(corps.password);
       compte.hash = hash;
       compte.sel = sel;
+      // Un mot de passe utilisable existe désormais, même pour un compte
+      // ouvert via Google (qui n'en avait aucun).
+      compte.motDePasseDefini = true;
       // L'adresse vient d'être prouvée par l'e-mail reçu.
       compte.emailVerifie = true;
       compte.emailVerifieLe = new Date().toISOString();
