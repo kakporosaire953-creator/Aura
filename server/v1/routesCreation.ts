@@ -20,6 +20,9 @@ import type { Creation, SourceRecherche, TypeCreation, VersionCreation } from '.
 import { composerDocument, nomFichierSur } from '../export/blocs.js';
 import { creerDocx } from '../export/docx.js';
 import { creerPdf } from '../export/pdf.js';
+import { creerPptx } from '../export/pptx.js';
+import { creerXlsx } from '../export/xlsx.js';
+import { creerCsv, creerHtml, creerTxt } from '../export/texte.js';
 import { choisirConnecteur } from '../search/connecteurs.js';
 import * as serviceIa from '../ai/service.js';
 import { ErreurAi } from '../ai/errors.js';
@@ -423,30 +426,43 @@ export function createRoutesCreation(): express.Router {
     res.send(`# ${job.titre}\n\n> ${job.type} — version ${version.numero} (${version.cree})\n\n${version.contenu}\n`);
   }));
 
-  /** Export Word (.docx). */
-  c.get('/studio/artifacts/:id/docx', asyncRoute(async (req, res) => {
-    const trouve = await chargerPourExport(req, res);
-    if (!trouve) return;
-    const { job, version } = trouve;
-    const fichier = creerDocx(documentDe(job, version));
-    res.setHeader(
-      'Content-Type',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    );
-    enteteTelechargement(res, nomFichierSur(job.titre, 'docx'));
-    res.send(fichier);
-  }));
+  /**
+   * Formats d'export : un seul point de passage, pour que le type MIME et le
+   * nom de fichier ne puissent pas diverger d'une route à l'autre.
+   */
+  const FORMATS = {
+    docx: {
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      rendre: creerDocx,
+    },
+    pdf: { type: 'application/pdf', rendre: creerPdf },
+    pptx: {
+      type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      rendre: creerPptx,
+    },
+    xlsx: {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      rendre: creerXlsx,
+    },
+    csv: { type: 'text/csv; charset=utf-8', rendre: creerCsv },
+    txt: { type: 'text/plain; charset=utf-8', rendre: creerTxt },
+    html: { type: 'text/html; charset=utf-8', rendre: creerHtml },
+  } as const;
 
-  /** Export PDF (mis en page, paginé, avec pied de page). */
-  c.get('/studio/artifacts/:id/pdf', asyncRoute(async (req, res) => {
-    const trouve = await chargerPourExport(req, res);
-    if (!trouve) return;
-    const { job, version } = trouve;
-    const fichier = creerPdf(documentDe(job, version));
-    res.setHeader('Content-Type', 'application/pdf');
-    enteteTelechargement(res, nomFichierSur(job.titre, 'pdf'));
-    res.send(fichier);
-  }));
+  for (const [extension, format] of Object.entries(FORMATS)) {
+    c.get(
+      `/studio/artifacts/:id/${extension}`,
+      asyncRoute(async (req, res) => {
+        const trouve = await chargerPourExport(req, res);
+        if (!trouve) return;
+        const { job, version } = trouve;
+        const fichier = format.rendre(documentDe(job, version));
+        res.setHeader('Content-Type', format.type);
+        enteteTelechargement(res, nomFichierSur(job.titre, extension));
+        res.send(fichier);
+      }),
+    );
+  }
 
   c.delete('/studio/jobs/:id', asyncRoute(async (req, res) => {
     const r = req as ReqV1;

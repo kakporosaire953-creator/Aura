@@ -3304,6 +3304,22 @@ button {
   margin-top: 0.55rem;
 }
 
+/* Export multi-formats : un seul bouton, le format se choisit dans le select. */
+.btn-export { padding-right: 0.55rem; }
+.btn-export select {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  padding: 0.1rem 0;
+}
+.btn-export select:focus-visible {
+  outline: 2px solid var(--vert);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
 .studio-apercus h2 {
   display: flex;
   align-items: center;

@@ -597,6 +597,13 @@ export interface Content {
     compteSupprime: string;
     exportPdf: string;
     exporterWord: string;
+    exporterPptx: string;
+    exporterXlsx: string;
+    exporterCsv: string;
+    exporterTxt: string;
+    exporterHtml: string;
+    exporterMarkdown: string;
+    exporterChoisir: string;
   };
 }
 
@@ -1472,6 +1479,13 @@ const contentFr: Content = {
     compteSupprime: 'Votre compte a été supprimé.',
     exportPdf: 'PDF',
     exporterWord: 'Word (.docx)',
+    exporterPptx: 'PowerPoint (.pptx)',
+    exporterXlsx: 'Excel (.xlsx)',
+    exporterCsv: 'CSV (.csv)',
+    exporterTxt: 'Texte (.txt)',
+    exporterHtml: 'Page HTML (.html)',
+    exporterMarkdown: 'Markdown (.md)',
+    exporterChoisir: 'Choisir un format…',
   },
 };
 
@@ -2274,6 +2288,13 @@ const contentEn: Content = {
     compteSupprime: 'Your account has been deleted.',
     exportPdf: 'PDF',
     exporterWord: 'Word (.docx)',
+    exporterPptx: 'PowerPoint (.pptx)',
+    exporterXlsx: 'Excel (.xlsx)',
+    exporterCsv: 'CSV (.csv)',
+    exporterTxt: 'Text (.txt)',
+    exporterHtml: 'HTML page (.html)',
+    exporterMarkdown: 'Markdown (.md)',
+    exporterChoisir: 'Choose a format…',
   },
 };
 

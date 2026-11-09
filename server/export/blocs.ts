@@ -15,12 +15,22 @@ export type Bloc =
   | { type: 'numerote'; texte: string }
   | { type: 'citation'; texte: string }
   | { type: 'code'; texte: string }
+  | { type: 'tableau'; entetes: string[]; lignes: string[][] }
   | { type: 'espace' };
+
+const SEPARATEUR_TABLEAU = /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/;
+
+function decouperLigneTableau(ligne: string): string[] {
+  const net = ligne.trim().replace(/^\|/, '').replace(/\|$/, '');
+  return net.split('|').map((c) => nettoyerEnLigne(c.trim()));
+}
 
 export type DocumentLisible = {
   titre: string;
   sousTitre: string;
   blocs: Bloc[];
+  /** Markdown d'origine : les formats tabulaires (XLSX, CSV) y lisent les tableaux. */
+  markdown: string;
 };
 
 /** Retire le balisage en ligne en conservant le texte et les liens visibles. */
@@ -102,6 +112,20 @@ export function analyserMarkdown(markdown: string): Bloc[] {
       continue;
     }
 
+    // Tableau Markdown : ligne d'en-tête + ligne de séparation.
+    if (ligne.includes('|') && SEPARATEUR_TABLEAU.test(lignes[i + 1] ?? '')) {
+      viderParagraphe();
+      const entetes = decouperLigneTableau(ligne);
+      const corps: string[][] = [];
+      i += 1;
+      while (i + 1 < lignes.length && lignes[i + 1].includes('|') && lignes[i + 1].trim()) {
+        i += 1;
+        corps.push(decouperLigneTableau(lignes[i]));
+      }
+      blocs.push({ type: 'tableau', entetes, lignes: corps });
+      continue;
+    }
+
     const puce = PUCE.exec(ligne);
     if (puce) {
       viderParagraphe();
@@ -155,6 +179,7 @@ export function composerDocument(meta: {
     titre: meta.titre,
     sousTitre: `Aura — ${etiquette} · version ${meta.version} · ${quand}`,
     blocs: analyserMarkdown(meta.contenu),
+    markdown: meta.contenu,
   };
 }
 
@@ -169,4 +194,55 @@ export function nomFichierSur(titre: string, extension: string): string {
       .replace(/^-+|-+$/g, '')
       .slice(0, 60) || 'creation';
   return `${base}.${extension}`;
+}
+
+/* ── Tableaux Markdown (repris par XLSX et CSV) ── */
+
+export type SectionTableau = {
+  titre: string;
+  lignes: string[][];
+};
+
+
+/**
+ * Regroupe les tableaux du Markdown par section (`## …`). Une section sans
+ * tableau n'est pas renvoyée : l'appelant décide du repli.
+ */
+export function extraireTableaux(markdown: string): SectionTableau[] {
+  const lignes = markdown.replace(/\r\n?/g, '\n').split('\n');
+  const sections: SectionTableau[] = [];
+  let titre = '';
+  let courante: string[][] | null = null;
+
+  const fermer = () => {
+    if (courante && courante.length > 0) sections.push({ titre, lignes: courante });
+    courante = null;
+  };
+
+  for (let i = 0; i < lignes.length; i += 1) {
+    const ligne = lignes[i];
+    const entete = TITRE.exec(ligne);
+    if (entete && entete[1].length <= 2) {
+      fermer();
+      titre = nettoyerEnLigne(entete[2]).trim();
+      continue;
+    }
+    if (ligne.includes('|') && SEPARATEUR_TABLEAU.test(lignes[i + 1] ?? '')) {
+      if (!courante) courante = [];
+      courante.push(decouperLigneTableau(ligne));
+      i += 1; // ligne de séparation
+      while (i + 1 < lignes.length && lignes[i + 1].includes('|') && lignes[i + 1].trim()) {
+        i += 1;
+        courante.push(decouperLigneTableau(lignes[i]));
+      }
+      continue;
+    }
+    if (!ligne.trim()) continue;
+    if (courante && courante.length) {
+      // Le texte entre deux tableaux reste attaché au tableau précédent.
+      fermer();
+    }
+  }
+  fermer();
+  return sections;
 }

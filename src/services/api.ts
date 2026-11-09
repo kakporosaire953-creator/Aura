@@ -438,22 +438,28 @@ export async function supprimerCreation(id: string): Promise<ReponseApi<void>> {
  * serveur renvoie la dernière. Markdown, Word et PDF sont produits côté
  * serveur — le fichier téléchargé correspond exactement à ce qui est affiché.
  */
-function urlExport(id: string, format: 'md' | 'docx' | 'pdf', version?: number | null): string {
+export type FormatExport = 'md' | 'docx' | 'pdf' | 'pptx' | 'xlsx' | 'csv' | 'txt' | 'html';
+
+export function urlExportCreationFormat(
+  id: string,
+  format: FormatExport,
+  version?: number | null,
+): string {
   const suffixe = format === 'md' ? '' : `/${format}`;
   const requete = version ? `?version=${encodeURIComponent(String(version))}` : '';
   return `/api/v1/studio/artifacts/${encodeURIComponent(id)}${suffixe}${requete}`;
 }
 
 export function urlExportCreation(id: string, version?: number | null): string {
-  return urlExport(id, 'md', version);
+  return urlExportCreationFormat(id, 'md', version);
 }
 
 export function urlExportCreationDocx(id: string, version?: number | null): string {
-  return urlExport(id, 'docx', version);
+  return urlExportCreationFormat(id, 'docx', version);
 }
 
 export function urlExportCreationPdf(id: string, version?: number | null): string {
-  return urlExport(id, 'pdf', version);
+  return urlExportCreationFormat(id, 'pdf', version);
 }
 
 /* ───────────────────────── Compte & préférences ───────────────────────── */

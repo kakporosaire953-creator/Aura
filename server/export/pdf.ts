@@ -248,6 +248,16 @@ function elementsDepuis(doc: DocumentLisible): Element[] {
         elements.push({ texte: '', police: 'F1', taille: 5, retrait: 0, avant: 4 });
         break;
       }
+      case 'tableau': {
+        const rendreLigne = (cellules: string[], gras: boolean) =>
+          cellules.filter(Boolean).join('   ');
+        pousserTexte(rendreLigne(bloc.entetes, true), 'F2', 9.5, 0, 10);
+        for (const ligne of bloc.lignes) {
+          pousserTexte(rendreLigne(ligne, false), 'F1', 9.5, 0, 3);
+        }
+        elements.push({ texte: '', police: 'F1', taille: 5, retrait: 0, avant: 6 });
+        break;
+      }
       case 'espace':
         elements.push({ texte: '', police: 'F1', taille: 6, retrait: 0, avant: 6 });
         break;
