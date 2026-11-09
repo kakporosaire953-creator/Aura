@@ -30,8 +30,10 @@ export type ResultatEnvoi =
       statut?: number;
     };
 
+type Fournisseur = 'resend' | 'brevo';
+
 type Configuration = {
-  fournisseur: string;
+  fournisseur: Fournisseur;
   cle: string;
   expediteur: string;
   reponse: string | null;
@@ -39,7 +41,27 @@ type Configuration = {
   delaiMs: number;
 };
 
-const BASE_PAR_DEFAUT = 'https://api.resend.com';
+/**
+ * Points d'entrée par fournisseur. `AURA_MAIL_API_URL` les remplace, mais
+ * seulement par une URL complète : on ne devine jamais un sous-chemin (une
+ * URL doublée du type /emails/emails a déjà coûté un diagnostic).
+ */
+const BASES: Record<Fournisseur, string> = {
+  resend: 'https://api.resend.com',
+  brevo: 'https://api.brevo.com/v3',
+};
+
+const FOURNISSEURS: Fournisseur[] = ['resend', 'brevo'];
+
+/**
+ * « AURA <bonjour@domaine.tld> » → { nom: 'AURA', email: 'bonjour@domaine.tld' }.
+ * Brevo attend l'expéditeur en deux champs séparés.
+ */
+function separerExpediteur(expediteur: string): { nom: string; email: string } {
+  const m = expediteur.match(/^\s*(.*?)\s*<([^@\s>]+@[^@\s>]+)>\s*$/);
+  if (m) return { nom: m[1] || 'AURA', email: m[2] };
+  return { nom: 'AURA', email: expediteur.trim() };
+}
 
 /** Domaine de l'expéditeur, jamais l'adresse complète (journaux sobres). */
 function domaineExpediteur(expediteur: string): string {
@@ -80,16 +102,17 @@ export function originePublique(): string | null {
 
 /** Configuration effective, ou la raison précise de son absence. */
 export function configurationMail(): { ok: true; config: Configuration } | { ok: false; raison: string } {
-  const fournisseur = nettoie(process.env.AURA_MAIL_PROVIDER).toLowerCase();
+  const brut = nettoie(process.env.AURA_MAIL_PROVIDER).toLowerCase();
   const cle = nettoie(process.env.AURA_MAIL_API_KEY);
   const expediteur = nettoie(process.env.AURA_MAIL_FROM);
   const reponse = nettoie(process.env.AURA_MAIL_REPLY_TO);
-  const base = nettoie(process.env.AURA_MAIL_API_URL) || BASE_PAR_DEFAUT;
 
-  if (!fournisseur) return { ok: false, raison: "L'envoi d'e-mails n'est pas configuré sur cet environnement." };
-  if (fournisseur !== 'resend') {
+  if (!brut) return { ok: false, raison: "L'envoi d'e-mails n'est pas configuré sur cet environnement." };
+  if (!FOURNISSEURS.includes(brut as Fournisseur)) {
     return { ok: false, raison: "Fournisseur d'e-mails non pris en charge sur cet environnement." };
   }
+  const fournisseur = brut as Fournisseur;
+  const base = nettoie(process.env.AURA_MAIL_API_URL) || BASES[fournisseur];
   if (!cle) return { ok: false, raison: "L'envoi d'e-mails n'est pas configuré sur cet environnement." };
   if (!expediteur || !/^[^@\s]+@[^@\s]+\.[^@\s]+$|^.+\s<[^@\s]+@[^@\s]+>$/.test(expediteur)) {
     return { ok: false, raison: "L'expéditeur des e-mails n'est pas configuré correctement." };
@@ -127,6 +150,54 @@ export function raisonMailIndisponible(): string {
   return c.ok ? '' : c.raison;
 }
 
+
+/**
+ * Requête propre à chaque fournisseur. Deux API, deux contrats — mais une
+ * seule règle : aucun secret ne sort d'ici, et l'adresse de l'expéditeur ne
+ * vient que de la configuration.
+ */
+function requeteFournisseur(
+  config: Configuration,
+  message: MessageMail,
+  signal: AbortSignal,
+): { url: string; init: RequestInit } {
+  if (config.fournisseur === 'brevo') {
+    const expediteur = separerExpediteur(config.expediteur);
+    return {
+      url: `${config.base}/smtp/email`,
+      init: {
+        method: 'POST',
+        headers: { 'api-key': config.cle, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sender: { email: expediteur.email, name: expediteur.nom },
+          to: [{ email: message.a }],
+          subject: message.sujet,
+          htmlContent: message.html,
+          textContent: message.texte,
+          ...(config.reponse ? { replyTo: { email: config.reponse } } : {}),
+        }),
+        signal,
+      },
+    };
+  }
+  return {
+    url: `${config.base}/emails`,
+    init: {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${config.cle}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: config.expediteur,
+        to: [message.a],
+        subject: message.sujet,
+        html: message.html,
+        text: message.texte,
+        ...(config.reponse ? { reply_to: config.reponse } : {}),
+      }),
+      signal,
+    },
+  };
+}
+
 /**
  * Envoie un message. Ne lève jamais : l'appelant décide de la réponse HTTP.
  * Aucun contenu, aucune adresse et aucun jeton n'est écrit dans les journaux.
@@ -140,22 +211,8 @@ export async function envoyer(message: MessageMail): Promise<ResultatEnvoi> {
   const minuteur = setTimeout(() => controleur.abort(), config.delaiMs);
 
   try {
-    const r = await fetch(`${config.base}/emails`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${config.cle}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: config.expediteur,
-        to: [message.a],
-        subject: message.sujet,
-        html: message.html,
-        text: message.texte,
-        ...(config.reponse ? { reply_to: config.reponse } : {}),
-      }),
-      signal: controleur.signal,
-    });
+    const { url, init } = requeteFournisseur(config, message, controleur.signal);
+    const r = await fetch(url, init);
 
     if (!r.ok) {
       // Le statut et le message public du fournisseur sont journalisés
@@ -186,7 +243,7 @@ export async function envoyer(message: MessageMail): Promise<ResultatEnvoi> {
       };
     }
     // Trace utile : un envoi accepté se distingue d'un envoi silencieux.
-    console.log(`[mail] envoi accepté — endpoint=${config.base}/emails`);
+    console.log(`[mail] envoi accepté — fournisseur=${config.fournisseur} — endpoint=${url}`);
     return { ok: true };
   } catch (e) {
     const interrompu = e instanceof Error && e.name === 'AbortError';

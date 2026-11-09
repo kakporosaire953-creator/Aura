@@ -282,3 +282,78 @@ describe('Envoi des deux messages', () => {
     assert.equal(corps.subject, 'Reset your AURA password');
   });
 });
+
+/* ─────────────────────── Second fournisseur : Brevo ─────────────────────── */
+
+describe('Brevo — envoi sans domaine vérifié', () => {
+  const CONFIG_BREVO = {
+    AURA_MAIL_PROVIDER: 'brevo',
+    AURA_MAIL_API_KEY: 'xkeysib-test',
+    AURA_MAIL_FROM: 'AURA <rimelovibes@gmail.com>',
+    AURA_PUBLIC_ORIGIN: 'https://aura.test',
+  };
+
+  test('le point d’entrée par défaut est celui de Brevo, sans sous-chemin ajouté', () => {
+    configurer(CONFIG_BREVO);
+    const etat = configurationMail();
+    assert.equal(etat.ok, true);
+    if (etat.ok) {
+      assert.equal(etat.config.fournisseur, 'brevo');
+      assert.equal(etat.config.base, 'https://api.brevo.com/v3');
+    }
+  });
+
+  test('la requête respecte le contrat Brevo (api-key, sender séparé, htmlContent)', async () => {
+    configurer({ ...CONFIG_BREVO, AURA_MAIL_REPLY_TO: 'reponse@aura.test' });
+    const { appels } = bouchonFetch(() => new Response('{"messageId":"x"}', { status: 201 }));
+    const r = await envoyer({
+      a: 'nouvel.inscrit@test.dev',
+      sujet: 'Confirmez votre adresse',
+      texte: 'texte',
+      html: '<p>html</p>',
+    });
+    assert.equal(r.ok, true);
+    assert.equal(appels.length, 1);
+    assert.equal(appels[0].url, 'https://api.brevo.com/v3/smtp/email');
+    const entetes = appels[0].init.headers as Record<string, string>;
+    assert.equal(entetes['api-key'], 'xkeysib-test');
+    assert.equal(entetes.Authorization, undefined, 'aucun en-tête Resend');
+    const corps = JSON.parse(String(appels[0].init.body)) as {
+      sender: { email: string; name: string };
+      to: { email: string }[];
+      subject: string;
+      htmlContent: string;
+      textContent: string;
+      replyTo?: { email: string };
+    };
+    assert.deepEqual(corps.sender, { name: 'AURA', email: 'rimelovibes@gmail.com' });
+    assert.deepEqual(corps.to, [{ email: 'nouvel.inscrit@test.dev' }]);
+    assert.equal(corps.subject, 'Confirmez votre adresse');
+    assert.equal(corps.htmlContent, '<p>html</p>');
+    assert.equal(corps.textContent, 'texte');
+    assert.deepEqual(corps.replyTo, { email: 'reponse@aura.test' });
+  });
+
+  test('un refus Brevo est un refus, pas une configuration absente', async () => {
+    configurer(CONFIG_BREVO);
+    bouchonFetch(
+      () =>
+        new Response(JSON.stringify({ code: 'unauthorized', message: 'Key not found' }), {
+          status: 401,
+        }),
+    );
+    const r = await envoyer({ a: 'x@y.test', sujet: 's', texte: 't', html: '<p>h</p>' });
+    assert.equal(r.ok, false);
+    if (!r.ok) {
+      assert.equal(r.code, 'mail-refuse');
+      assert.equal(r.statut, 401);
+    }
+  });
+
+  test('une URL personnalisée reste prioritaire', () => {
+    configurer({ ...CONFIG_BREVO, AURA_MAIL_API_URL: 'https://relais.interne/v3/' });
+    const etat = configurationMail();
+    assert.equal(etat.ok, true);
+    if (etat.ok) assert.equal(etat.config.base, 'https://relais.interne/v3');
+  });
+});
