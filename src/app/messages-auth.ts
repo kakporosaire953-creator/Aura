@@ -18,6 +18,44 @@ export type TraductionsAuth = {
   errServeur: string;
 };
 
+export type TraductionsGoogle = {
+  googleAnnule: string;
+  googleExpire: string;
+  googleEchec: string;
+  googleIndisponible: string;
+  googleConflit: string;
+  googleStockage: string;
+};
+
+/**
+ * Codes renvoyés par `/api/auth/google/retour` (en query string) : le serveur
+ * redirige, c'est donc l'interface qui traduit. Chaque code porte une cause
+ * distincte — inutile de renvoyer l'utilisateur vers une piste fausse.
+ */
+export function messageGoogle(code: string | undefined, t: TraductionsGoogle): string | null {
+  switch (code) {
+    case 'etat':
+      return t.googleExpire;
+    case 'refus':
+      return t.googleAnnule;
+    case 'indisponible':
+      return t.googleIndisponible;
+    case 'conflit':
+      return t.googleConflit;
+    case 'stockage':
+      return t.googleStockage;
+    case 'non-verifiable':
+    case 'reseau':
+      return t.googleEchec;
+    // Code inconnu : on informe sans inventer de cause.
+    case undefined:
+    case '':
+      return null;
+    default:
+      return t.googleEchec;
+  }
+}
+
 export function messageErreur(
   code: string | undefined,
   secours: string,

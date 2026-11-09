@@ -60,6 +60,7 @@ import {
   verificationBloquante,
 } from './auth/verification.js';
 import { langueDepuis } from './mail/gabarits.js';
+import { createRoutesGoogle, googleConfigure } from './auth/google.js';
 
 const comptes = entrepotComptes();
 
@@ -93,6 +94,8 @@ function versPublic(u: Compte): ComptePublic {
     profil: u.profil,
     preferences: u.preferences,
     emailVerifie: u.emailVerifie === true,
+    googleLie: typeof u.googleSub === 'string' && u.googleSub.length > 0,
+    motDePasseDefini: u.motDePasseDefini !== false,
   };
 }
 
@@ -152,6 +155,10 @@ export function createApiApp(): express.Router {
   // API v1 — modules fonctionnels du workspace.
   api.use('/v1', createApiV1());
 
+  /* Connexion Google : deux routes publiques (départ, retour). Sans
+     configuration, elles répondent 503 — jamais une simulation. */
+  api.use('/auth/google', createRoutesGoogle());
+
   /* Récupération de compte : routes publiques (mot de passe oublié,
      réinitialisation, vérification d'adresse, renvoi). */
   api.use('/auth', createRoutesRecuperation());
@@ -176,6 +183,8 @@ export function createApiApp(): express.Router {
         iaConfiguree: etatIa.ok,
         mailConfiguree: mailActif,
         verificationEmail: etatVerification(),
+        // Simple disponibilité : ni identifiant client ni secret ici.
+        googleConfiguree: googleConfigure(),
       },
       features: {
         publicSite: 'live',

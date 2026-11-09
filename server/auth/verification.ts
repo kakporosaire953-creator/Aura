@@ -9,12 +9,15 @@
  *   confirmation serait alors une porte fermée dont personne n'a la clé :
  *   l'accès reste ouvert, et l'interface le dit explicitement au lieu de
  *   laisser croire à une vérification.
- * - `facultative` : désactivée volontairement par l'administrateur
- *   (`AURA_VERIFICATION_EMAIL_OBLIGATOIRE=0`).
+ * - `facultative` : état par défaut. L'adresse peut être confirmée (le lien
+ *   est envoyé quand un fournisseur existe), mais rien n'est bloqué : c'est
+ *   la règle en vigueur depuis la décision produit du 2026-11-09, le temps
+ *   que l'envoi d'e-mails soit réellement opérationnel.
  *
- * La variable d'environnement peut forcer `obligatoire` même sans
- * fournisseur (`=1`) : dans ce cas l'inscription refuse honnêtement (503),
- * plutôt que de créer des comptes qui ne pourraient jamais être confirmés.
+ * `AURA_VERIFICATION_EMAIL_OBLIGATOIRE=1` rétablit la confirmation
+ * bloquante (et, sans fournisseur, refuse honnêtement l'inscription en 503
+ * plutôt que de créer des comptes qui ne pourraient jamais s'ouvrir).
+ * `=0` fige explicitement l'état non bloquant.
  */
 import { mailConfigure } from '../mail/adaptateur.js';
 
@@ -25,9 +28,12 @@ const VALEURS_FAUSSES = new Set(['0', 'non', 'false', 'off']);
 
 export function etatVerification(): EtatVerification {
   const brut = (process.env.AURA_VERIFICATION_EMAIL_OBLIGATOIRE ?? '').trim().toLowerCase();
-  if (VALEURS_FAUSSES.has(brut)) return 'facultative';
+  // La variable reste prioritaire : elle seule peut rétablir le blocage.
   if (VALEURS_VRAIES.has(brut)) return 'obligatoire';
-  return mailConfigure() ? 'obligatoire' : 'impossible';
+  if (VALEURS_FAUSSES.has(brut)) return 'facultative';
+  // Défaut : aucune confirmation exigée. Sans fournisseur, on le dit
+  // franchement (« impossible ») au lieu de laisser croire qu'un lien part.
+  return mailConfigure() ? 'facultative' : 'impossible';
 }
 
 /** L'accès à l'espace est-il refusé tant que l'adresse n'est pas confirmée ? */

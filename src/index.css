@@ -3557,6 +3557,72 @@ button {
   justify-content: center;
 }
 
+/* Connexion Google — sobre, même gabarit que les autres boutons.
+   Le bouton n'apparaît que si le serveur déclare Google configuré. */
+.btn-google {
+  width: 100%;
+  margin-top: 1.2rem;
+  justify-content: center;
+  gap: 0.6em;
+  border: 1.6px solid rgba(18, 33, 27, 0.22);
+  background: #ffffff;
+  color: var(--encre);
+  text-decoration: none;
+}
+
+.btn-google:hover {
+  border-color: var(--encre);
+  background: #ffffff;
+}
+
+.btn-google svg {
+  flex: none;
+}
+
+.auth-separateur {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin: 1.05rem 0 0.1rem;
+  font-size: 0.76rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--encre-2);
+}
+
+.auth-separateur::before,
+.auth-separateur::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(18, 33, 27, 0.14);
+}
+
+[data-theme='dark'] .btn-google {
+  background: transparent;
+  color: #f2f1e9;
+  border-color: rgba(242, 241, 233, 0.3);
+}
+
+[data-theme='dark'] .btn-google:hover {
+  border-color: #f2f1e9;
+  background: transparent;
+}
+
+[data-theme='dark'] .auth-separateur::before,
+[data-theme='dark'] .auth-separateur::after {
+  background: rgba(242, 241, 233, 0.22);
+}
+
+@media (max-width: 360px) {
+  .btn-google {
+    padding-left: 1.1em;
+    padding-right: 1.1em;
+    white-space: normal;
+    line-height: 1.25;
+  }
+}
+
 @media (max-width: 640px) {
   .explore-barre,
   .missions-barre {

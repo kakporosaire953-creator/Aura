@@ -172,6 +172,14 @@ export interface Content {
     confirmerLimite: string;
     confirmerRenvoyer: string;
     confirmerDeconnexion: string;
+    googleBouton: string;
+    googleOu: string;
+    googleAnnule: string;
+    googleExpire: string;
+    googleEchec: string;
+    googleIndisponible: string;
+    googleConflit: string;
+    googleStockage: string;
   };
   securite: {
     oubliTitre1: string;
@@ -1003,6 +1011,16 @@ const contentFr: Content = {
       'Trop de demandes de renvoi en peu de temps. Réessayez dans une heure.',
     confirmerRenvoyer: 'Renvoyer le lien',
     confirmerDeconnexion: 'Se déconnecter',
+    googleBouton: 'Continuer avec Google',
+    googleOu: 'ou',
+    googleAnnule:
+      'Connexion Google annulée. Vous pouvez réessayer, ou vous connecter avec votre mot de passe.',
+    googleExpire: 'La connexion Google a expiré. Réessayez.',
+    googleEchec: 'Google n’a pas confirmé la connexion. Réessayez dans un instant.',
+    googleIndisponible:
+      'La connexion Google n’est pas configurée sur cet environnement : utilisez votre mot de passe.',
+    googleConflit: 'Cette adresse est déjà liée à un autre compte Google.',
+    googleStockage: 'Service momentanément indisponible. Réessayez dans un instant.',
   },
   securite: {
     oubliTitre1: 'Mot de passe',
@@ -1827,6 +1845,14 @@ const contentEn: Content = {
       'Too many resend requests in a short time. Try again in an hour.',
     confirmerRenvoyer: 'Resend the link',
     confirmerDeconnexion: 'Sign out',
+    googleBouton: 'Continue with Google',
+    googleOu: 'or',
+    googleAnnule: 'Google sign-in cancelled. Try again, or sign in with your password.',
+    googleExpire: 'The Google sign-in expired. Try again.',
+    googleEchec: 'Google did not confirm the sign-in. Try again in a moment.',
+    googleIndisponible: 'Google sign-in is not configured on this environment: use your password.',
+    googleConflit: 'This address is already linked to another Google account.',
+    googleStockage: 'Service temporarily unavailable. Try again in a moment.',
   },
   securite: {
     oubliTitre1: 'Forgotten',

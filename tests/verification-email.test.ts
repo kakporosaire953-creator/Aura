@@ -104,12 +104,27 @@ describe('Règle de confirmation d’adresse', () => {
     delete process.env.AURA_VERIFICATION_EMAIL_OBLIGATOIRE;
   });
 
-  test('avec fournisseur d’e-mails, la confirmation devient obligatoire', () => {
+  test('avec fournisseur d’e-mails, la confirmation reste FACULTATIVE par défaut', () => {
+    // Décision produit du 2026-11-09 : l'envoi n'étant pas encore
+    // opérationnel, aucune confirmation n'est exigée. Le lien reste envoyé
+    // quand il peut partir ; il n'est simplement plus une condition d'accès.
     configurerMail(true);
+    assert.equal(etatVerification(), 'facultative');
+    assert.equal(accesAutorise({ emailVerifie: false }), true);
+    assert.equal(accesAutorise({ emailVerifie: true }), true);
+    assert.equal(accesAutorise(null), false);
+    configurerMail(false);
+  });
+
+  test('la confirmation bloquante reste disponible sur demande explicite', () => {
+    configurerMail(true);
+    process.env.AURA_VERIFICATION_EMAIL_OBLIGATOIRE = '1';
     assert.equal(etatVerification(), 'obligatoire');
     assert.equal(accesAutorise({ emailVerifie: false }), false);
     assert.equal(accesAutorise({ emailVerifie: true }), true);
     assert.equal(accesAutorise(null), false);
+    delete process.env.AURA_VERIFICATION_EMAIL_OBLIGATOIRE;
+    configurerMail(false);
   });
 
   test('confirmation exigée sans fournisseur : l’inscription est refusée, pas simulée', async () => {
@@ -143,14 +158,16 @@ describe('État public : /api/status dit ce qui reste à configurer', () => {
     assert.doesNotMatch(JSON.stringify(r.json), /re_test|resend|AURA_MAIL_API_KEY/i);
   });
 
-  test('avec fournisseur, la confirmation redevient obligatoire', async () => {
+  test('avec fournisseur, la confirmation est annoncée comme facultative', async () => {
     configurerMail(true);
     const appel = client();
     const r = await appel('GET', '/status');
     const config = r.json.config as Json;
     assert.equal(config.mailConfiguree, true);
-    assert.equal(config.verificationEmail, 'obligatoire');
+    assert.equal(config.verificationEmail, 'facultative');
     assert.equal((r.json.setup as Json).mail, undefined);
+    // La connexion Google n'est pas configurée ici : l'état le dit.
+    assert.equal(config.googleConfiguree, false);
     configurerMail(false);
   });
 });
@@ -173,6 +190,8 @@ describe('Garde de l’interface (règle front, sans navigateur)', () => {
 describe('Accès à l’espace d’un compte non confirmé', () => {
   test('workspace fermé, profil et renvoi accessibles, ouverture après confirmation', async () => {
     configurerMail(true);
+    // Le blocage doit être demandé explicitement (défaut = facultatif).
+    process.env.AURA_VERIFICATION_EMAIL_OBLIGATOIRE = '1';
     const appel = client();
     const inscription = await appel('POST', '/auth/register', {
       email: 'attente@test.dev',
@@ -209,6 +228,8 @@ describe('Accès à l’espace d’un compte non confirmé', () => {
 
     const apres = await appel('GET', '/v1/conversations');
     assert.equal(apres.statut, 200);
+    delete process.env.AURA_VERIFICATION_EMAIL_OBLIGATOIRE;
+    configurerMail(false);
   });
 
   test('désactivation : l’espace reste ouvert malgré une adresse non confirmée', async () => {

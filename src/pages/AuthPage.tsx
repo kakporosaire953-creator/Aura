@@ -6,7 +6,7 @@ import { useT } from '../app/prefs';
 import { useSession, appelerAuth } from '../app/session';
 import { ouvrirDemo, simulationDisponible } from '../app/simulation';
 import { destinationApresConnexion } from '../app/retour';
-import { messageErreur } from '../app/messages-auth';
+import { messageErreur, messageGoogle } from '../app/messages-auth';
 import { Icone } from '../components/ui/Icone';
 
 /**
@@ -31,6 +31,9 @@ export const AuthPage: React.FC = () => {
   const [mdp, setMdp] = useState('');
   const [nom, setNom] = useState('');
   const [etat, setEtat] = useState<'idle' | 'envoi' | 'erreur'>('idle');
+  // Disponibilité lue sur le serveur : un bouton qui mène à un 503 serait
+  // une promesse en l'air. En cas d'échec de lecture, on n'affiche rien.
+  const [googleDispo, setGoogleDispo] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [detail, setDetail] = useState<Record<string, string> | null>(null);
 
@@ -38,6 +41,24 @@ export const AuthPage: React.FC = () => {
   useEffect(() => {
     if (statut === 'connecte') navigate(depuis, { replace: true });
   }, [statut, navigate, depuis]);
+
+  useEffect(() => {
+    let vivant = true;
+    fetch('/api/status')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { config?: { googleConfiguree?: boolean } } | null) => {
+        if (vivant && d?.config?.googleConfiguree === true) setGoogleDispo(true);
+      })
+      .catch(() => {
+        /* pas de bouton plutôt qu'un bouton mort */
+      });
+    return () => {
+      vivant = false;
+    };
+  }, []);
+
+  // Cause réelle d'un retour Google (le serveur redirige avec un code).
+  const codeGoogle = new URLSearchParams(location.search).get('google');
 
   useEffect(() => {
     const reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -172,6 +193,45 @@ export const AuthPage: React.FC = () => {
               <Icone nom="circle-info" />{' '}
               {(location.state as { info?: string }).info}
             </p>
+          )}
+
+          {codeGoogle && (
+            <p className="form-note form-info" role="status">
+              <Icone nom="circle-info" /> {messageGoogle(codeGoogle, t.auth)}
+            </p>
+          )}
+
+          {googleDispo && (
+            <>
+              <a
+                className="btn btn-google"
+                href={`/api/auth/google/demarrer?retour=${encodeURIComponent(depuis)}`}
+                rel="nofollow"
+              >
+                <svg viewBox="0 0 48 48" width="18" height="18" aria-hidden focusable="false">
+                  <path
+                    fill="#4285F4"
+                    d="M45.1 24.5c0-1.6-.1-2.8-.4-4.1H24v7.8h12c-.2 2-1.5 5-4.4 7l-.1.3 6.4 4.9.4.1c4-3.7 6.8-9.2 6.8-16z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M24 46c5.9 0 10.9-1.9 14.5-5.3l-6.9-5.4c-1.9 1.3-4.4 2.2-7.6 2.2-5.8 0-10.7-3.8-12.4-9.1l-.3.1-6.6 5.1-.1.3C8.2 41 15.5 46 24 46z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M11.6 28.4A13.7 13.7 0 0 1 10.8 24c0-1.6.3-3.1.7-4.5l-.1-.3-6.7-5.2-.2.1A22 22 0 0 0 2 24c0 3.5.9 6.9 2.5 9.8l7.1-5.4z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M24 10.1c4.1 0 6.9 1.8 8.5 3.3l6.2-6C34.9 3.7 29.9 2 24 2 15.5 2 8.2 6.9 4.5 14.2l7 5.4C13.3 14.3 18.2 10.1 24 10.1z"
+                  />
+                </svg>
+                <span>{t.auth.googleBouton}</span>
+              </a>
+              <p className="auth-separateur" aria-hidden>
+                <span>{t.auth.googleOu}</span>
+              </p>
+            </>
           )}
 
           <form onSubmit={soumettre} noValidate>
