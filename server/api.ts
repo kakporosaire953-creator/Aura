@@ -161,6 +161,11 @@ export function createApiApp(): express.Router {
     const comptesActifs = comptes.mode !== 'indisponible';
     const etatIa = await serviceIa.etatIa();
     const chatActif = etatIa.ok;
+    // L'envoi d'e-mails conditionne deux parcours : la confirmation
+    // d'adresse et la réinitialisation de mot de passe. Son absence se dit,
+    // sans nom de fournisseur ni secret : l'exploitant doit pouvoir lire
+    // « ce qui reste à configurer » depuis le site lui-même.
+    const mailActif = mailConfigure();
     res.json({
       name: 'Aura',
       phase: 'workspace',
@@ -169,6 +174,8 @@ export function createApiApp(): express.Router {
         // État technique minimal pour l'UI (jamais de stratégie commerciale,
         // jamais de nom de fournisseur ni de modèle).
         iaConfiguree: etatIa.ok,
+        mailConfiguree: mailActif,
+        verificationEmail: etatVerification(),
       },
       features: {
         publicSite: 'live',
@@ -186,6 +193,13 @@ export function createApiApp(): express.Router {
           ? {}
           : {
               chat: "Assistant non configuré sur cet environnement : ajoutez une clé de moteur côté serveur (jamais dans le navigateur).",
+            }),
+        ...(mailActif
+          ? {}
+          : {
+              // Aucun nom de variable ni de fournisseur ici : cet état est
+              // public. La marche à suivre vit dans docs/analyse et .env.example.
+              mail: "Envoi d'e-mails non configuré : la confirmation d'adresse et la réinitialisation de mot de passe sont indisponibles sur cet environnement.",
             }),
       },
     });

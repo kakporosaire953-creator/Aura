@@ -4,7 +4,7 @@
  * Toutes les routes privées exigent une session et vérifient la propriété
  * des ressources via les entrepôts (périmètre utilisateur).
  */
-import express, { type Response } from 'express';
+import express, { type Request, type Response } from 'express';
 import {
   authRequise,
   emailVerifieRequis,
@@ -144,6 +144,26 @@ function messageErreur(e: unknown, tache: string): { error: string; code: string
   return { error: 'Le modèle ne répond pas.', code: 'modele-indisponible' };
 }
 
+
+/**
+ * Chemin de la requête, relatif au routeur v1.
+ *
+ * `req.path` n'existe que si la requête a traversé une application Express.
+ * La fonction serverless (`api/index.ts`) appelle le routeur « nu » : seuls
+ * `url` et `originalUrl` sont alors garantis. S'y fier levait un TypeError
+ * dans la garde de confirmation, et **toute l'API v1 répondait 500 en
+ * production** alors qu'elle fonctionnait en développement.
+ */
+export function cheminSousRouteur(req: Request): string {
+  const source =
+    typeof req.url === 'string' && req.url
+      ? req.url
+      : (req as unknown as { originalUrl?: string }).originalUrl;
+  const sansRequete = String(source ?? '/').split('?')[0].replace(/\/+$/, '');
+  if (!sansRequete) return '/';
+  return sansRequete.startsWith('/') ? sansRequete : `/${sansRequete}`;
+}
+
 export function createApiV1(): express.Router {
   const v1 = express.Router();
   // Les messages peuvent porter des images : corps plus large sur cette seule route.
@@ -167,7 +187,7 @@ export function createApiV1(): express.Router {
     /^\/me\/password$/,
   ];
   v1.use((req, res, next) => {
-    const chemin = req.path.replace(/\/$/, '') || '/';
+    const chemin = cheminSousRouteur(req);
     if (ACCESSIBLE_SANS_CONFIRMATION.some((motif) => motif.test(chemin))) {
       next();
       return;
