@@ -70,6 +70,13 @@ console.log(`  point d'entrée  : ${config.base}`);
 console.log(`  délai           : ${config.delaiMs} ms`);
 console.log(`  destinataire    : ${masquer(destination)}`);
 console.log('');
+if (config.fournisseur === 'brevo') {
+  console.log('Rappel Brevo (offre gratuite, 300 messages/jour, sans carte bancaire) :');
+  console.log("  l'adresse d'expédition doit être VALIDÉE dans le tableau de bord Brevo");
+  console.log('  (Senders → Add a sender → cliquer le lien reçu dans cette boîte).');
+  console.log("  Aucun domaine payant n'est nécessaire ; DKIM améliorera la délivrabilité.");
+  console.log('');
+}
 
 console.log('── Envoi réel ──');
 const debut = Date.now();
@@ -102,9 +109,14 @@ if (resultat.code === 'mail-indisponible') {
 } else if (resultat.statut === 401 || resultat.statut === 403) {
   console.log('  Le fournisseur refuse l’authentification ou l’expéditeur :');
   console.log('    · la clé API est-elle valide et active sur ce compte ?');
-  console.log('    · le domaine de l’expéditeur est-il VÉRIFIÉ chez le fournisseur ?');
-  console.log('    · avec un expéditeur de test (« onboarding@resend.dev »), les');
-  console.log('      messages ne partent que vers l’adresse du titulaire du compte.');
+  if (config.fournisseur === 'brevo') {
+    console.log("    · l'adresse d'expédition est-elle validée dans Brevo (Senders) ?");
+    console.log('    · la clé vient-elle bien de Brevo (SMTP & API → API keys) ?');
+  } else {
+    console.log('    · le domaine de l’expéditeur est-il VÉRIFIÉ chez le fournisseur ?');
+    console.log('    · avec un expéditeur de test (« onboarding@resend.dev »), les');
+    console.log('      messages ne partent que vers l’adresse du titulaire du compte.');
+  }
   console.log('    · le destinataire est-il autorisé par le plan du fournisseur ?');
 } else if (resultat.statut === 422) {
   console.log('  Requête refusée : expéditeur mal formé ou champ invalide.');
