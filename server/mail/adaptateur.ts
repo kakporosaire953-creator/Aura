@@ -22,7 +22,13 @@ export type MessageMail = {
 
 export type ResultatEnvoi =
   | { ok: true }
-  | { ok: false; raison: string; code: 'mail-indisponible' | 'mail-refuse' };
+  | {
+      ok: false;
+      raison: string;
+      code: 'mail-indisponible' | 'mail-refuse';
+      /** Statut HTTP du fournisseur — pour le diagnostic, jamais pour l'UI. */
+      statut?: number;
+    };
 
 type Configuration = {
   fournisseur: string;
@@ -34,6 +40,12 @@ type Configuration = {
 };
 
 const BASE_PAR_DEFAUT = 'https://api.resend.com';
+
+/** Domaine de l'expéditeur, jamais l'adresse complète (journaux sobres). */
+function domaineExpediteur(expediteur: string): string {
+  const m = expediteur.match(/@([^@>\s]+)/);
+  return m ? m[1] : '(illisible)';
+}
 
 function nettoie(valeur: string | undefined): string {
   return (valeur ?? '').trim();
@@ -146,10 +158,35 @@ export async function envoyer(message: MessageMail): Promise<ResultatEnvoi> {
     });
 
     if (!r.ok) {
-      // Seul le statut est journalisé : jamais le corps, jamais l'adresse.
-      console.error(`[mail] envoi refusé par le fournisseur (${r.status}).`);
-      return { ok: false, raison: "L'envoi de l'e-mail a échoué.", code: 'mail-refuse' };
+      // Le statut et le message public du fournisseur sont journalisés
+      // (« domaine non vérifié », « quota dépassé », « clé invalide »…),
+      // après retrait de toute adresse : c'est ce qui permet à l'exploitant
+      // de comprendre un refus sans jamais exposer un destinataire.
+      let detail = '';
+      try {
+        const corps = (await r.json()) as { message?: unknown; name?: unknown };
+        detail = String(corps?.message ?? corps?.name ?? '').slice(0, 200);
+      } catch {
+        /* corps absent ou illisible : le statut suffit */
+      }
+      const sansAdresses = detail.replace(/[^\s@]+@[^\s@]+\.[^\s@]+/g, '[adresse]');
+      // Ligne de diagnostic complète, sans secret : le point d'entrée (une
+      // URL doublée du type /emails/emails se voit tout de suite), le domaine
+      // expéditeur (à vérifier chez le fournisseur) et le message public.
+      console.error(
+        `[mail] envoi refusé (${r.status}) — endpoint=${config.base}/emails` +
+          ` — domaine-expediteur=${domaineExpediteur(config.expediteur)}` +
+          (sansAdresses ? ` — ${sansAdresses}` : ''),
+      );
+      return {
+        ok: false,
+        raison: "L'envoi de l'e-mail a échoué.",
+        code: 'mail-refuse',
+        statut: r.status,
+      };
     }
+    // Trace utile : un envoi accepté se distingue d'un envoi silencieux.
+    console.log(`[mail] envoi accepté — endpoint=${config.base}/emails`);
     return { ok: true };
   } catch (e) {
     const interrompu = e instanceof Error && e.name === 'AbortError';

@@ -39,7 +39,29 @@ const AttenteConfirmation: React.FC<{ email: string }> = ({ email }) => {
   const t = useT();
   const { lang } = usePrefs();
   const { deconnecter } = useSession();
-  const [etat, setEtat] = React.useState<'repos' | 'envoi' | 'envoye' | 'echec'>('repos');
+  const location = useLocation();
+  // Résultat de l'envoi transmis par l'inscription : si le lien n'est pas
+  // parti, on le dit immédiatement.
+  const premierEnvoi = (
+    location.state as { envoiMail?: { ok: boolean; code?: string } } | null
+  )?.envoiMail;
+  const [etat, setEtat] = React.useState<'repos' | 'envoi' | 'envoye' | 'echec'>(
+    premierEnvoi && !premierEnvoi.ok ? 'echec' : 'repos',
+  );
+  // Le message suit la **cause réelle** renvoyée par le serveur : dire
+  // « pas configuré » alors que le fournisseur a refusé l'envoi (domaine non
+  // vérifié, quota, clé) envoyait l'utilisateur — et l'exploitant — sur une
+  // fausse piste.
+  const texteEchec = (code: string | undefined): string => {
+    if (code === 'mail-indisponible') return t.auth.confirmerIndisponible;
+    if (code === 'limite' || code === '429') return t.auth.confirmerLimite;
+    if (code === 'deja-verifie') return t.auth.confirmerEnvoye;
+    return t.auth.confirmerRefus;
+  };
+
+  const [message, setMessage] = React.useState<string | null>(
+    premierEnvoi && !premierEnvoi.ok ? texteEchec(premierEnvoi.code) : null,
+  );
 
   return (
     <div className="page-chargement page-confirmation">
@@ -51,7 +73,7 @@ const AttenteConfirmation: React.FC<{ email: string }> = ({ email }) => {
           {etat === 'envoye'
             ? t.auth.confirmerEnvoye
             : etat === 'echec'
-              ? t.auth.confirmerEchec
+              ? (message ?? t.auth.confirmerRefus)
               : t.auth.confirmerAide}
         </p>
         <div className="page-confirmation-actions">
@@ -61,8 +83,14 @@ const AttenteConfirmation: React.FC<{ email: string }> = ({ email }) => {
             disabled={etat === 'envoi' || etat === 'envoye'}
             onClick={async () => {
               setEtat('envoi');
+              setMessage(null);
               const r = await renvoyerVerification(lang);
-              setEtat(r.ok ? 'envoye' : 'echec');
+              if (r.ok) {
+                setEtat('envoye');
+                return;
+              }
+              setEtat('echec');
+              setMessage(texteEchec(r.code));
             }}
           >
             {etat === 'envoi' ? t.auth.submitEnvoi : t.auth.confirmerRenvoyer}

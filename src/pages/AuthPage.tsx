@@ -103,7 +103,12 @@ export const AuthPage: React.FC = () => {
 
     if (res.ok) {
       await rafraichir();
-      navigate(depuis, { replace: true });
+      // L'inscription peut réussir alors que le lien n'a pas pu partir :
+      // l'écran d'attente doit le dire tout de suite, pas après un clic.
+      navigate(depuis, {
+        replace: true,
+        ...(res.envoiMail ? { state: { envoiMail: res.envoiMail } } : {}),
+      });
       return;
     }
     setEtat('erreur');
