@@ -1,0 +1,64 @@
+name: Audit responsive
+
+# Diagnostic de mise en page dans un vrai navigateur (Chromium).
+# Le développement local n'a pas de navigateur : cette CI le fournit et
+# publie captures + rapport en artefacts.
+on:
+  push:
+    branches: ['arena/3630913f-aura']
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Dépendances
+        run: npm ci --legacy-peer-deps
+
+      - name: Navigateur
+        run: |
+          npm i --no-save playwright@1.48.2
+          npx playwright install --with-deps chromium
+
+      - name: Construction
+        run: npm run build
+
+      - name: Serveur
+        env:
+          NODE_ENV: production
+          PORT: '4173'
+          AURA_DATA_DIR: /tmp/aura-audit
+        run: |
+          mkdir -p /tmp/aura-audit
+          node --import tsx server.ts > /tmp/serveur.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -sf http://127.0.0.1:4173/api/status > /dev/null; then
+              echo "Serveur prêt"; break
+            fi
+            sleep 1
+          done
+          curl -s http://127.0.0.1:4173/api/status | head -c 400
+
+      - name: Audit
+        env:
+          BASE_URL: http://127.0.0.1:4173
+          OUT_DIR: audit-responsive
+        run: node scripts/audit-responsive.mjs
+
+      - name: Journal du serveur
+        if: always()
+        run: tail -40 /tmp/serveur.log
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: audit-responsive
+          path: audit-responsive/
+          retention-days: 7

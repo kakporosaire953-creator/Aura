@@ -416,6 +416,26 @@ describe('Honnêteté des capacités', () => {
     const absent = await fetch(`${base}/v1/studio/artifacts/${creation.id}/pdf?version=99`, { headers: entetes });
     assert.equal(absent.status, 404);
     assert.equal(((await absent.json()) as Json).code, 'version-introuvable');
+
+    // Tous les formats annoncés répondent réellement un fichier.
+    const formats: Array<[string, RegExp, string | null]> = [
+      ['docx', /wordprocessingml\.document/, 'PK'],
+      ['pdf', /application\/pdf/, '%PDF-1.4'],
+      ['pptx', /presentationml\.presentation/, 'PK'],
+      ['xlsx', /spreadsheetml\.sheet/, 'PK'],
+      ['csv', /text\/csv/, null],
+      ['txt', /text\/plain/, null],
+      ['html', /text\/html/, null],
+    ];
+    for (const [extension, type, entete] of formats) {
+      const r = await fetch(`${base}/v1/studio/artifacts/${creation.id}/${extension}`, { headers: entetes });
+      assert.equal(r.status, 200, `format ${extension}`);
+      assert.match(r.headers.get('content-type') ?? '', type, `type ${extension}`);
+      assert.match(r.headers.get('content-disposition') ?? '', new RegExp(`\\.${extension}"`));
+      const corps = Buffer.from(await r.arrayBuffer());
+      assert.ok(corps.length > 20, `fichier ${extension} vide`);
+      if (entete) assert.equal(corps.subarray(0, entete.length).toString('latin1'), entete);
+    }
   });
 });
 

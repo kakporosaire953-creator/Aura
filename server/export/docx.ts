@@ -82,6 +82,28 @@ function blocCode(texte: string): string {
     .join('');
 }
 
+const BORDURE = '<w:tblBorders><w:top w:val="single" w:sz="4" w:color="D9D9D9"/><w:left w:val="single" w:sz="4" w:color="D9D9D9"/><w:bottom w:val="single" w:sz="4" w:color="D9D9D9"/><w:right w:val="single" w:sz="4" w:color="D9D9D9"/><w:insideH w:val="single" w:sz="4" w:color="D9D9D9"/><w:insideV w:val="single" w:sz="4" w:color="D9D9D9"/></w:tblBorders>';
+
+function celluleTableau(texte: string, gras: boolean): string {
+  return `<w:tc><w:tcPr><w:tcW w:w="0" w:type="auto"/></w:tcPr>${paragraphe(texte, {
+    taille: 19,
+    apres: 40,
+    gras,
+  })}</w:tc>`;
+}
+
+/** Tableau Word réel (w:tbl), pas une suite de lignes avec des barres. */
+function tableau(entetes: string[], lignes: string[][]): string {
+  const entete = `<w:tr>${entetes.map((c) => celluleTableau(c, true)).join('')}</w:tr>`;
+  const corps = lignes
+    .map((l) => `<w:tr>${l.map((c) => celluleTableau(c, false)).join('')}</w:tr>`)
+    .join('');
+  return `<w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/>${BORDURE}</w:tblPr>${entete}${corps}</w:tbl>${paragraphe(
+    '',
+    { taille: 22, apres: 120 },
+  )}`;
+}
+
 function rendreBloc(bloc: Bloc): string {
   switch (bloc.type) {
     case 'titre':
@@ -106,6 +128,8 @@ function rendreBloc(bloc: Bloc): string {
       });
     case 'code':
       return blocCode(bloc.texte);
+    case 'tableau':
+      return tableau(bloc.entetes, bloc.lignes);
     case 'espace':
       return paragraphe('', { taille: 22, apres: 160 });
     default:

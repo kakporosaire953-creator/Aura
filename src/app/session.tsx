@@ -33,12 +33,23 @@ export type Compte = {
  */
 export type StatutSession = 'chargement' | 'anonyme' | 'connecte' | 'indisponible';
 
+/**
+ * Règle de confirmation d'adresse appliquée par le serveur :
+ * - `obligatoire` : l'espace reste fermé tant que l'adresse n'est pas confirmée ;
+ * - `impossible` : aucun e-mail ne peut partir, exiger la confirmation
+ *   enfermerait tout le monde — l'interface l'affiche tel quel ;
+ * - `facultative` : désactivée par l'administrateur.
+ */
+export type VerificationEmail = 'obligatoire' | 'impossible' | 'facultative';
+
 type EtatSession = {
   statut: StatutSession;
   compte: Compte | null;
   motif: 'stockage' | 'reseau' | null;
   /** Le serveur a répondu 401 `session-expiree` : le dire, plutôt que « anonyme ». */
   expiree: boolean;
+  /** Règle réellement appliquée, telle que le serveur la déclare. */
+  verificationEmail: VerificationEmail;
 };
 
 type CtxSession = EtatSession & {
@@ -51,6 +62,7 @@ const SessionCtx = createContext<CtxSession>({
   compte: null,
   motif: null,
   expiree: false,
+  verificationEmail: 'obligatoire',
   rafraichir: async () => {},
   deconnecter: async () => {},
 });
@@ -61,6 +73,7 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     compte: null,
     motif: null,
     expiree: false,
+    verificationEmail: 'obligatoire',
   });
 
   const rafraichir = useCallback(async () => {
@@ -69,16 +82,22 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const c = compteCourantSimule();
       setEtat(
         c
-          ? { statut: 'connecte', compte: c, motif: null, expiree: false }
-          : { statut: 'anonyme', compte: null, motif: null, expiree: false },
+          ? { statut: 'connecte', compte: c, motif: null, expiree: false, verificationEmail: 'facultative' }
+          : { statut: 'anonyme', compte: null, motif: null, expiree: false, verificationEmail: 'facultative' },
       );
       return;
     }
     try {
       const r = await fetch('/api/me', { credentials: 'same-origin' });
       if (r.ok) {
-        const d = (await r.json()) as { compte: Compte };
-        setEtat({ statut: 'connecte', compte: d.compte, motif: null, expiree: false });
+        const d = (await r.json()) as { compte: Compte; verificationEmail?: VerificationEmail };
+        setEtat({
+          statut: 'connecte',
+          compte: d.compte,
+          motif: null,
+          expiree: false,
+          verificationEmail: d.verificationEmail ?? 'obligatoire',
+        });
         return;
       }
       if (r.status === 401) {
@@ -91,6 +110,7 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
           compte: null,
           motif: null,
           expiree: code === 'session-expiree',
+          verificationEmail: 'obligatoire',
         });
         return;
       }
@@ -101,22 +121,35 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
         compte: null,
         motif: r.status === 503 ? 'stockage' : 'reseau',
         expiree: false,
+        verificationEmail: 'obligatoire',
       });
     } catch {
-      setEtat({ statut: 'indisponible', compte: null, motif: 'reseau', expiree: false });
+      setEtat({
+        statut: 'indisponible',
+        compte: null,
+        motif: 'reseau',
+        expiree: false,
+        verificationEmail: 'obligatoire',
+      });
     }
   }, []);
 
   const deconnecter = useCallback(async () => {
     if (simulationActivee()) {
       deconnecterSimule();
-      setEtat({ statut: 'anonyme', compte: null, motif: null, expiree: false });
+      setEtat({ statut: 'anonyme', compte: null, motif: null, expiree: false, verificationEmail: 'facultative' });
       return;
     }
     try {
       await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
     } finally {
-      setEtat({ statut: 'anonyme', compte: null, motif: null, expiree: false });
+      setEtat({
+        statut: 'anonyme',
+        compte: null,
+        motif: null,
+        expiree: false,
+        verificationEmail: 'obligatoire',
+      });
     }
   }, []);
 

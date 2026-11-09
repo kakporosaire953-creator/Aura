@@ -107,3 +107,31 @@ Pour la rendre réelle, il faut : un modèle d'image (payant à l'image), un
 stockage de fichiers (Vercel Blob ; le KV plafonne à 1 Mo par valeur), le
 branchement UI et les tests. Décision produit à prendre, pas une variable
 d'environnement à ajouter.
+
+## 5. Extension : tous les formats de bureau (mission suivante)
+
+Ajouté après le premier lot, sans nouvelle dépendance :
+
+| Format | Route | Contenu |
+|---|---|---|
+| `.docx` | `/docx` | document Word, tableaux Word réels (`w:tbl`) |
+| `.pdf` | `/pdf` | A4 paginé, pied de page |
+| `.pptx` | `/pptx` | 16:9, une diapositive par section, thème et masque inclus |
+| `.xlsx` | `/xlsx` | une feuille par section, nombres écrits comme nombres |
+| `.csv` | `/csv` | point-virgule + BOM UTF-8 (Excel français) |
+| `.txt` | `/txt` | texte brut structuré |
+| `.html` | `/html` | page autonome (styles inclus, aucun script, aucune ressource distante) |
+| `.md` | `/` | Markdown d'origine |
+
+Les tableaux Markdown sont désormais reconnus comme des blocs typés :
+vrai tableau Word, lignes alignées en PDF, lignes en diapositive, `<table>`
+en HTML, cellules et nombres dans Excel.
+
+Limites conservées : PowerPoint affiche les tableaux en lignes de texte (pas
+de `a:tbl`), le PDF n'a pas d'italique, et un document de plus de 60 sections
+reçoit une dernière diapositive qui renvoie explicitement aux exports Word et
+PDF — jamais une troncature silencieuse.
+
+Vérifications : lecture réelle des fichiers par `python-pptx`, `python-docx`,
+`openpyxl` et `MuPDF` (diapositives, tableau Word, cellules numériques,
+extraction du texte), `npm test` **211/211**, `npm run verif:prod` OK.

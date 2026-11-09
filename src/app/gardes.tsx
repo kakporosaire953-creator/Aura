@@ -1,8 +1,10 @@
 import React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { useSession } from './session';
+import { useSession, type VerificationEmail } from './session';
 import { useT } from './prefs';
 import { decisionGarde } from './garde-etat';
+import { renvoyerVerification } from '../services/api';
+import { usePrefs } from './prefs';
 
 /**
  * Garde des routes privées — un seul endroit, pas une copie par page.
@@ -15,8 +17,67 @@ import { decisionGarde } from './garde-etat';
  * - service indisponible → message explicite, jamais une redirection :
  *   une panne de stockage n'est pas une déconnexion.
  */
+/**
+ * La règle de confirmation, isolée en fonction pure : elle se vérifie sans
+ * navigateur. L'espace ne s'ouvre qu'à une adresse confirmée, et seulement
+ * si l'environnement peut réellement envoyer des e-mails (`obligatoire`).
+ * Sinon (`facultative`, `impossible`), exiger la confirmation enfermerait
+ * des utilisateurs qui n'ont aucun moyen de la donner.
+ */
+export function confirmationRequise(
+  compte: { emailVerifie?: boolean } | null,
+  verificationEmail: VerificationEmail,
+): boolean {
+  return verificationEmail === 'obligatoire' && compte?.emailVerifie !== true;
+}
+
+/**
+ * Écran d'attente de confirmation — l'espace reste fermé, mais l'utilisateur
+ * peut renvoyer le lien ou se déconnecter : jamais enfermé sans issue.
+ */
+const AttenteConfirmation: React.FC<{ email: string }> = ({ email }) => {
+  const t = useT();
+  const { lang } = usePrefs();
+  const { deconnecter } = useSession();
+  const [etat, setEtat] = React.useState<'repos' | 'envoi' | 'envoye' | 'echec'>('repos');
+
+  return (
+    <div className="page-chargement page-confirmation">
+      <div className="page-indisponible-boite">
+        <h1 className="display-md">{t.auth.confirmerTitre}</h1>
+        <p className="corps">{t.auth.confirmerSous}</p>
+        <p className="corps page-confirmation-email">{email}</p>
+        <p className="corps" role="status" aria-live="polite">
+          {etat === 'envoye'
+            ? t.auth.confirmerEnvoye
+            : etat === 'echec'
+              ? t.auth.confirmerEchec
+              : t.auth.confirmerAide}
+        </p>
+        <div className="page-confirmation-actions">
+          <button
+            type="button"
+            className="btn btn-principal"
+            disabled={etat === 'envoi' || etat === 'envoye'}
+            onClick={async () => {
+              setEtat('envoi');
+              const r = await renvoyerVerification(lang);
+              setEtat(r.ok ? 'envoye' : 'echec');
+            }}
+          >
+            {etat === 'envoi' ? t.auth.submitEnvoi : t.auth.confirmerRenvoyer}
+          </button>
+          <button type="button" className="btn btn-ligne" onClick={() => void deconnecter()}>
+            {t.auth.confirmerDeconnexion}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const RoutePrivee: React.FC = () => {
-  const { statut, motif, expiree, rafraichir } = useSession();
+  const { statut, motif, expiree, rafraichir, compte, verificationEmail } = useSession();
   const location = useLocation();
   const t = useT();
   const [relance, setRelance] = React.useState(false);
@@ -59,6 +120,11 @@ export const RoutePrivee: React.FC = () => {
   if (decision === 'rediriger') {
     const depuis = `${location.pathname}${location.search}${location.hash}`;
     return <Navigate to="/login" replace state={{ depuis, expiree }} />;
+  }
+
+  // Adresse non confirmée alors que la règle l'exige : l'espace reste fermé.
+  if (compte && confirmationRequise(compte, verificationEmail)) {
+    return <AttenteConfirmation email={compte.email} />;
   }
 
   return <Outlet />;

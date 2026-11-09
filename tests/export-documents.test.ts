@@ -10,6 +10,9 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { analyserMarkdown, composerDocument, nettoyerEnLigne, nomFichierSur } from '../server/export/blocs';
 import { creerDocx, echapperXml } from '../server/export/docx';
+import { creerPptx, diapositives } from '../server/export/pptx';
+import { creerXlsx } from '../server/export/xlsx';
+import { creerCsv, creerHtml, creerTxt } from '../server/export/texte';
 import { creerPdf, chainePdf, couperEnLignes, largeurTexte, versWinAnsi } from '../server/export/pdf';
 
 /* ── Outils de lecture d'archive ZIP « stored » ── */
@@ -199,5 +202,129 @@ describe('Export PDF', () => {
     assert.ok(lignes.length > 1);
     for (const ligne of lignes) assert.ok(largeurTexte(ligne, 10) <= 100);
     assert.equal(lignes.join(''), 'A'.repeat(120));
+  });
+});
+
+/* ── Formats de bureau et texte ── */
+
+describe('Tableaux Markdown', () => {
+  const TABLEAU = [
+    '## Chiffres',
+    '',
+    '| Indicateur | 2024 | 2025 |',
+    '| --- | --- | --- |',
+    '| Comptes | 1200 | 3400 |',
+    '| Documents | 340 | 1120 |',
+    '',
+    'Fin.',
+  ].join('\n');
+
+  test('un tableau devient un bloc typé, pas un paragraphe avec des barres', () => {
+    const blocs = analyserMarkdown(TABLEAU);
+    const tableau = blocs.find((b) => b.type === 'tableau');
+    assert.ok(tableau);
+    assert.deepEqual(tableau, {
+      type: 'tableau',
+      entetes: ['Indicateur', '2024', '2025'],
+      lignes: [
+        ['Comptes', '1200', '3400'],
+        ['Documents', '340', '1120'],
+      ],
+    });
+  });
+
+  test('Word reçoit un vrai tableau wordprocessingML', () => {
+    const doc = composerDocument({ ...SOURCE, contenu: TABLEAU });
+    const xml = lireZip(creerDocx(doc)).get('word/document.xml')!.toString('utf8');
+    assert.match(xml, /<w:tbl>/);
+    assert.match(xml, /<w:tblBorders>/);
+    assert.equal((xml.match(/<w:tr>/g) ?? []).length, 3);
+  });
+
+  test('Excel écrit les nombres comme nombres et crée une feuille par section', () => {
+    const doc = composerDocument({ ...SOURCE, contenu: TABLEAU });
+    const parties = lireZip(creerXlsx(doc));
+    assert.ok(parties.has('xl/workbook.xml'));
+    const feuille = parties.get('xl/worksheets/sheet1.xml')!.toString('utf8');
+    assert.match(feuille, /<v>1200<\/v>/);
+    assert.match(feuille, /t="inlineStr"/);
+    const classeur = parties.get('xl/workbook.xml')!.toString('utf8');
+    assert.match(classeur, /name="Chiffres"/);
+  });
+});
+
+describe('PowerPoint', () => {
+  test('une diapositive par section, contenu réparti', () => {
+    const diapos = diapositives(DOCUMENT);
+    assert.equal(diapos[0].titre, DOCUMENT.titre);
+    assert.ok(diapos.length >= 3);
+    assert.ok(diapos.some((d) => d.titre === 'Introduction'));
+    assert.ok(diapos.some((d) => d.titre === 'Objectifs'));
+  });
+
+  test('archive PPTX complète : masque, mise en page, thème, diapositives', () => {
+    const parties = lireZip(creerPptx(DOCUMENT));
+    for (const nom of [
+      '[Content_Types].xml',
+      '_rels/.rels',
+      'ppt/presentation.xml',
+      'ppt/_rels/presentation.xml.rels',
+      'ppt/slideMasters/slideMaster1.xml',
+      'ppt/slideLayouts/slideLayout1.xml',
+      'ppt/theme/theme1.xml',
+      'ppt/slides/slide1.xml',
+    ]) {
+      assert.ok(parties.has(nom), `partie manquante : ${nom}`);
+    }
+    const types = parties.get('[Content_Types].xml')!.toString('utf8');
+    assert.match(types, /presentationml\.presentation\.main\+xml/);
+    const presentation = parties.get('ppt/presentation.xml')!.toString('utf8');
+    const nombre = (presentation.match(/<p:sldId /g) ?? []).length;
+    assert.equal(nombre, diapositives(DOCUMENT).length);
+    assert.match(presentation, /cx="12192000" cy="6858000"/);
+    for (let i = 1; i <= nombre; i += 1) {
+      assert.ok(parties.has(`ppt/slides/slide${i}.xml`));
+    }
+  });
+
+  test('un document très long est borné, avec une diapositive qui le dit', () => {
+    const long = composerDocument({
+      ...SOURCE,
+      contenu: Array.from({ length: 90 }, (_v, i) => `## Section ${i + 1}\n\ntexte`).join('\n\n'),
+    });
+    const diapos = diapositives(long);
+    assert.ok(diapos.length <= 61);
+    assert.equal(diapos[diapos.length - 1].titre, 'Suite du document');
+  });
+});
+
+describe('Formats texte', () => {
+  test('CSV : point-virgule, BOM UTF-8, guillemets échappés', () => {
+    const doc = composerDocument({
+      ...SOURCE,
+      contenu: '| Nom | Note |\n| --- | --- |\n| A; B | "excellent" |',
+    });
+    const csv = creerCsv(doc).toString('utf8');
+    assert.equal(csv.charCodeAt(0), 0xfeff);
+    assert.match(csv, /Nom;Note/);
+    assert.ok(csv.includes('"A; B";"""excellent"""'));
+  });
+
+  test('TXT : titres, puces et code conservés', () => {
+    const txt = creerTxt(DOCUMENT).toString('utf8');
+    assert.match(txt, /INTRODUCTION/);
+    assert.match(txt, /- Premier point/);
+    assert.ok(txt.includes('const x = (a) => a * 2;'));
+  });
+
+  test('HTML autonome : aucun script, contenu échappé, styles inclus', () => {
+    const html = creerHtml(DOCUMENT).toString('utf8');
+    assert.match(html, /^<!doctype html>/);
+    assert.match(html, /<style>/);
+    assert.doesNotMatch(html, /<script/i);
+    assert.match(html, /&lt;balise&gt;/);
+    assert.doesNotMatch(html, /<balise>/);
+    assert.match(html, /<pre><code>/);
+    assert.match(html, /Bénin/);
   });
 });

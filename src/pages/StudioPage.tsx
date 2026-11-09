@@ -14,8 +14,8 @@ import { Icone } from '../components/ui/Icone';
 
 /**
  * Studio — création de livrables réelle (génération par le moteur IA
- * configuré), historique des versions, révision, exports Word, PDF et
- * Markdown produits par le serveur.
+ * configuré), historique des versions, révision, exports produits par le
+ * serveur (Word, PDF, PowerPoint, Excel, CSV, texte, HTML, Markdown).
  * Les états sont honnêtes : sans moteur, la génération est déclarée
  * indisponible ; aucune création prédéfinie n'est présentée comme générée.
  */
@@ -49,6 +49,7 @@ export const StudioPage: React.FC = () => {
   const [creations, setCreations] = useState<Creation[]>([]);
   const [active, setActive] = useState<Creation | null>(null);
   const [versionVue, setVersionVue] = useState<number | null>(null);
+  const [formatChoisi, setFormatChoisi] = useState('');
   const [revision, setRevision] = useState('');
   const [dispo, setDispo] = useState<{ ok: boolean; raison?: string } | null>(null);
   const [projets, setProjets] = useState<Array<{ id: string; nom: string }>>([]);
@@ -244,30 +245,33 @@ export const StudioPage: React.FC = () => {
                       </select>
                     )}
                     {active.versions.length > 0 && (
-                      <>
-                        <a
-                          className="btn-simple"
-                          href={api.urlExportCreationDocx(active.id, versionAffichee?.numero)}
-                          download
+                      <label className="btn-simple btn-export">
+                        <Icone nom="download" />
+                        <select
+                          value={formatChoisi}
+                          aria-label={t.ws.exporter}
+                          onChange={(e) => {
+                            const format = e.target.value as api.FormatExport;
+                            setFormatChoisi('');
+                            if (!format) return;
+                            window.location.href = api.urlExportCreationFormat(
+                              active.id,
+                              format,
+                              versionAffichee?.numero,
+                            );
+                          }}
                         >
-                          <Icone nom="download" /> {t.ws.exporterWord}
-                        </a>
-                        <a
-                          className="btn-simple"
-                          href={api.urlExportCreationPdf(active.id, versionAffichee?.numero)}
-                          download
-                        >
-                          <Icone nom="download" /> {t.ws.exportPdf}
-                        </a>
-                        <a
-                          className="btn-simple"
-                          href={api.urlExportCreation(active.id, versionAffichee?.numero)}
-                          download
-                          title={t.ws.exporter}
-                        >
-                          <Icone nom="download" /> Markdown
-                        </a>
-                      </>
+                          <option value="">{t.ws.exporterChoisir}</option>
+                          <option value="docx">{t.ws.exporterWord}</option>
+                          <option value="pdf">{t.ws.exportPdf}</option>
+                          <option value="pptx">{t.ws.exporterPptx}</option>
+                          <option value="xlsx">{t.ws.exporterXlsx}</option>
+                          <option value="csv">{t.ws.exporterCsv}</option>
+                          <option value="txt">{t.ws.exporterTxt}</option>
+                          <option value="html">{t.ws.exporterHtml}</option>
+                          <option value="md">{t.ws.exporterMarkdown}</option>
+                        </select>
+                      </label>
                     )}
                     <button
                       type="button"

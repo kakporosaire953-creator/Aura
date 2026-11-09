@@ -103,8 +103,15 @@ export function maxReplis(): number {
   return Number.isFinite(n) && n >= 0 ? Math.min(n, 5) : 2;
 }
 
-/** Délai maximal d'une requête fournisseur (ms). */
+/** Plafond absolu : la fonction serverless est coupée à 60 s par la
+ * plateforme. Un délai fournisseur supérieur produirait une requête tuée
+ * sans réponse JSON — le navigateur afficherait alors « le service ne
+ * répond pas » au lieu d'une erreur lisible. On garde 10 s de marge. */
+export const DELAI_FOURNISSEUR_MAX_MS = 50_000;
+
+/** Délai maximal d'une requête fournisseur (ms), toujours sous le plafond. */
 export function timeoutMs(): number {
-  const n = Number.parseInt(env('AI_REQUEST_TIMEOUT_MS') || '60000', 10);
-  return Number.isFinite(n) && n > 0 ? n : 60000;
+  const brut = Number.parseInt(env('AI_REQUEST_TIMEOUT_MS') || '45000', 10);
+  const n = Number.isFinite(brut) && brut > 0 ? brut : 45_000;
+  return Math.min(n, DELAI_FOURNISSEUR_MAX_MS);
 }

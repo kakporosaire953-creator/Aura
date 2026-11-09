@@ -5,6 +5,7 @@
  */
 import type { NextFunction, Request, Response } from 'express';
 import { empreinteJeton, lireJetonSession } from '../accounts.js';
+import { accesAutorise, MESSAGE_EMAIL_NON_VERIFIE } from '../auth/verification.js';
 import {
   baseDeDonnees,
   entrepotComptes,
@@ -95,6 +96,20 @@ export function authRequise(req: ReqV1, res: Response, next: NextFunction) {
     return;
   }
   res.status(401).json({ error: 'Connexion requise.', code: 'anonyme' });
+}
+
+/** Garde de confirmation d'adresse, appliquée au routeur du workspace. */
+export function emailVerifieRequis(req: Request, res: Response, next: NextFunction) {
+  const r = req as ReqV1;
+  if (!r.compte) {
+    next(); // non connecté : `authRequise` répondra 401, pas 403
+    return;
+  }
+  if (accesAutorise(r.compte)) {
+    next();
+    return;
+  }
+  res.status(403).json({ error: MESSAGE_EMAIL_NON_VERIFIE, code: 'email-non-verifie' });
 }
 
 /* ── Limitation de débit (compteur partagé, repli local) ── */

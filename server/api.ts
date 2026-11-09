@@ -53,6 +53,12 @@ import {
 import { ipClient } from './v1/limite.js';
 import { createRoutesRecuperation, envoyerVerificationCompte } from './auth/recuperation.js';
 import { mailConfigure } from './mail/adaptateur.js';
+import {
+  accesAutorise,
+  etatVerification,
+  MESSAGE_EMAIL_NON_VERIFIE,
+  verificationBloquante,
+} from './auth/verification.js';
 import { langueDepuis } from './mail/gabarits.js';
 
 const comptes = entrepotComptes();
@@ -202,6 +208,17 @@ export function createApiApp(): express.Router {
       return;
     }
 
+    // Confirmation obligatoire sans fournisseur d'e-mails : l'inscription est
+    // refusée plutôt que de créer un compte qui ne pourrait jamais s'ouvrir.
+    if (verificationBloquante() && !mailConfigure()) {
+      res.status(503).json({
+        error:
+          'La confirmation d’adresse est obligatoire, mais l’envoi d’e-mails n’est pas configuré sur cet environnement.',
+        code: 'mail-indisponible',
+      });
+      return;
+    }
+
     const email = corps.email!.trim().toLowerCase();
     if (await comptes.parEmail(email)) {
       res.status(409).json({ error: 'Un compte existe déjà avec cette adresse.', code: 'existe' });
@@ -308,7 +325,11 @@ export function createApiApp(): express.Router {
       res.status(401).json({ error: 'non connecté', code: 'anonyme' });
       return;
     }
-    res.json({ compte: versPublic(reqAuth.compte.utilisateur) });
+    res.json({
+      compte: versPublic(reqAuth.compte.utilisateur),
+      // La règle appliquée par le serveur, pour que l'interface n'invente rien.
+      verificationEmail: etatVerification(),
+    });
   });
 
   /* ── Onboarding ── */
@@ -338,6 +359,10 @@ export function createApiApp(): express.Router {
     const reqAuth = req as ReqAuth;
     if (!reqAuth.compte) {
       res.status(401).json({ error: 'non connecté', code: 'anonyme' });
+      return;
+    }
+    if (!accesAutorise(reqAuth.compte.utilisateur)) {
+      res.status(403).json({ error: MESSAGE_EMAIL_NON_VERIFIE, code: 'email-non-verifie' });
       return;
     }
     const etatIa = await serviceIa.etatIa();
