@@ -16,7 +16,10 @@ import {
   type ReqV1,
 } from './middlewares.js';
 import { nouvelId } from '../db/entrepots.js';
-import type { SourceRecherche, TypeCreation, VersionCreation } from '../db/types.js';
+import type { Creation, SourceRecherche, TypeCreation, VersionCreation } from '../db/types.js';
+import { composerDocument, nomFichierSur } from '../export/blocs.js';
+import { creerDocx } from '../export/docx.js';
+import { creerPdf } from '../export/pdf.js';
 import { choisirConnecteur } from '../search/connecteurs.js';
 import * as serviceIa from '../ai/service.js';
 import { ErreurAi } from '../ai/errors.js';
@@ -352,27 +355,97 @@ export function createRoutesCreation(): express.Router {
     }),
   );
 
-  /** Export d'un livrable (dernière version) en Markdown téléchargeable. */
-  c.get('/studio/artifacts/:id', asyncRoute(async (req, res) => {
+  /* ── Exports d'un livrable ──
+     Markdown, Word (.docx) et PDF sont produits côté serveur : le fichier
+     téléchargé contient exactement la version demandée, sans passer par
+     l'impression du navigateur. */
+
+  /**
+   * Version à exporter : celle demandée par `?version=N`, sinon la dernière.
+   * Une version inexistante est signalée, jamais remplacée en silence.
+   */
+  const versionDemandee = (req: express.Request, job: Creation): VersionCreation | null => {
+    const brut = req.query.version;
+    if (typeof brut === 'string' && brut.trim()) {
+      if (!/^\d{1,4}$/.test(brut.trim())) return null;
+      return job.versions.find((v) => v.numero === Number(brut.trim())) ?? null;
+    }
+    return job.versions[job.versions.length - 1] ?? null;
+  };
+
+  const enteteTelechargement = (res: express.Response, nom: string): void => {
+    const ascii = nom.replace(/[^\x20-\x7e]/g, '_').replace(/"/g, '');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(nom)}`,
+    );
+  };
+
+  /** Charge la création et la version demandée, ou répond l'erreur adaptée. */
+  const chargerPourExport = async (
+    req: express.Request,
+    res: express.Response,
+  ): Promise<{ job: Creation; version: VersionCreation } | null> => {
     const r = req as ReqV1;
     const job = await r.donnees!.creation(req.params.id);
     if (!job) {
       erreur404(res);
-      return;
+      return null;
     }
-    const version = job.versions[job.versions.length - 1];
-    if (!version) {
+    if (job.versions.length === 0) {
       res.status(404).json({ error: 'Aucune version disponible pour cette création.', code: 'sans-version' });
-      return;
+      return null;
     }
-    const nomFichier = job.titre
-      .toLowerCase()
-      .replace(/[^a-z0-9à-ÿ]+/g, '-')
-      .replace(/^-|-$/g, '')
-      .slice(0, 60) || 'creation';
+    const version = versionDemandee(req, job);
+    if (!version) {
+      res.status(404).json({ error: 'Cette version n’existe pas pour cette création.', code: 'version-introuvable' });
+      return null;
+    }
+    return { job, version };
+  };
+
+  const documentDe = (job: Creation, version: VersionCreation) =>
+    composerDocument({
+      titre: job.titre,
+      type: job.type,
+      version: version.numero,
+      cree: version.cree,
+      contenu: version.contenu,
+    });
+
+  /** Export Markdown (format historique, conservé à l'identique). */
+  c.get('/studio/artifacts/:id', asyncRoute(async (req, res) => {
+    const trouve = await chargerPourExport(req, res);
+    if (!trouve) return;
+    const { job, version } = trouve;
     res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="${nomFichier}.md"`);
+    enteteTelechargement(res, nomFichierSur(job.titre, 'md'));
     res.send(`# ${job.titre}\n\n> ${job.type} — version ${version.numero} (${version.cree})\n\n${version.contenu}\n`);
+  }));
+
+  /** Export Word (.docx). */
+  c.get('/studio/artifacts/:id/docx', asyncRoute(async (req, res) => {
+    const trouve = await chargerPourExport(req, res);
+    if (!trouve) return;
+    const { job, version } = trouve;
+    const fichier = creerDocx(documentDe(job, version));
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    );
+    enteteTelechargement(res, nomFichierSur(job.titre, 'docx'));
+    res.send(fichier);
+  }));
+
+  /** Export PDF (mis en page, paginé, avec pied de page). */
+  c.get('/studio/artifacts/:id/pdf', asyncRoute(async (req, res) => {
+    const trouve = await chargerPourExport(req, res);
+    if (!trouve) return;
+    const { job, version } = trouve;
+    const fichier = creerPdf(documentDe(job, version));
+    res.setHeader('Content-Type', 'application/pdf');
+    enteteTelechargement(res, nomFichierSur(job.titre, 'pdf'));
+    res.send(fichier);
   }));
 
   c.delete('/studio/jobs/:id', asyncRoute(async (req, res) => {

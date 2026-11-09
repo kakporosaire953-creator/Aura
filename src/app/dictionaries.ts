@@ -596,6 +596,7 @@ export interface Content {
     motDePasseLabel: string;
     compteSupprime: string;
     exportPdf: string;
+    exporterWord: string;
   };
 }
 
@@ -1469,7 +1470,8 @@ const contentFr: Content = {
     supprimerCompteConfirmeValeur: 'SUPPRIMER',
     motDePasseLabel: 'Mot de passe',
     compteSupprime: 'Votre compte a été supprimé.',
-    exportPdf: 'Imprimer / PDF',
+    exportPdf: 'PDF',
+    exporterWord: 'Word (.docx)',
   },
 };
 
@@ -2270,7 +2272,8 @@ const contentEn: Content = {
     supprimerCompteConfirmeValeur: 'DELETE',
     motDePasseLabel: 'Password',
     compteSupprime: 'Your account has been deleted.',
-    exportPdf: 'Print / PDF',
+    exportPdf: 'PDF',
+    exporterWord: 'Word (.docx)',
   },
 };
 

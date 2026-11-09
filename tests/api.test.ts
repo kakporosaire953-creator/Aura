@@ -390,6 +390,32 @@ describe('Honnêteté des capacités', () => {
     assert.equal(exp.status, 200);
     assert.match(exp.headers.get('content-type') ?? '', /markdown/);
     assert.match(await exp.text(), /Rapport sur la scolarisation/);
+
+    // Exports Word et PDF : fichier réellement produit, pas une redirection.
+    const entetes = { ...(c.enteteCookie() ? { Cookie: c.enteteCookie()! } : {}) };
+
+    const word = await fetch(`${base}/v1/studio/artifacts/${creation.id}/docx`, { headers: entetes });
+    assert.equal(word.status, 200);
+    assert.match(
+      word.headers.get('content-type') ?? '',
+      /application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document/,
+    );
+    assert.match(word.headers.get('content-disposition') ?? '', /\.docx"/);
+    const octetsWord = Buffer.from(await word.arrayBuffer());
+    assert.equal(octetsWord.subarray(0, 2).toString('latin1'), 'PK');
+
+    const pdf = await fetch(`${base}/v1/studio/artifacts/${creation.id}/pdf`, { headers: entetes });
+    assert.equal(pdf.status, 200);
+    assert.match(pdf.headers.get('content-type') ?? '', /application\/pdf/);
+    assert.match(pdf.headers.get('content-disposition') ?? '', /\.pdf"/);
+    assert.equal(Buffer.from(await pdf.arrayBuffer()).subarray(0, 8).toString('latin1'), '%PDF-1.4');
+
+    // Une version précise, et le refus honnête d'une version inexistante.
+    const v1 = await fetch(`${base}/v1/studio/artifacts/${creation.id}/pdf?version=1`, { headers: entetes });
+    assert.equal(v1.status, 200);
+    const absent = await fetch(`${base}/v1/studio/artifacts/${creation.id}/pdf?version=99`, { headers: entetes });
+    assert.equal(absent.status, 404);
+    assert.equal(((await absent.json()) as Json).code, 'version-introuvable');
   });
 });
 
