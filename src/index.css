@@ -2724,7 +2724,7 @@ button {
 
 .espace-grille {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
   gap: 1.4rem;
   align-items: start;
 }
@@ -2872,6 +2872,7 @@ button {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .chat {
@@ -3125,6 +3126,7 @@ button {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .module {
@@ -3329,7 +3331,7 @@ button {
 
 .studio-grille {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
   gap: 1.1rem;
 }
 
@@ -3384,7 +3386,7 @@ button {
 /* — Missions — */
 .missions-tableau {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
   gap: 1.15rem;
   align-items: start;
 }
@@ -3493,7 +3495,7 @@ button {
 /* — Cartes modules de l'espace — */
 .modules-grille {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
   gap: 0.95rem;
   margin: 1.15rem 0 1.55rem;
 }
@@ -5459,7 +5461,8 @@ button:disabled,
 }
 .dlg {
   background: var(--papier); border-radius: 22px; width: min(560px, 100%);
-  max-height: 86vh; overflow: auto; box-shadow: var(--ombre-flottante);
+  max-height: 86vh; max-height: 86dvh; overflow: auto;
+  box-shadow: var(--ombre-flottante);
   border: 1px solid var(--verre-trait);
 }
 .dlg-large { width: min(760px, 100%); }
@@ -5655,7 +5658,7 @@ button:disabled,
 
 /* ── Projets ── */
 .projets-grille {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(255px, 1fr));
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 255px), 1fr));
   gap: 1rem;
 }
 .projet-carte {
@@ -5786,7 +5789,7 @@ button:disabled,
 .soustache-ligne input { flex: 1; border: 1px solid var(--verre-trait); border-radius: 10px; padding: 0.42rem 0.7rem; background: var(--papier); color: var(--encre); }
 
 /* ── Mémoire ── */
-.memoire-liste { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 0.85rem; }
+.memoire-liste { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr)); gap: 0.85rem; }
 .memoire-carte {
   background: var(--papier); border: 1px solid var(--verre-trait); border-radius: 18px;
   padding: 1.05rem 1.25rem; display: flex; flex-direction: column; gap: 0.55rem;
@@ -6785,6 +6788,46 @@ button:disabled,
   max-width: 32rem;
 }
 
+/* Confirmation d'adresse obligatoire avant l'espace.
+   Même boîte centrée que « service indisponible », mais l'adresse doit
+   rester lisible jusqu'à 320 px : elle casse au besoin. */
+.page-confirmation {
+  min-height: 70svh;
+  padding: clamp(1.5rem, 6vw, 3rem) clamp(1rem, 4vw, 1.25rem);
+}
+
+.page-confirmation-email {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.page-confirmation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+  width: 100%;
+}
+
+.page-confirmation-actions .btn {
+  flex: 1 1 auto;
+  min-width: min(100%, 12rem);
+  max-width: 100%;
+}
+
+@media (max-width: 420px) {
+  .page-confirmation-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .page-confirmation-actions .btn {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
 /* =========================================================
    ICÔNES AURA — jeu maison (aucun webfont externe)
    ========================================================= */
@@ -7538,4 +7581,322 @@ button:disabled,
 
 .etat-attente {
   color: var(--feu-profond);
+}
+
+/* =========================================================
+   RESPONSIVE — contrat de mise en page, 320 px → 1600 px+
+   ---------------------------------------------------------
+   Règles vérifiables, une par famille de problème :
+
+   1. Toute grille `repeat(auto-*, minmax(X, 1fr))` utilise
+      `minmax(min(100%, X), 1fr)` : une piste ne peut pas être plus
+      large que la colonne qui la contient (avant, `290px` débordait
+      de 2 px dans une page à 320 px).
+   2. Aucune hauteur de page en `100vh` seule : `100dvh` suit la
+      barre d'URL des navigateurs mobiles (après un repli `100vh`
+      pour les moteurs anciens).
+   3. Les contenus écrits par l'utilisateur (titres de missions, de
+      conversations, adresses e-mail, URLs) se coupent au lieu de
+      pousser la page : `overflow-wrap` + `min-width: 0` sur les
+      parents flex/grid.
+   4. Les barres d'actions passent à la ligne, jamais en débordement.
+   5. Les tableaux défilent dans leur propre cadre, la page ne bouge pas.
+   6. Les cibles tactiles restent ≥ 44 px, y compris les actions de
+      liste habituellement révélées au survol.
+   ========================================================= */
+
+/* — 1. Contenus extensibles : jamais de débordement de page — */
+video,
+canvas,
+iframe,
+svg {
+  max-width: 100%;
+}
+
+/* Texte de contenu : coupure propre des mots trop longs. */
+.corps,
+.sous-titre,
+.msg-texte,
+.md,
+.doc-corps,
+.doc-section,
+.explore-synthese,
+.memoire-contenu,
+.projet-carte p,
+.mission-titre-btn strong,
+.kanban-carte,
+.studio-document {
+  overflow-wrap: break-word;
+}
+
+/* Données techniques et adresses : coupure autorisée n'importe où. */
+.page-confirmation-email,
+.bandeau-verif,
+.ws-user-texte em,
+.session-date,
+.explore-url,
+.doc-code code,
+.md-code-inline,
+.compte-boite input {
+  overflow-wrap: anywhere;
+}
+
+/* Les cellules de grille flex laissent leurs enfants rétrécir. */
+.champ,
+.ws-user-texte,
+.chat-item-ouvrir,
+.ligne-ouvrir,
+.studio-item,
+.mission-titre-btn,
+.proposition-carte,
+.session-ligne > div {
+  min-width: 0;
+}
+
+/* — 2. Barres d'actions : retour à la ligne systématique — */
+.dlg-pied {
+  flex-wrap: wrap;
+}
+
+.page-module-actions,
+.studio-apercu-haut,
+.studio-revision,
+.param-actions,
+.mission-actions,
+.doc-pagination {
+  flex-wrap: wrap;
+}
+
+/* Le sélecteur d'export (8 formats) ne pousse pas son bouton hors écran. */
+.btn-export {
+  max-width: 100%;
+}
+
+.btn-export select {
+  max-width: min(11rem, 52vw);
+  text-overflow: ellipsis;
+}
+
+/* — 3. Tableaux : le cadre défile, la page non — */
+.doc-tableau-defile,
+.md-tableau-wrap {
+  max-width: 100%;
+}
+
+/* — 4. Tablette étroite / grande tablette : la barre haute respire — */
+@media (max-width: 1023px) and (min-width: 900px) {
+  .ws-main {
+    padding-left: 1.6rem;
+    padding-right: 1.6rem;
+  }
+}
+
+/* — 5. Téléphones (≤ 720 px) — */
+@media (max-width: 720px) {
+  /* Actions de liste : visibles sans survol (tactile). */
+  .chat-item-actions {
+    display: inline-flex;
+  }
+
+  .dlg-fond {
+    padding: 0.85rem;
+  }
+
+  .dlg {
+    border-radius: 20px;
+    max-height: 90svh;
+    max-height: 90dvh;
+  }
+
+  .dlg-corps {
+    padding: 0.5rem 1.1rem 0.9rem;
+  }
+
+  .dlg-pied {
+    padding: 0.8rem 1.1rem 1rem;
+  }
+
+  /* Séances et échéances : empilées plutôt que comprimées. */
+  .echeance-ligne {
+    flex-wrap: wrap;
+    gap: 0.35rem 0.75rem;
+  }
+
+  .echeance-ligne .echeance-date {
+    min-width: 0;
+  }
+
+  .echeance-ligne strong {
+    flex-basis: 100%;
+    order: 3;
+    overflow-wrap: anywhere;
+  }
+
+  .session-ligne {
+    align-items: flex-start;
+    gap: 0.55rem;
+  }
+
+  .session-ligne > div {
+    flex: 1 1 100%;
+  }
+
+  /* Studio : l'historique horizontal garde une hauteur stable. */
+  .studio-historique {
+    padding-bottom: 0.25rem;
+    scrollbar-width: thin;
+    scroll-snap-type: x proximity;
+  }
+
+  .studio-item {
+    min-width: min(200px, 72vw);
+    scroll-snap-align: start;
+  }
+}
+
+/* — 6. Petits téléphones (≤ 420 px) — */
+@media (max-width: 420px) {
+  .ws-main {
+    padding-left: 0.85rem;
+    padding-right: 0.85rem;
+  }
+
+  .page-module {
+    padding: 1rem 0.85rem 2.4rem;
+  }
+
+  .page-module-actions {
+    width: 100%;
+  }
+
+  .page-module-actions .btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  .hero-actions .btn {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+
+  .dlg-titre {
+    font-size: 1.15rem;
+  }
+
+  .dlg-pied .btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  /* Le bouton d'export garde le format lisible et le libellé entier. */
+  .btn-export {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .btn-export select {
+    max-width: 46vw;
+  }
+
+  .accueil-composeur {
+    padding: 0.85rem 0.8rem 0.7rem;
+  }
+
+  .chat-composeur {
+    padding-left: 0.6rem;
+    padding-right: 0.6rem;
+  }
+
+  .bandeau-verif {
+    font-size: 0.85rem;
+  }
+}
+
+/* — 7. Très petits écrans (≤ 360 px) — */
+@media (max-width: 360px) {
+  body {
+    font-size: 16px;
+  }
+
+  .display-xl {
+    font-size: 2.15rem;
+  }
+
+  .display-lg {
+    font-size: 1.75rem;
+  }
+
+  .display-md {
+    font-size: 1.35rem;
+  }
+
+  .ws-fil {
+    font-size: 1rem;
+  }
+
+  .ws-topbar {
+    padding-left: 0.55rem;
+    padding-right: 0.45rem;
+  }
+
+  .ws-bottom a {
+    font-size: 0.6rem;
+  }
+
+  .onglets button {
+    padding: 0.45rem 0.7rem;
+    font-size: 0.82rem;
+  }
+
+  .accueil-pastilles {
+    gap: 0.4rem;
+  }
+
+  .studio-type {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8rem;
+  }
+}
+
+/* — 8. Téléphones couchés : la hauteur est rare, on la rend au contenu — */
+@media (orientation: landscape) and (max-height: 520px) {
+  .hero {
+    min-height: auto;
+    padding-top: 6rem;
+    padding-bottom: 3rem;
+  }
+
+  .chat-accueil {
+    padding-top: 1.1rem;
+  }
+
+  .accueil-hero {
+    padding-top: 0.35rem;
+  }
+
+  .nav-interieur {
+    height: 62px;
+  }
+
+  .nav-mobile {
+    max-height: calc(100svh - 4.4rem);
+  }
+
+  .auth-film {
+    min-height: 60svh;
+  }
+}
+
+/* — 9. Grands écrans (≥ 1440 px) : on garde la mesure de lecture — */
+@media (min-width: 1440px) {
+  .ws-main > .module,
+  .ws-main > .accueil,
+  .ws-main > .chat-page {
+    max-width: 1200px;
+  }
+
+  .doc-corps,
+  .studio-document {
+    max-width: 76ch;
+  }
 }

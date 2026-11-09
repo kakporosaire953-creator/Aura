@@ -163,6 +163,13 @@ export interface Content {
     indispoReseau: string;
     reessayer: string;
     sessionExpiree: string;
+    confirmerTitre: string;
+    confirmerSous: string;
+    confirmerAide: string;
+    confirmerEnvoye: string;
+    confirmerEchec: string;
+    confirmerRenvoyer: string;
+    confirmerDeconnexion: string;
   };
   securite: {
     oubliTitre1: string;
@@ -981,6 +988,14 @@ const contentFr: Content = {
       "Le service ne répond pas. Vérifiez votre connexion, puis réessayez : votre session est conservée.",
     reessayer: 'Réessayer',
     sessionExpiree: 'Votre session a expiré. Reconnectez-vous pour reprendre le fil.',
+    confirmerTitre: 'Confirmez votre adresse',
+    confirmerSous:
+      'Votre espace s’ouvrira dès que vous aurez cliqué sur le lien envoyé par e-mail. C’est ce qui évite qu’une adresse soit utilisée sans l’accord de son propriétaire.',
+    confirmerAide: 'Vous n’avez rien reçu ? Vérifiez les indésirables, puis demandez un nouveau lien.',
+    confirmerEnvoye: 'Un nouvel e-mail vient de partir. Le lien précédent a été invalidé.',
+    confirmerEchec: 'L’envoi a échoué : l’envoi d’e-mails n’est pas configuré sur cet environnement.',
+    confirmerRenvoyer: 'Renvoyer le lien',
+    confirmerDeconnexion: 'Se déconnecter',
   },
   securite: {
     oubliTitre1: 'Mot de passe',
@@ -1792,6 +1807,14 @@ const contentEn: Content = {
       'The service is not responding. Check your connection, then try again: your session is kept.',
     reessayer: 'Try again',
     sessionExpiree: 'Your session has expired. Sign in again to pick up the thread.',
+    confirmerTitre: 'Confirm your address',
+    confirmerSous:
+      'Your workspace opens as soon as you click the link we emailed you. It is what prevents an address from being used without its owner’s consent.',
+    confirmerAide: 'Nothing received? Check your spam folder, then ask for a new link.',
+    confirmerEnvoye: 'A new e-mail has just been sent. The previous link is now invalid.',
+    confirmerEchec: 'Sending failed: e-mail delivery is not configured on this environment.',
+    confirmerRenvoyer: 'Resend the link',
+    confirmerDeconnexion: 'Sign out',
   },
   securite: {
     oubliTitre1: 'Forgotten',

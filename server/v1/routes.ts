@@ -7,6 +7,7 @@
 import express, { type Response } from 'express';
 import {
   authRequise,
+  emailVerifieRequis,
   asyncRoute,
   attacherCompteV1,
   bool,
@@ -149,6 +150,31 @@ export function createApiV1(): express.Router {
   v1.use('/conversations/:id/messages', express.json({ limit: '6mb' }));
   v1.use(express.json({ limit: '64kb' }));
   v1.use(attacherCompteV1);
+
+  /**
+   * Confirmation d'adresse : garde unique, placée avant toutes les routes du
+   * workspace. Seuls le profil (pour afficher l'écran d'attente) et le renvoi
+   * du lien restent accessibles à un compte non confirmé — sinon
+   * l'utilisateur serait enfermé sans pouvoir se débloquer.
+   */
+  const ACCESSIBLE_SANS_CONFIRMATION = [
+    /^\/me$/,
+    /^\/me\/email(\/|$)/,
+    /^\/preferences$/,
+    /^\/capabilities$/,
+    /^\/ai\/usage$/,
+    /^\/me\/sessions(\/|$)/,
+    /^\/me\/password$/,
+  ];
+  v1.use((req, res, next) => {
+    const chemin = req.path.replace(/\/$/, '') || '/';
+    if (ACCESSIBLE_SANS_CONFIRMATION.some((motif) => motif.test(chemin))) {
+      next();
+      return;
+    }
+    emailVerifieRequis(req, res, next);
+  });
+
   // Sécurité du compte : mot de passe, sessions actives, renvoi de vérification.
   v1.use(createRoutesCompte());
 
