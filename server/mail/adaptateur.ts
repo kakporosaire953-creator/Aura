@@ -41,6 +41,12 @@ type Configuration = {
 
 const BASE_PAR_DEFAUT = 'https://api.resend.com';
 
+/** Domaine de l'expéditeur, jamais l'adresse complète (journaux sobres). */
+function domaineExpediteur(expediteur: string): string {
+  const m = expediteur.match(/@([^@>\s]+)/);
+  return m ? m[1] : '(illisible)';
+}
+
 function nettoie(valeur: string | undefined): string {
   return (valeur ?? '').trim();
 }
@@ -164,8 +170,13 @@ export async function envoyer(message: MessageMail): Promise<ResultatEnvoi> {
         /* corps absent ou illisible : le statut suffit */
       }
       const sansAdresses = detail.replace(/[^\s@]+@[^\s@]+\.[^\s@]+/g, '[adresse]');
+      // Ligne de diagnostic complète, sans secret : le point d'entrée (une
+      // URL doublée du type /emails/emails se voit tout de suite), le domaine
+      // expéditeur (à vérifier chez le fournisseur) et le message public.
       console.error(
-        `[mail] envoi refusé par le fournisseur (${r.status})${sansAdresses ? ` — ${sansAdresses}` : ''}`,
+        `[mail] envoi refusé (${r.status}) — endpoint=${config.base}/emails` +
+          ` — domaine-expediteur=${domaineExpediteur(config.expediteur)}` +
+          (sansAdresses ? ` — ${sansAdresses}` : ''),
       );
       return {
         ok: false,
@@ -174,6 +185,8 @@ export async function envoyer(message: MessageMail): Promise<ResultatEnvoi> {
         statut: r.status,
       };
     }
+    // Trace utile : un envoi accepté se distingue d'un envoi silencieux.
+    console.log(`[mail] envoi accepté — endpoint=${config.base}/emails`);
     return { ok: true };
   } catch (e) {
     const interrompu = e instanceof Error && e.name === 'AbortError';
