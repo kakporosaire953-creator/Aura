@@ -231,6 +231,15 @@ export interface Content {
     sessionsFermees: string;
     emailVerifie: string;
     emailNonVerifie: string;
+    connexionTitre: string;
+    connexionSous: string;
+    connexionGoogle: string;
+    connexionLie: string;
+    connexionNonLie: string;
+    connexionMdpDefini: string;
+    connexionMdpNon: string;
+    mdpDefinirSous: string;
+    mdpDefinirBouton: string;
     emailBandeau: string;
     emailRenvoyer: string;
     emailEnvoye: string;
@@ -1076,6 +1085,17 @@ const contentFr: Content = {
     sessionsFermees: 'session(s) fermée(s)',
     emailVerifie: 'Adresse confirmée',
     emailNonVerifie: 'Adresse non confirmée',
+    connexionTitre: 'Mode de connexion',
+    connexionSous:
+      'Ce qui permet réellement d’ouvrir ce compte aujourd’hui. Rien n’est affiché par défaut : chaque ligne reflète l’état enregistré.',
+    connexionGoogle: 'Connexion Google',
+    connexionLie: 'Rattachée',
+    connexionNonLie: 'Non rattachée',
+    connexionMdpDefini: 'Défini',
+    connexionMdpNon: 'Aucun mot de passe',
+    mdpDefinirSous:
+      'Ce compte a été ouvert avec Google : aucun mot de passe n’existe encore. Définissez-en un pour pouvoir aussi vous connecter sans Google. Vos autres sessions seront fermées.',
+    mdpDefinirBouton: 'Définir un mot de passe',
     emailBandeau: 'Confirmez votre adresse pour pouvoir récupérer votre compte plus tard.',
     emailRenvoyer: 'Renvoyer le lien',
     emailEnvoye: 'Lien envoyé. Pensez à vérifier vos indésirables.',
@@ -1908,6 +1928,17 @@ const contentEn: Content = {
     sessionsFermees: 'session(s) closed',
     emailVerifie: 'Address confirmed',
     emailNonVerifie: 'Address not confirmed',
+    connexionTitre: 'Sign-in methods',
+    connexionSous:
+      'What can actually open this account today. Nothing is assumed: each line reflects the recorded state.',
+    connexionGoogle: 'Google sign-in',
+    connexionLie: 'Linked',
+    connexionNonLie: 'Not linked',
+    connexionMdpDefini: 'Set',
+    connexionMdpNon: 'No password',
+    mdpDefinirSous:
+      'This account was opened with Google, so no password exists yet. Set one to be able to sign in without Google too. Your other sessions will be closed.',
+    mdpDefinirBouton: 'Set a password',
     emailBandeau: 'Confirm your address so you can recover your account later.',
     emailRenvoyer: 'Resend the link',
     emailEnvoye: 'Link sent. Check your spam folder.',

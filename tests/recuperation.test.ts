@@ -472,6 +472,14 @@ describe('Changement de mot de passe depuis une session', () => {
     assert.equal(login.statut, 200);
   });
 
+  test('compte avec mot de passe : « actuel » reste obligatoire', async () => {
+    const c = await inscrire(adresseNeuve());
+    const r = await c('POST', '/v1/me/password', { nouveau: 'NouveauMotDePasse1!' });
+    assert.equal(r.statut, 400);
+    assert.equal(r.json.code, 'validation');
+    assert.deepEqual((r.json.champs as Json).actuel, 'requis');
+  });
+
   test('nouveau mot de passe identique ou trop court refusé', async () => {
     const c = await inscrire(adresseNeuve());
     const identique = await c('POST', '/v1/me/password', {
