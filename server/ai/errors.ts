@@ -33,6 +33,8 @@ export class ErreurAi extends Error {
 export const CODES_AI = {
   cleManquante: 'cle-manquante',
   indisponible: 'modele-indisponible',
+  modeleIntrouvable: 'modele-introuvable',
+  erreurFournisseur: 'erreur-fournisseur',
   limite: 'limite-modele',
   bloque: 'bloque',
   vide: 'vide',

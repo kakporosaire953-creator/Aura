@@ -22,6 +22,7 @@ import * as serviceIa from '../server/ai/service';
 import { reinitialiserRegistre, candidatsPour, desactiverFournisseur } from '../server/ai/registre';
 import { POLITIQUE_ROUTAGE, capacitesPour, ordonnerCandidats } from '../server/ai/router';
 import { ErreurAi, estRecuperable, natureDe } from '../server/ai/errors';
+import { erreurDepuisStatut } from '../server/ai/transport';
 import type { CapacitesAi, FournisseurAi, RequeteAi } from '../server/ai/types';
 
 const ENV_IA = [
@@ -801,5 +802,33 @@ describe('Scénarios mission 02 — fallback', () => {
     assert.equal(generation?.bascules, 1, 'une bascule tracée');
     assert.equal(generation?.fournisseur, 'groq');
     purgerEnv();
+  });
+});
+
+
+/* ─────────────── Messages d'erreur : chaque cause se distingue ─────────────── */
+
+describe('Erreurs fournisseur — ne jamais confondre deux causes', () => {
+  test('404 : le modèle est en cause, pas le réseau', () => {
+    const e = erreurDepuisStatut(404);
+    assert.equal(e.code, 'modele-introuvable');
+    assert.match(e.message, /modèle/i);
+    assert.doesNotMatch(e.message, /ne répond pas/);
+  });
+
+  test('5xx : le fournisseur a répondu, en erreur', () => {
+    const e = erreurDepuisStatut(503);
+    assert.equal(e.code, 'erreur-fournisseur');
+    assert.match(e.message, /HTTP 503/);
+  });
+
+  test('401/403, 429, 504 gardent leurs messages propres', () => {
+    assert.equal(erreurDepuisStatut(401).code, 'auth-fournisseur');
+    assert.equal(erreurDepuisStatut(429).code, 'limite-modele');
+    assert.equal(erreurDepuisStatut(504).code, 'timeout');
+    // Aucun message ne divulgue de clé ni de corps de réponse.
+    for (const statut of [400, 401, 403, 404, 429, 500, 503, 504]) {
+      assert.doesNotMatch(erreurDepuisStatut(statut).message, /key=|api[_-]?key|sk-|xkeysib/i);
+    }
   });
 });

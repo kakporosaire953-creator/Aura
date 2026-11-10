@@ -36,6 +36,10 @@ export type CompteV1 = {
   /** Adresse confirmée par e-mail — jamais bloquant pour utiliser le compte.
    *  Absent = non confirmé (comptes créés avant la vérification). */
   emailVerifie?: boolean;
+  /** Connexion Google rattachée au compte. */
+  googleLie?: boolean;
+  /** Faux quand le compte a été ouvert via Google sans mot de passe choisi. */
+  motDePasseDefini?: boolean;
 };
 
 /** Session ouverte sur le compte, telle que présentée à son propriétaire. */

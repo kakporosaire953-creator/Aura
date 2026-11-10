@@ -149,15 +149,23 @@ export function createRoutesCompte(): express.Router {
       const actuel = typeof corps.actuel === 'string' ? corps.actuel : '';
       const nouveau = typeof corps.nouveau === 'string' ? corps.nouveau : '';
 
+      const compte = rq.compte!;
+      // Compte ouvert via Google : aucun mot de passe n'existe. La session
+      // ouverte fait foi (le parcours « mot de passe oublié » dépend d'un
+      // e-mail qui n'est pas encore opérationnel) ; on définit donc le
+      // premier mot de passe sans demander l'ancien — et on ferme toutes les
+      // autres sessions dans la foulée.
+      const premierMotDePasse = compte.motDePasseDefini === false;
+
       const champs: Record<string, string> = {};
-      if (!actuel) champs.actuel = 'requis';
+      if (!premierMotDePasse && !actuel) champs.actuel = 'requis';
       if (nouveau.length < 8) champs.nouveau = 'court';
       if (nouveau.length > 200) champs.nouveau = 'long';
       if (Object.keys(champs).length > 0) {
         invalide(res, champs);
         return;
       }
-      if (nouveau === actuel) {
+      if (!premierMotDePasse && nouveau === actuel) {
         res.status(400).json({
           error: 'Choisissez un mot de passe différent de l’actuel.',
           code: 'identique',
@@ -166,22 +174,24 @@ export function createRoutesCompte(): express.Router {
         return;
       }
 
-      const compte = rq.compte!;
-      const valide = await verifierMotDePasse(actuel, compte.hash, compte.sel);
-      if (!valide) {
-        // Compteur dédié : marteler ce champ n'atteint pas la connexion.
-        if (await limiteIdentifiant(res, REGLES.loginEmail, `mdp:${compte.email}`)) return;
-        res.status(401).json({
-          error: 'Mot de passe actuel incorrect.',
-          code: 'mot-de-passe',
-          champs: { actuel: 'incorrect' },
-        });
-        return;
+      if (!premierMotDePasse) {
+        const valide = await verifierMotDePasse(actuel, compte.hash, compte.sel);
+        if (!valide) {
+          // Compteur dédié : marteler ce champ n'atteint pas la connexion.
+          if (await limiteIdentifiant(res, REGLES.loginEmail, `mdp:${compte.email}`)) return;
+          res.status(401).json({
+            error: 'Mot de passe actuel incorrect.',
+            code: 'mot-de-passe',
+            champs: { actuel: 'incorrect' },
+          });
+          return;
+        }
       }
 
       const { hash, sel } = await hacherMotDePasse(nouveau);
       compte.hash = hash;
       compte.sel = sel;
+      compte.motDePasseDefini = true;
       await rq.comptes!.enregistrer(compte);
 
       const fermees = await rq.comptes!.supprimerAutresSessions(

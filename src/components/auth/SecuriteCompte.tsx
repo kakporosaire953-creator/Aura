@@ -24,7 +24,7 @@ function dateLisible(iso: string, lang: 'fr' | 'en'): string {
 export const SecuriteCompte: React.FC = () => {
   const t = useT();
   const { lang } = usePrefs();
-  const { statut, compte } = useSession();
+  const { statut, compte, rafraichir } = useSession();
   const sim = simulationActivee();
 
   const [actuel, setActuel] = useState('');
@@ -71,6 +71,9 @@ export const SecuriteCompte: React.FC = () => {
     const r = await api.changerMotDePasse(actuel, nouveau);
     if (r.ok) {
       setEtatMdp('fait');
+      // L'état du compte change (un mot de passe existe désormais) :
+      // on relit la session pour que l'interface suive.
+      await rafraichir();
       setActuel('');
       setNouveau('');
       setConfirmation('');
@@ -126,10 +129,35 @@ export const SecuriteCompte: React.FC = () => {
   };
 
   const verifie = compte?.emailVerifie === true;
+  const googleLie = compte?.googleLie === true;
+  // `undefined` = compte historique avec mot de passe : on ne lui retire rien.
+  const mdpDefini = compte?.motDePasseDefini !== false;
   const autres = (sessions ?? []).filter((s) => !s.courante);
 
   return (
     <>
+      {/* — Mode de connexion : ce qui existe réellement sur ce compte — */}
+      <section className="param-section">
+        <h2>
+          <Icone nom="shield-halved" /> {t.securite.connexionTitre}
+        </h2>
+        <p className="corps">{t.securite.connexionSous}</p>
+        {(googleLie || !mdpDefini) && (
+          <div className="param-ligne">
+            <span className="param-label">{t.securite.connexionGoogle}</span>
+            <strong className={googleLie ? 'etat-ok' : 'etat-attente'}>
+              {googleLie ? t.securite.connexionLie : t.securite.connexionNonLie}
+            </strong>
+          </div>
+        )}
+        <div className="param-ligne">
+          <span className="param-label">{t.securite.mdpTitre}</span>
+          <strong className={mdpDefini ? 'etat-ok' : 'etat-attente'}>
+            {mdpDefini ? t.securite.connexionMdpDefini : t.securite.connexionMdpNon}
+          </strong>
+        </div>
+      </section>
+
       {/* — Adresse e-mail — */}
       <section className="param-section">
         <h2>
@@ -166,20 +194,22 @@ export const SecuriteCompte: React.FC = () => {
         <h2>
           <Icone nom="shield-halved" /> {t.securite.mdpTitre}
         </h2>
-        <p className="corps">{t.securite.mdpSous}</p>
+        <p className="corps">{mdpDefini ? t.securite.mdpSous : t.securite.mdpDefinirSous}</p>
         <form className="formulaire" onSubmit={changerMdp} noValidate>
-          <div className="form-groupe">
-            <label htmlFor="param-actuel">{t.securite.mdpActuel}</label>
-            <input
-              id="param-actuel"
-              type="password"
-              className="form-champ"
-              autoComplete="current-password"
-              required
-              value={actuel}
-              onChange={(e) => setActuel(e.target.value)}
-            />
-          </div>
+          {mdpDefini && (
+            <div className="form-groupe">
+              <label htmlFor="param-actuel">{t.securite.mdpActuel}</label>
+              <input
+                id="param-actuel"
+                type="password"
+                className="form-champ"
+                autoComplete="current-password"
+                required
+                value={actuel}
+                onChange={(e) => setActuel(e.target.value)}
+              />
+            </div>
+          )}
           <div className="champs-ligne">
             <div className="form-groupe">
               <label htmlFor="param-nouveau">{t.securite.mdpNouveau}</label>
@@ -221,7 +251,13 @@ export const SecuriteCompte: React.FC = () => {
           )}
 
           <button type="submit" className="btn btn-ruban" disabled={etatMdp === 'envoi'}>
-            <span>{etatMdp === 'envoi' ? t.securite.mdpEnvoi : t.securite.mdpBouton}</span>
+            <span>
+              {etatMdp === 'envoi'
+                ? t.securite.mdpEnvoi
+                : mdpDefini
+                  ? t.securite.mdpBouton
+                  : t.securite.mdpDefinirBouton}
+            </span>
           </button>
         </form>
       </section>

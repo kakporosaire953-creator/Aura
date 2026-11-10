@@ -322,6 +322,31 @@ describe('Retour de Google', () => {
     assert.equal(corps.compte.emailVerifie, true);
     assert.equal(corps.compte.googleLie, true);
     assert.equal(corps.compte.motDePasseDefini, false);
+
+    // Aucun mot de passe n'existe : on peut en définir un sans « actuel »
+    // (la session ouverte fait foi, faute d'e-mail opérationnel).
+    const mdp = await fetchReel(`${base}/v1/me/password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Cookie: `aura_session=${encodeURIComponent(session!)}`,
+      },
+      body: JSON.stringify({ actuel: '', nouveau: 'MotDePasseGoogle1!' }),
+    });
+    assert.equal(mdp.status, 200);
+
+    const apres = await fetchReel(`${base}/me`, {
+      headers: { Cookie: `aura_session=${encodeURIComponent(session!)}` },
+    });
+    const apresCorps = (await apres.json()) as { compte: { motDePasseDefini: boolean } };
+    assert.equal(apresCorps.compte.motDePasseDefini, true);
+
+    const parMotDePasse = await fetchReel(`${base}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'nouveau@gmail.test', password: 'MotDePasseGoogle1!' }),
+    });
+    assert.equal(parMotDePasse.status, 200, 'le mot de passe défini ouvre le compte');
   });
 
   test('un compte existant est rattaché, pas dupliqué', async () => {

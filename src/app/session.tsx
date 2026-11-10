@@ -21,6 +21,10 @@ export type Compte = {
   onboarding: { fait: boolean; objectif: string | null };
   /** Adresse confirmée par e-mail (facultatif : non bloquant, jamais supposé). */
   emailVerifie?: boolean;
+  /** Une connexion Google est-elle rattachée à ce compte ? */
+  googleLie?: boolean;
+  /** Un mot de passe utilisable existe-t-il ? (faux pour un compte Google seul) */
+  motDePasseDefini?: boolean;
 };
 
 /**
