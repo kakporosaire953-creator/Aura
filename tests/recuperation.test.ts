@@ -477,7 +477,7 @@ describe('Changement de mot de passe depuis une session', () => {
     const r = await c('POST', '/v1/me/password', { nouveau: 'NouveauMotDePasse1!' });
     assert.equal(r.statut, 400);
     assert.equal(r.json.code, 'validation');
-    assert.deepEqual((r.json.champs as Json).actuel, 'requis');
+    assert.deepEqual((r.json.champs as Record<string, string>).actuel, 'requis');
   });
 
   test('nouveau mot de passe identique ou trop court refusé', async () => {

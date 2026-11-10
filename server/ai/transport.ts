@@ -77,6 +77,27 @@ export function erreurDepuisStatut(statut: number): ErreurAi {
   if (nature === 'validation') {
     return new ErreurAi('Requête refusée par le moteur IA.', CODES_AI.invalide, 400, 'validation');
   }
+  // 404 : le fournisseur a répondu — c'est le MODÈLE qui n'existe pas (ou
+  // n'est pas ouvert à cette clé). Dire « ne répond pas » envoyait chercher
+  // une panne réseau qui n'existe pas.
+  if (statut === 404) {
+    return new ErreurAi(
+      'Le modèle configuré n’existe pas ou n’est pas accessible avec cette clé.',
+      CODES_AI.modeleIntrouvable,
+      502,
+      'serveur',
+    );
+  }
+  // 5xx : le fournisseur a répondu, mais en erreur. La formulation le dit,
+  // sans exposer ni la clé ni le corps de la réponse.
+  if (statut >= 500) {
+    return new ErreurAi(
+      `Le moteur IA a renvoyé une erreur (HTTP ${statut}).`,
+      CODES_AI.erreurFournisseur,
+      502,
+      'serveur',
+    );
+  }
   return new ErreurAi('Le moteur IA ne répond pas.', CODES_AI.indisponible, 502, 'serveur');
 }
 
