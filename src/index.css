@@ -8217,3 +8217,99 @@ svg {
     padding: 1rem;
   }
 }
+
+/* ═══════════════════════════════════════════
+   APPLICATION INSTALLABLE (PWA)
+   ═══════════════════════════════════════════ */
+
+/* — Invitation à installer, en bas de la barre latérale — */
+.ws-installer {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  width: 100%;
+  min-height: 44px;
+  margin-bottom: 0.35rem;
+  padding: 0.65em 0.95em;
+  border: 1px dashed rgba(47, 148, 32, 0.45);
+  border-radius: 12px;
+  background: rgba(67, 188, 44, 0.08);
+  color: var(--encre);
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease;
+}
+
+.ws-installer:hover {
+  background: rgba(67, 188, 44, 0.16);
+  border-color: var(--vert-profond);
+}
+
+.ws-installer:focus-visible {
+  outline: 2px solid var(--feu);
+  outline-offset: 2px;
+}
+
+[data-theme='dark'] .ws-installer {
+  color: var(--ivoire);
+  border-color: rgba(165, 232, 56, 0.4);
+  background: rgba(165, 232, 56, 0.1);
+}
+
+.ws-repliee .ws-installer span {
+  display: none;
+}
+
+.ws-repliee .ws-installer {
+  justify-content: center;
+  padding: 0.72em 0;
+}
+
+/* — Bandeau « nouvelle version prête » — */
+.pwa-maj {
+  position: fixed;
+  left: 50%;
+  bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  max-width: calc(100% - 2rem);
+  padding: 0.55rem 0.6rem 0.55rem 1rem;
+  border-radius: 999px;
+  background: var(--encre);
+  color: var(--ivoire);
+  box-shadow: 0 14px 34px rgba(18, 33, 27, 0.3);
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+
+.pwa-maj span {
+  flex: 1 1 auto;
+}
+
+.pwa-maj .btn-ligne {
+  flex: 0 0 auto;
+  background: var(--ivoire);
+  color: var(--encre);
+  border-color: transparent;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .pwa-maj {
+    left: 0.8rem;
+    right: 0.8rem;
+    bottom: calc(5.2rem + env(safe-area-inset-bottom, 0px));
+    transform: none;
+    max-width: none;
+    border-radius: 16px;
+    flex-wrap: wrap;
+  }
+}

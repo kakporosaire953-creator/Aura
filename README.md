@@ -21,6 +21,8 @@ réellement** ; ce qui n'existe pas est dit, jamais simulé en silence.
 | Connexion Google | **Live** (code) | `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` côté Vercel |
 | E-mails transactionnels | **Live** (code) | un fournisseur (`brevo` ou `resend`) + `AURA_PUBLIC_ORIGIN` |
 | Confirmation d'adresse **bloquante** | **Désactivée par défaut** | `AURA_VERIFICATION_EMAIL_OBLIGATOIRE=1` |
+| Application installable (PWA) | **Live** | rien à configurer — HTTPS suffit (section 10) |
+| Panneau d'administration | **Live** (code) | `AURA_ADMIN_EMAILS` côté Vercel (section 4.6) |
 | Génération d'images, pièces jointes | **Non livré** | — (aucune fausse promesse dans l'interface) |
 
 ---
@@ -282,7 +284,7 @@ recopier l'adresse exacte du compte.
 
 | Commande | Ce qu'elle prouve |
 |---|---|
-| `npm test` | 308 tests : auth, e-mails, IA, Google, API v1, administration, responsive |
+| `npm test` | 328 tests : auth, e-mails, IA, Google, API v1, administration, PWA, responsive |
 | `npm run verif:prod` | le build n'active aucune simulation en production |
 | `npm run verif:mail -- adresse@exemple.tld` | envoi réel, cause exacte d'un refus (401/403/422/429/réseau) |
 | `npm run diagnostic -- https://votre-site` | état public de l'API en ligne (lecture seule) |
@@ -398,7 +400,76 @@ Journal : `[ia] tentative N échouée (fournisseur, code)` puis
 
 ---
 
-## 10. Documentation
+## 10. Application installable (PWA)
+
+Aura s'installe depuis le navigateur, **sans boutique, sans compte
+supplémentaire et sans frais**. Ce n'est pas un portage : c'est le même site,
+affiché en plein écran, qui s'ouvre plus vite et reste lisible quand le
+réseau manque.
+
+**Condition** : HTTPS (Vercel l'impose déjà) et le manifeste à la racine.
+
+### Installer
+
+| Appareil | Geste |
+|---|---|
+| Android (Chrome) | bandeau « Installer Aura », ou menu ⋮ → *Installer l'application* |
+| Ordinateur (Chrome, Edge) | icône d'installation dans la barre d'adresse, ou le bouton dans la barre latérale |
+| iPhone / iPad (Safari) | bouton **Partager** → *Sur l'écran d'accueil* |
+
+Le bouton dans la barre latérale n'apparaît que si le navigateur a réellement
+émis son invite (`beforeinstallprompt`) : il n'est jamais affiché « au cas
+où ». Sur iOS, qui n'expose pas cette invite, le geste est expliqué dans
+**Paramètres → Application**. Sans réseau, une page dédiée prend le relais et
+dit franchement que la connexion manque.
+
+### Ce qui fonctionne hors ligne — et ce qui ne peut pas
+
+| Élément | Hors ligne |
+|---|---|
+| Coque de l'application (HTML, scripts, styles, icônes) | oui, en cache |
+| Pages déjà consultées | oui |
+| Conversations, recherche, créations, administration | **non** — le réseau est requis, et c'est voulu |
+| Envoi de messages en attente | non : Aura ne fait pas semblant de mettre en file |
+
+Règle tenue par le service worker : **aucune réponse `/api/*` n'est mise en
+cache**. Un compte suspendu, une session fermée ou une conversation supprimée
+doivent être vus immédiatement — jamais resservis depuis un cache.
+
+### Mises à jour
+
+Une nouvelle version est détectée en arrière-plan, puis **proposée** par un
+bandeau « Une nouvelle version d'Aura est prête → Recharger ». Aucun
+rechargement imposé : on ne coupe pas une phrase en cours. `/sw.js` et le
+manifeste sont servis en `no-cache` (Vercel et serveur auto-hébergé), sinon un
+navigateur pourrait garder une version des semaines.
+
+### Fichiers
+
+| Fichier | Rôle |
+|---|---|
+| `public/manifest.webmanifest` | nom, icônes, `start_url` (`/app`), raccourcis Conversation / Projets / Missions |
+| `public/sw.js` | coque en cache, données jamais ; réseau d'abord pour la navigation |
+| `public/hors-ligne.html` | page de secours autonome (aucune ressource distante) |
+| `public/icones/` | 192, 512, maskable 512, icône Apple 180 |
+| `src/app/pwa.ts` | enregistrement, invite d'installation, mise à jour |
+| `src/components/pwa/` | bouton « Installer Aura », bandeau de mise à jour |
+
+Le service worker n'est enregistré **qu'en production** (`main.tsx`) : en
+développement, un cache fausserait le rechargement à chaud.
+
+### Vérifier
+
+- `npm test` — manifeste, tailles réelles des icônes (lues dans l'en-tête PNG),
+  absence de cache sur `/api`, en-têtes `no-cache`, page hors ligne autonome,
+  invite d'installation et mise à jour sur clic.
+- Dans le navigateur : DevTools → *Application* → *Manifest* et *Service
+  Workers*. L'installation réelle, l'écran d'accueil et le mode plein écran se
+  vérifient **sur l'appareil**, pas en test automatisé.
+
+---
+
+## 11. Documentation
 
 | Dossier | Contenu |
 |---|---|
@@ -419,7 +490,7 @@ Quelques lectures utiles :
 
 ---
 
-## 11. Identité
+## 12. Identité
 
 - Logo officiel : `public/assets/` (ne jamais redessiner, recolorer ni déformer).
 - Palette dérivée du logo : vert `#43BC2C`, lime `#A5E838`, or `#EACB37`, feu `#FF790D`.

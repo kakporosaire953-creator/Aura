@@ -6,6 +6,7 @@ import { useSession } from '../../app/session';
 import { simulationActivee, simulationDisponible, definirSimulation } from '../../app/simulation';
 import { Icone } from '../ui/Icone';
 import { useAdmin } from '../../app/admin';
+import { BoutonInstaller } from '../pwa/BoutonInstaller';
 
 /**
  * Coque du workspace — sidebar structurée (sections évolutives), barre
@@ -299,6 +300,7 @@ export const WorkspaceLayout: React.FC = () => {
         </nav>
 
         <div className="ws-sidebar-bas">
+          <BoutonInstaller />
           <Link to="/memoire" className={`ws-lien-simple${location.pathname === '/memoire' ? ' actif' : ''}`}>
             <Icone nom="brain" /> <span>{t.ws.memoireNav}</span>
           </Link>

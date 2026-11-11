@@ -55,6 +55,24 @@ export function enTetesHsts(): Record<string, string> {
   return { 'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload' };
 }
 
+/**
+ * En-têtes propres à l'application installable.
+ *
+ * `/sw.js` doit être **revalidé** à chaque visite : un service worker gardé
+ * en cache par le navigateur peut retarder une mise à jour des semaines. Le
+ * manifeste suit la même règle, pour que le nom, les icônes ou `start_url`
+ * changent dès le déploiement.
+ */
+export function poserEntetesPwa(req: Request, res: Response, next: NextFunction): void {
+  if (req.path === '/sw.js' || req.path === '/manifest.webmanifest') {
+    res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+    // Sans cet en-tête, la portée d'un worker servi sous /sw.js resterait
+    // limitée à son dossier : ici, la racine est bien la portée voulue.
+    res.setHeader('Service-Worker-Allowed', '/');
+  }
+  next();
+}
+
 /** Pose les en-têtes sur toutes les réponses (mode production auto-hébergé). */
 export function appliquerEnTetesDocument(app: Application): void {
   const communs = { ...enTetesDocument(), ...enTetesHsts() };

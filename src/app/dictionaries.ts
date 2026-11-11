@@ -690,6 +690,20 @@ export interface Content {
     appareil: string;
     jamais: string;
   };
+  pwa: {
+    installer: string;
+    installerTexte: string;
+    installee: string;
+    application: string;
+    applicationSous: string;
+    miseAJour: string;
+    recharger: string;
+    iosAide: string;
+    androidAide: string;
+    ordinateurAide: string;
+    horsLigneTitre: string;
+    horsLigneTexte: string;
+  };
 }
 
 const etapesFr: Etape[] = [
@@ -1667,6 +1681,26 @@ const contentFr: Content = {
     appareil: 'Appareil',
     jamais: 'jamais',
   },
+  pwa: {
+    installer: 'Installer Aura',
+    installerTexte:
+      'Aura s’ouvre alors comme une application : plein écran, sans barre d’adresse.',
+    installee: 'Aura est installée sur cet appareil.',
+    application: 'Application',
+    applicationSous:
+      'Aura peut s’installer sur cet appareil. Rien n’est téléchargé depuis une boutique : le navigateur ajoute l’application à votre écran d’accueil.',
+    miseAJour: 'Une nouvelle version d’Aura est prête.',
+    recharger: 'Recharger',
+    iosAide:
+      'Sur iPhone ou iPad : bouton Partager, puis « Sur l’écran d’accueil ».',
+    androidAide:
+      'Sur Android : menu ⋮ de Chrome, puis « Installer l’application » (ou « Ajouter à l’écran d’accueil »).',
+    ordinateurAide:
+      'Sur ordinateur : icône d’installation dans la barre d’adresse de Chrome ou Edge.',
+    horsLigneTitre: 'Hors ligne',
+    horsLigneTexte:
+      'Sans réseau, Aura rouvre les pages déjà visitées. Les conversations, la recherche et les créations reprennent dès que la connexion revient — rien n’est perdu.',
+  },
 };
 
 const contentEn: Content = {
@@ -2568,6 +2602,24 @@ const contentEn: Content = {
     derniereActivite: 'Last activity',
     appareil: 'Device',
     jamais: 'never',
+  },
+  pwa: {
+    installer: 'Install Aura',
+    installerTexte: 'Aura then opens like an app: full screen, no address bar.',
+    installee: 'Aura is installed on this device.',
+    application: 'Application',
+    applicationSous:
+      'Aura can be installed on this device. Nothing comes from an app store: your browser adds the app to your home screen.',
+    miseAJour: 'A new version of Aura is ready.',
+    recharger: 'Reload',
+    iosAide: 'On iPhone or iPad: Share button, then “Add to Home Screen”.',
+    androidAide:
+      'On Android: Chrome’s ⋮ menu, then “Install app” (or “Add to Home screen”).',
+    ordinateurAide:
+      'On desktop: the install icon in the address bar of Chrome or Edge.',
+    horsLigneTitre: 'Offline',
+    horsLigneTexte:
+      'Without a network, Aura reopens pages you already visited. Conversations, search and creations resume as soon as you are back online — nothing is lost.',
   },
 };
 

@@ -38,6 +38,7 @@ import { NotFoundPage } from './pages/NotFoundPage';
 import { MotDePasseOubliePage } from './pages/MotDePasseOubliePage';
 import { ReinitialiserPage } from './pages/ReinitialiserPage';
 import { VerifierEmailPage } from './pages/VerifierEmailPage';
+import { BandeauMiseAJour } from './components/pwa/BandeauMiseAJour';
 
 const ScrollToTop: React.FC = () => {
   const location = useLocation();
@@ -91,6 +92,7 @@ export const App: React.FC = () => {
             </Route>
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
+          <BandeauMiseAJour />
         </BrowserRouter>
       </SessionProvider>
     </PrefsProvider>
