@@ -2,7 +2,7 @@
  * Documentation — rendu réel de chaque guide (côté serveur).
  *
  * Ce n'est pas un test navigateur : les pages sont rendues avec
- * `react-dom/server` et un `window` minimal. Ce qui est prouvé : les douze
+ * `react-dom/server` et un `window` minimal. Ce qui est prouvé : tous les
  * guides s'affichent sans erreur, le sommaire liste bien chaque section, les
  * tableaux produisent le bon nombre de cellules, et les liens « à lire
  * ensuite » pointent vers des pages existantes.
@@ -78,7 +78,7 @@ before(() => {
 });
 
 describe('Hub de la documentation', () => {
-  test('liste les douze guides avec leur titre et leur durée', () => {
+  test('liste tous les guides avec leur titre et leur durée', () => {
     const html = rendre(React.createElement(DocumentationPage));
     for (const article of DOCS.fr.articles) {
       assert.ok(html.includes(article.titre), `titre absent du sommaire : ${article.titre}`);

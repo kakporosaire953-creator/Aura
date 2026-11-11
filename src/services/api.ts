@@ -28,6 +28,15 @@ import type {
   Projet,
   PropositionMission,
   Recherche,
+  ReferenceCitee,
+  SavoirDomaine,
+  SavoirEtat,
+  SavoirJournalEntreeAdmin,
+  SavoirNiveau,
+  SavoirPassageAdmin,
+  SavoirRessource,
+  SavoirSource,
+  SavoirStatut,
   SourceRecherche,
   StatutMission,
   TypeCreation,
@@ -128,6 +137,8 @@ export async function envoyerMessage(
   opts: {
     langue?: 'fr' | 'en';
     onChunk?: (texte: string) => void;
+    /** Sources annoncées avant la fin de la génération (uniquement celles réellement envoyées). */
+    onSources?: (references: ReferenceCitee[], avertissements: string[]) => void;
     signal?: AbortSignal;
     stream?: boolean;
     regenerer?: boolean;
@@ -160,10 +171,16 @@ export async function envoyerMessage(
       const d = (await r.json().catch(() => ({}))) as {
         message?: MessageChat;
         reponse?: MessageChat;
+        references?: ReferenceCitee[];
         error?: string;
         code?: string;
       };
-      if (r.ok && d.reponse) return succes({ message: d.message!, reponse: d.reponse });
+      if (r.ok && d.reponse) {
+        if (d.references?.length && !d.reponse.meta?.references) {
+          d.reponse.meta = { ...(d.reponse.meta ?? {}), references: d.references };
+        }
+        return succes({ message: d.message!, reponse: d.reponse });
+      }
       return echec(d.error ?? 'Le service ne répond pas.', d.code, r.status);
     }
 
@@ -181,6 +198,12 @@ export async function envoyerMessage(
       try {
         const j = JSON.parse(donnees) as Record<string, unknown>;
         if (nom === 'chunk') opts.onChunk?.(String((j as { texte?: string }).texte ?? ''));
+        if (nom === 'sources') {
+          opts.onSources?.(
+            (j.references as ReferenceCitee[] | undefined) ?? [],
+            (j.avertissements as string[] | undefined) ?? [],
+          );
+        }
         if (nom === 'done') etat.resultat = j as unknown as typeof etat.resultat;
         if (nom === 'error') etat.erreur = { message: String(j.error ?? 'Erreur de génération.'), code: j.code as string | undefined };
       } catch {
@@ -676,4 +699,98 @@ export async function adminSupprimer(id: string, confirmation: string): Promise<
 export async function adminJournal(): Promise<ReponseApi<{ entrees: AdminJournalEntree[] }>> {
   if (simulationActivee()) return indisponibleEnSimulation();
   return apiAppel('/admin/journal');
+}
+
+/* ───────────────────────── Référentiel documentaire ───────────────────────── */
+
+export async function savoirEtat(): Promise<ReponseApi<SavoirEtat>> {
+  if (simulationActivee()) return indisponibleEnSimulation();
+  return apiAppel('/admin/savoir/etat');
+}
+
+export async function savoirRessources(
+  opts: { domaine?: string; statut?: string; q?: string } = {},
+): Promise<ReponseApi<{ ressources: SavoirRessource[]; total: number }>> {
+  if (simulationActivee()) return indisponibleEnSimulation();
+  const p = new URLSearchParams();
+  if (opts.domaine) p.set('domaine', opts.domaine);
+  if (opts.statut) p.set('statut', opts.statut);
+  if (opts.q) p.set('q', opts.q);
+  const q = p.toString();
+  return apiAppel(`/admin/savoir/ressources${q ? `?${q}` : ''}`);
+}
+
+export async function savoirImporter(corps: {
+  url?: string;
+  texte?: string;
+  titre?: string;
+  description?: string;
+  domaine: SavoirDomaine;
+  pays?: string;
+  organisme?: string;
+  niveau: SavoirNiveau;
+}): Promise<ReponseApi<{ ok: boolean; ressource: SavoirRessource | null; erreur: string | null; etapes: { etape: string; ok: boolean; detail: string }[] }>> {
+  if (simulationActivee()) return indisponibleEnSimulation();
+  return apiAppel('/admin/savoir/ressources', { methode: 'POST', corps });
+}
+
+export async function savoirStatutRessource(
+  id: string,
+  statut: SavoirStatut,
+): Promise<ReponseApi<{ ok: boolean; ressource: SavoirRessource }>> {
+  if (simulationActivee()) return indisponibleEnSimulation();
+  return apiAppel(`/admin/savoir/ressources/${encodeURIComponent(id)}/statut`, {
+    methode: 'POST',
+    corps: { statut },
+  });
+}
+
+export async function savoirReindexer(id: string): Promise<ReponseApi<{ ok: boolean }>> {
+  if (simulationActivee()) return indisponibleEnSimulation();
+  return apiAppel(`/admin/savoir/ressources/${encodeURIComponent(id)}/reindexer`, { methode: 'POST' });
+}
+
+export async function savoirSupprimerRessource(id: string): Promise<ReponseApi<{ ok: boolean }>> {
+  if (simulationActivee()) return indisponibleEnSimulation();
+  return apiAppel(`/admin/savoir/ressources/${encodeURIComponent(id)}`, { methode: 'DELETE' });
+}
+
+export async function savoirSources(): Promise<
+  ReponseApi<{ sources: SavoirSource[]; candidats: { id: string; nom: string; hote: string }[] }>
+> {
+  if (simulationActivee()) return indisponibleEnSimulation();
+  return apiAppel('/admin/savoir/sources');
+}
+
+export async function savoirSemer(): Promise<ReponseApi<{ crees: SavoirSource[]; ignores: number }>> {
+  if (simulationActivee()) return indisponibleEnSimulation();
+  return apiAppel('/admin/savoir/sources/semer', { methode: 'POST' });
+}
+
+export async function savoirStatutSource(
+  id: string,
+  statut: 'actif' | 'a-verifier' | 'desactive',
+): Promise<ReponseApi<{ ok: boolean; source: SavoirSource }>> {
+  if (simulationActivee()) return indisponibleEnSimulation();
+  return apiAppel(`/admin/savoir/sources/${encodeURIComponent(id)}/statut`, {
+    methode: 'POST',
+    corps: { statut },
+  });
+}
+
+export async function savoirRecherche(question: string): Promise<
+  ReponseApi<{
+    passages: SavoirPassageAdmin[];
+    mode: 'lexical' | 'hybride';
+    avertissements: string[];
+    couverture: number;
+  }>
+> {
+  if (simulationActivee()) return indisponibleEnSimulation();
+  return apiAppel('/admin/savoir/recherche', { methode: 'POST', corps: { question } });
+}
+
+export async function savoirJournal(): Promise<ReponseApi<{ entrees: SavoirJournalEntreeAdmin[] }>> {
+  if (simulationActivee()) return indisponibleEnSimulation();
+  return apiAppel('/admin/savoir/journal');
 }

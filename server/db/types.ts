@@ -5,6 +5,8 @@
  * propriétaire. Voir docs/database/ pour le modèle relationnel documenté.
  */
 
+import type { ReferenceUtilisee } from '../savoir/types.js';
+
 export type Identifiant = string; // id opaque court (chrono + aléatoire)
 
 /* ── Compte, profil contextuel, préférences ── */
@@ -176,6 +178,10 @@ export type Message = {
     piecesJointes?: PieceJointe[];
     /** Mode demandé par l'utilisateur (routage), jamais un nom de fournisseur. */
     mode?: string;
+    /** Documents du référentiel réellement transmis au modèle (citations). */
+    references?: ReferenceUtilisee[];
+    /** Avertissements de fiabilité attachés à ces références. */
+    avertissementsSavoir?: string[];
   } | null;
 };
 
