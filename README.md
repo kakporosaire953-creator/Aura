@@ -284,7 +284,7 @@ recopier l'adresse exacte du compte.
 
 | Commande | Ce qu'elle prouve |
 |---|---|
-| `npm test` | 342 tests : auth, e-mails, IA, Google, API v1, administration, PWA, documentation, responsive |
+| `npm test` | 370 tests : auth, e-mails, IA, Google, API v1, administration, référentiel documentaire, PWA, documentation, responsive |
 | `npm run verif:prod` | le build n'active aucune simulation en production |
 | `npm run verif:mail -- adresse@exemple.tld` | envoi réel, cause exacte d'un refus (401/403/422/429/réseau) |
 | `npm run diagnostic -- https://votre-site` | état public de l'API en ligne (lecture seule) |
@@ -305,6 +305,7 @@ server/                 API — source unique (dev et serverless)
   ai/                   multi-fournisseurs, routage, repli, erreurs normalisées
   mail/                 adaptateur (brevo | resend), gabarits FR/EN
   db/                   entrepôts (KV ou fichier), modèle logique
+  savoir/               référentiel documentaire (ingestion, recherche, RAG)
   v1/                   API du workspace + middlewares (limites, auth)
   export/               documents Word / PDF / tableurs / présentations
 api/index.ts            point d'entrée de la fonction serverless Vercel
@@ -320,7 +321,8 @@ scripts/                vérifications de build, de production, diagnostic
 `POST /api/auth/forgot-password`, `POST /api/auth/reset-password`,
 `POST /api/auth/verify-email`, `POST /api/chat`, puis `/api/v1/*`
 (conversations, projets, missions, mémoire, recherche, studio, exports,
-`/me/password`, `/me/sessions`, `/me/email/renvoyer`).
+`/me/password`, `/me/sessions`, `/me/email/renvoyer`, et pour les
+administrateurs `/admin/savoir/*`).
 Détail : `docs/api/README.md`.
 
 ---
@@ -506,6 +508,7 @@ existants, icônes présentes, et rendu réel de chaque guide.
 | `docs/operations/` | activer comptes et e-mails, déploiement, redéployer Vercel |
 | `docs/security/` | durcissement, sessions, jetons |
 | `docs/database/` | modèle logique |
+| `docs/savoir/` | référentiel documentaire : modèle, sécurité de collecte, API d'administration, limites |
 
 Quelques lectures utiles :
 
@@ -517,7 +520,32 @@ Quelques lectures utiles :
 
 ---
 
-## 12. Identité
+## 12. Référentiel documentaire (sources et citations)
+
+AURA peut consulter des documents (pages officielles, publications, textes)
+et **citer** les extraits réellement utilisés sous la réponse. Ce module ne
+crée aucune connaissance par lui-même : il n'indexe que ce qu'un
+administrateur a importé **et validé**.
+
+- Stockage : le KV existant, préfixe `aurav1:savoir:` — aucune base nouvelle.
+- Import : `/admin/savoir` (URL d'une source autorisée, ou texte collé).
+  Une ressource importée arrive au statut **à vérifier** et reste invisible
+  du chat tant qu'un administrateur ne l'a pas validée.
+- Sécurité de collecte : hôte présent dans le catalogue actif, adresse IP
+  publique obligatoire (refus de `127.0.0.1`, réseaux privés et
+  `169.254.169.254`), redirections recontrôlées, 4 Mo, 8 s.
+- Recherche : lexicale (BM25 + filtres), car **aucun fournisseur
+  d'embeddings n'est configuré** ; la similarité sémantique est prête mais
+  éteinte, et l'interface l'affiche.
+- Citations : `[S1]`, `[S2]`… uniquement pour les extraits transmis au
+  modèle, avec organisme, niveau d'autorité et alertes de fraîcheur.
+
+**Aucune variable d'environnement nouvelle.** Détail complet, limites et
+procédure d'exploitation : `docs/savoir/README.md`.
+
+---
+
+## 13. Identité
 
 - Logo officiel : `public/assets/` (ne jamais redessiner, recolorer ni déformer).
 - Palette dérivée du logo : vert `#43BC2C`, lime `#A5E838`, or `#EACB37`, feu `#FF790D`.

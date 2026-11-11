@@ -90,7 +90,24 @@ export type MessageChat = {
     interrompuParUtilisateur?: boolean;
     piecesJointes?: PieceJointeChat[];
     mode?: string;
+    references?: ReferenceCitee[];
+    avertissementsSavoir?: string[];
   } | null;
+};
+
+/** Source réellement transmise au modèle — seule citable. */
+export type ReferenceCitee = {
+  etiquette: string;
+  ressourceId: string;
+  titre: string;
+  organisme: string;
+  domaine: string;
+  niveau: 'A' | 'B' | 'C';
+  pays: string;
+  url: string | null;
+  publication: string | null;
+  verification: string | null;
+  alertes: string[];
 };
 
 export type Projet = {
@@ -262,4 +279,101 @@ export type AdminDetail = {
   utilisateur: AdminUtilisateur & { bannissement: { le: string; motif: string | null } | null };
   sessions: AdminSession[];
   activite: { conversations: number; messages: number; projets: number; missions: number; creations: number };
+};
+
+/* ── Référentiel documentaire (administration) ── */
+
+export type SavoirStatut = 'actif' | 'a-verifier' | 'expire' | 'archive';
+export type SavoirNiveau = 'A' | 'B' | 'C';
+export type SavoirDomaine =
+  | 'administration'
+  | 'culture'
+  | 'geographie'
+  | 'education'
+  | 'entrepreneuriat'
+  | 'institutions'
+  | 'statistiques'
+  | 'numerique';
+
+export type SavoirRessource = {
+  id: string;
+  titre: string;
+  description: string;
+  domaine: SavoirDomaine;
+  sousDomaine: string | null;
+  pays: string;
+  organisme: string;
+  url: string | null;
+  type: 'pdf' | 'web' | 'texte' | 'rapport' | 'publication';
+  publication: string | null;
+  collecte: string;
+  verification: string | null;
+  niveau: SavoirNiveau;
+  langue: 'fr' | 'en' | 'autre';
+  statut: SavoirStatut;
+  caracteres: number;
+  segments: number;
+  prochaineRevision: string | null;
+  note: string | null;
+  avertissements: string[];
+  cree: string;
+  maj: string;
+};
+
+export type SavoirSource = {
+  id: string;
+  nom: string;
+  organisme: string;
+  hote: string;
+  url: string;
+  niveau: SavoirNiveau;
+  domaines: SavoirDomaine[];
+  statut: 'actif' | 'a-verifier' | 'desactive';
+  verifieLe: string | null;
+  note: string | null;
+  cree: string;
+};
+
+export type SavoirEtat = {
+  ressources: number;
+  actives: number;
+  aVerifier: number;
+  archivees: number;
+  segments: number;
+  sources: number;
+  sourcesActives: number;
+  pays: string[];
+  domaines: Record<string, number>;
+  recherche: 'lexicale' | 'hybride';
+  embeddings: string | null;
+  avertissementsEmbeddings: string[];
+  hotesAutorises: string[];
+  hotesEnAttente: string[];
+  candidatsProposes: number;
+  candidatsAbsents: number;
+};
+
+export type SavoirPassageAdmin = {
+  ressourceId: string;
+  titre: string;
+  organisme: string;
+  urgence?: never;
+  niveau: SavoirNiveau;
+  domaine: string;
+  pays: string;
+  publication: string | null;
+  verification: string | null;
+  ordre: number;
+  texte: string;
+  score: number;
+  alertes: string[];
+};
+
+export type SavoirJournalEntreeAdmin = {
+  id: string;
+  le: string;
+  action: string;
+  ressourceId: string | null;
+  par: string;
+  detail: string;
 };

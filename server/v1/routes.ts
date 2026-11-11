@@ -32,6 +32,7 @@ import type {
   StatutMessage,
 } from '../db/types.js';
 import { construireContexte, versMessagesModele } from '../services/contexte.js';
+import { preparerSavoir } from '../savoir/rag.js';
 import * as serviceIa from '../ai/service.js';
 import { ErreurAi } from '../ai/errors.js';
 import { enregistrerUsage, consommationParFournisseur } from '../ai/usage.js';
@@ -39,6 +40,7 @@ import type { ImageAi, MessageAi } from '../ai/types.js';
 import { createRoutesTravail } from './routesTravail.js';
 import { createRoutesCompte } from './routesCompte.js';
 import { createRoutesAdmin } from './routesAdmin.js';
+import { createRoutesSavoir } from './routesSavoir.js';
 import { createRoutesCreation } from './routesCreation.js';
 import {
   empreinteJeton,
@@ -204,6 +206,8 @@ export function createApiV1(): express.Router {
 
   // Administration : rôle porté par AURA_ADMIN_EMAILS, jamais par la base.
   v1.use('/admin', createRoutesAdmin());
+  // Référentiel documentaire : mêmes gardes administrateur, préfixe distinct.
+  v1.use('/admin/savoir', createRoutesSavoir());
 
   /* ── Compte & profil ── */
 
@@ -565,11 +569,24 @@ export function createApiV1(): express.Router {
           ? 'en'
           : 'fr'
         : r.compte!.preferences.langueReponse;
+      // Référentiel documentaire : jamais systématique — le détecteur décide,
+      // et seuls les passages réellement transmis seront cités.
+      const savoir = contenu?.trim()
+        ? await preparerSavoir({ question: contenu })
+        : null;
       const ctx = construireContexte({
         compte: r.compte!,
         langue,
         projet,
         memoires: [...memoires].sort((a, b) => (a.cree < b.cree ? 1 : -1)),
+        savoir:
+          savoir?.bloc && savoir.references.length > 0
+            ? {
+                bloc: savoir.bloc,
+                references: savoir.references,
+                avertissements: savoir.avertissements,
+              }
+            : null,
       });
 
       const historique = await r.donnees!.messages(conv.id, { limite: 40 });
@@ -602,6 +619,8 @@ export function createApiV1(): express.Router {
           meta: {
             ...(erreur ? { erreur } : {}),
             memoiresUtilisees: ctx.memoiresUtilisees,
+            ...(ctx.references.length ? { references: ctx.references } : {}),
+            ...(savoir?.avertissements.length ? { avertissementsSavoir: savoir.avertissements } : {}),
           },
         });
 
@@ -620,6 +639,15 @@ export function createApiV1(): express.Router {
         const controle = new AbortController();
         req.on('close', () => controle.abort());
 
+        // Les sources sont annoncées avant la génération : l'interface peut
+        // afficher les citations pendant que le texte arrive.
+        if (ctx.references.length > 0) {
+          envoyer('sources', {
+            references: ctx.references,
+            avertissements: savoir?.avertissements ?? [],
+          });
+        }
+
         try {
           const rep = await serviceIa.genererEnStream(
             modeEffectif,
@@ -632,6 +660,7 @@ export function createApiV1(): express.Router {
           envoyer('done', {
             message: messagePublic(messageUser),
             reponse: messagePublic(message),
+            references: ctx.references,
           });
           await r.donnees!.enregistrerEvenement({
             id: nouvelId('evt'),
@@ -675,6 +704,7 @@ export function createApiV1(): express.Router {
         res.json({
           message: messagePublic(messageUser),
           reponse: messagePublic(message),
+          references: ctx.references,
         });
       } catch (e) {
         const err = messageErreur(e, modeEffectif);

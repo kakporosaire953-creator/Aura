@@ -7,6 +7,7 @@
  * L'interface ne fait que masquer ce qui n'a pas lieu d'être vu.
  */
 import React, { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { usePrefs, useT } from '../app/prefs';
 import { useSession } from '../app/session';
 import { Icone } from '../components/ui/Icone';
@@ -141,6 +142,9 @@ export const AdminPage: React.FC = () => {
       <header className="admin-entete">
         <h1 className="display-md">{t.admin.titre}</h1>
         <p className="corps">{t.admin.sous}</p>
+        <Link to="/admin/savoir" className="lien-discret">
+          <Icone nom="book-open" /> {lang === 'en' ? 'Document reference' : 'Référentiel documentaire'}
+        </Link>
       </header>
 
       {stats && (

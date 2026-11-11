@@ -14,6 +14,7 @@ import {
   usePiecesJointes,
 } from '../components/ui/composeur';
 import { Icone } from '../components/ui/Icone';
+import { Sources } from '../components/ui/Sources';
 
 /**
  * Assistant — conversations persistées côté serveur (API v1), réponses
@@ -74,6 +75,13 @@ const MessageBulle: React.FC<{
                 <Icone nom="brain" /> {t.ws.contexteUtilise} :{' '}
                 {message.meta.memoiresUtilisees.length} {t.ws.memoiresUtilisees}
               </p>
+            )}
+            {message.meta?.references && message.meta.references.length > 0 && (
+              <Sources
+                references={message.meta.references}
+                langue={langue}
+                avertissements={message.meta.avertissementsSavoir}
+              />
             )}
           </>
         )}
@@ -315,7 +323,25 @@ export const ChatPage: React.FC = () => {
         setStreamActif(accumule);
         setMessages((m) => {
           const maj = [...m];
-          maj[maj.length - 1] = { role: 'assistant', content: accumule };
+          const courant = maj[maj.length - 1];
+          maj[maj.length - 1] = { ...courant, role: 'assistant', content: accumule };
+          return maj;
+        });
+      },
+      onSources: (references, avertissements) => {
+        if (!references.length) return;
+        setMessages((m) => {
+          if (m.length === 0) return m;
+          const maj = [...m];
+          const courant = maj[maj.length - 1];
+          maj[maj.length - 1] = {
+            ...courant,
+            meta: {
+              ...(courant.meta ?? {}),
+              references,
+              ...(avertissements.length ? { avertissementsSavoir: avertissements } : {}),
+            },
+          };
           return maj;
         });
       },

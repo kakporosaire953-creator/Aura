@@ -31,6 +31,7 @@ import { MissionsPage } from './pages/MissionsPage';
 import { HistoriquePage } from './pages/HistoriquePage';
 import { ParametresPage } from './pages/ParametresPage';
 import { AdminPage } from './pages/AdminPage';
+import { SavoirAdminPage } from './pages/SavoirAdminPage';
 import { ProjetsPage, ProjetDetailPage } from './pages/ProjetsPage';
 import { MemoirePage } from './pages/MemoirePage';
 import { WorkspaceLayout } from './components/layout/WorkspaceLayout';
@@ -88,6 +89,7 @@ export const App: React.FC = () => {
                 <Route path="/memoire" element={<MemoirePage />} />
                 <Route path="/parametres" element={<ParametresPage />} />
                 <Route path="/admin" element={<AdminPage />} />
+                <Route path="/admin/savoir" element={<SavoirAdminPage />} />
               </Route>
             </Route>
             <Route path="*" element={<NotFoundPage />} />

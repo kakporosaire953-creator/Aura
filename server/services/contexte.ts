@@ -15,10 +15,20 @@
  * autres projets, les mémoires inactives, les mots de passe, les clés.
  */
 import type { Compte, Memoire, Message, Projet } from '../db/types.js';
+import type { ReferenceUtilisee } from '../savoir/types.js';
+
+/** Bloc documentaire préparé en amont (voir server/savoir/rag.ts). */
+export type BlocSavoir = {
+  bloc: string;
+  references: ReferenceUtilisee[];
+  avertissements: string[];
+};
 
 export type ContexteModele = {
   system: string;
   memoiresUtilisees: string[];
+  /** Références réellement transmises au modèle — donc seules citables. */
+  references: ReferenceUtilisee[];
 };
 
 const MAX_MEMOIRES = 10;
@@ -35,10 +45,28 @@ export function construireContexte(opts: {
   projet?: Projet | null;
   memoires?: Memoire[];
   preferencesForcees?: boolean;
+  /** Extraits documentaires du référentiel (déjà neutralisés). */
+  savoir?: BlocSavoir | null;
 }): ContexteModele {
   const { compte, langue, projet } = opts;
   const sections: string[] = [instructionBase(langue)];
   const memoiresUtilisees: string[] = [];
+  const references: ReferenceUtilisee[] = [];
+
+  // Extraits documentaires : insérés après l'instruction système, jamais à sa
+  // place. Les préférences, le projet et les mémoires restent prioritaires.
+  if (opts.savoir?.bloc) {
+    sections.push(opts.savoir.bloc);
+    references.push(...opts.savoir.references);
+    if (opts.savoir.avertissements.length > 0) {
+      sections.push(
+        (langue === 'en'
+          ? 'Reliability warnings to mention to the user if relevant:\n'
+          : 'Avertissements de fiabilité à signaler à l’utilisateur si pertinent :\n') +
+          opts.savoir.avertissements.map((a) => `- ${a}`).join('\n'),
+      );
+    }
+  }
 
   // Profil contextuel (AURA Local) — uniquement ce qui est renseigné.
   const p = compte.profil;
@@ -97,7 +125,7 @@ export function construireContexte(opts: {
     }
   }
 
-  return { system: sections.join('\n\n'), memoiresUtilisees };
+  return { system: sections.join('\n\n'), memoiresUtilisees, references };
 }
 
 /** Historique de conversation → messages pour le modèle (limités). */

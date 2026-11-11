@@ -1408,6 +1408,81 @@ curl -b cookies.txt -X POST https://votre-instance/api/v1/conversations/CONV_ID/
       ],
       associes: ['compte-securite', 'conversation'],
     },
+    {
+      slug: 'sources',
+      icone: 'book-open',
+      titre: 'Sources et citations',
+      resume: 'Comprendre les références [S1] affichées sous une réponse, et leurs limites.',
+      duree: '3 min',
+      sections: [
+        {
+          id: 'principe',
+          titre: 'Ce que sont les citations',
+          blocs: [
+            {
+              type: 'para',
+              texte:
+                'Lorsqu’une question porte sur un sujet documenté (administration, démarches, statistiques, culture, éducation, numérique), AURA peut consulter son référentiel documentaire et joindre des extraits au modèle. Sous la réponse, un bloc « sources » repliable liste alors uniquement les documents réellement transmis, avec leur organisme, leur niveau d’autorité et leur date de vérification.',
+            },
+            {
+              type: 'liste',
+              items: [
+                'Le repère [S1], [S2]… renvoie à une source du bloc, jamais à une source inventée.',
+                'Une même source n’apparaît qu’une fois, même si plusieurs extraits en proviennent.',
+                'Aucune citation n’est affichée si aucun document n’a été utilisé.',
+              ],
+            },
+          ],
+        },
+        {
+          id: 'quand',
+          titre: 'Quand le référentiel est consulté',
+          blocs: [
+            {
+              type: 'para',
+              texte:
+                'La consultation n’est pas systématique : une salutation, une demande de rédaction, de traduction ou de code n’y fait pas appel. Le référentiel ne remplace jamais les instructions de l’application, et un document ne peut pas donner d’ordre à l’assistant : les tentatives d’instruction contenues dans un texte sont neutralisées et signalées.',
+            },
+          ],
+        },
+        {
+          id: 'limites',
+          titre: 'Limites à connaître',
+          blocs: [
+            {
+              type: 'note',
+              ton: 'limite',
+              texte:
+                'Le référentiel est alimenté par l’administration d’AURA. Tant qu’un document n’a pas été validé par une personne, il n’est pas utilisable : la mention « à vérifier » est visible dans l’interface d’administration.',
+            },
+            {
+              type: 'note',
+              ton: 'limite',
+              texte:
+                'La recherche est actuellement lexicale (mots-clés), car aucun fournisseur d’embeddings n’est configuré. Une réponse peut donc manquer un document pertinent formulé avec d’autres mots.',
+            },
+            {
+              type: 'note',
+              ton: 'limite',
+              texte:
+                'Un extrait pertinent n’est pas une vérité : une source officielle peut être ancienne ou obsolète. Les avertissements de fraîcheur et de niveau d’autorité sont affichés avec la source.',
+            },
+          ],
+        },
+        {
+          id: 'signaler',
+          titre: 'Signaler une source erronée',
+          blocs: [
+            {
+              type: 'para',
+              texte:
+                'Si une citation vous semble fausse ou périmée, signalez-la : l’administrateur peut archiver le document, ce qui le retire immédiatement des réponses. AURA ne corrige jamais un document officiel : il cesse simplement de s’en servir.',
+            },
+          ],
+        },
+      ],
+      associes: ['explorer', 'api'],
+    },
   ],
 };
 
@@ -2743,6 +2818,81 @@ curl -b cookies.txt -X POST https://your-instance/api/v1/conversations/CONV_ID/m
         },
       ],
       associes: ['compte-securite', 'conversation'],
+    },
+    {
+      slug: 'sources',
+      icone: 'book-open',
+      titre: 'Sources and citations',
+      resume: 'Understand the [S1] references under an answer, and their limits.',
+      duree: '3 min',
+      sections: [
+        {
+          id: 'principe',
+          titre: 'What citations are',
+          blocs: [
+            {
+              type: 'para',
+              texte:
+                'When a question covers a documented topic (administration, procedures, statistics, culture, education, digital), AURA may consult its document reference and attach extracts to the model. Under the answer, a collapsible “sources” block lists only the documents actually sent, with their organisation, authority level and verification date.',
+            },
+            {
+              type: 'liste',
+              items: [
+                'The [S1], [S2]… marker points to a source in that block, never to an invented one.',
+                'A source appears once, even when several extracts come from it.',
+                'No citation is shown when no document was used.',
+              ],
+            },
+          ],
+        },
+        {
+          id: 'quand',
+          titre: 'When the reference is consulted',
+          blocs: [
+            {
+              type: 'para',
+              texte:
+                'Consultation is not systematic: greetings, writing, translation or code requests do not use it. The reference never overrides the application instructions, and a document cannot instruct the assistant: instruction-like sentences inside a text are neutralised and reported.',
+            },
+          ],
+        },
+        {
+          id: 'limites',
+          titre: 'Limits to know',
+          blocs: [
+            {
+              type: 'note',
+              ton: 'limite',
+              texte:
+                'The reference is filled by AURA’s administrators. Until a person approves a document, it is not usable: the “to review” status is visible in the administration interface.',
+            },
+            {
+              type: 'note',
+              ton: 'limite',
+              texte:
+                'Search is currently lexical (keywords) because no embedding provider is configured. An answer may therefore miss a relevant document phrased with different words.',
+            },
+            {
+              type: 'note',
+              ton: 'limite',
+              texte:
+                'A relevant extract is not a truth: an official source may be old or obsolete. Freshness and authority warnings are shown with the source.',
+            },
+          ],
+        },
+        {
+          id: 'signaler',
+          titre: 'Reporting a wrong source',
+          blocs: [
+            {
+              type: 'para',
+              texte:
+                'If a citation looks wrong or outdated, report it: the administrator can archive the document, which immediately removes it from answers. AURA never corrects an official document: it simply stops using it.',
+            },
+          ],
+        },
+      ],
+      associes: ['explorer', 'api'],
     },
   ],
 };
