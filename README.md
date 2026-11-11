@@ -284,7 +284,7 @@ recopier l'adresse exacte du compte.
 
 | Commande | Ce qu'elle prouve |
 |---|---|
-| `npm test` | 328 tests : auth, e-mails, IA, Google, API v1, administration, PWA, responsive |
+| `npm test` | 342 tests : auth, e-mails, IA, Google, API v1, administration, PWA, documentation, responsive |
 | `npm run verif:prod` | le build n'active aucune simulation en production |
 | `npm run verif:mail -- adresse@exemple.tld` | envoi réel, cause exacte d'un refus (401/403/422/429/réseau) |
 | `npm run diagnostic -- https://votre-site` | état public de l'API en ligne (lecture seule) |
@@ -471,12 +471,39 @@ développement, un cache fausserait le rechargement à chaud.
 
 ## 11. Documentation
 
+### Documentation publique (`/documentation`)
+
+Douze guides bilingues, écrits à partir de l'interface réelle. Chacun a un
+objectif, des étapes, un exemple, ses limites et un tableau de dépannage.
+
+| Guide | Ce qu'il couvre |
+|---|---|
+| Démarrage | compte, espace de travail, première conversation, installation de l'application |
+| L'assistant et le fil | fil de conversation, quatre modes (Aura, Réflexion, Code, Recherche), contexte, mémoire |
+| Projets et missions | projets, décomposition IA, statuts, mémoires de projet |
+| Mémoire | écrire, activer, rattacher à un projet, couper l'usage, effacer |
+| Explorer | recherche sourcée : ce qu'elle renvoie, ce qu'elle ne peut pas faire |
+| Studio | créer, réviser, versions, exports |
+| Exports et formats | les huit formats, ce que chaque fichier contient vraiment, nommage |
+| Installer AURA | Android, iOS, ordinateur, hors ligne, mises à jour, désinstallation |
+| Compte, données et sécurité | connexion, sessions actives, mot de passe, exports, suppression |
+| Comprendre les erreurs | chaque code (`compte-banni`, `modele-indisponible`, `limite`…), quoi faire |
+| Débit, durées et quotas | les limites réellement appliquées et les durées de vie |
+| API | routes `/api/v1`, formats de réponse, erreurs |
+
+Deux garde-fous automatisés (`tests/docs.test.ts`, `tests/docs-rendu.test.ts`)
+empêchent la dérive : slugs uniques, parité FR/EN section par section,
+tableaux dont chaque ligne a le bon nombre de cellules, articles associés
+existants, icônes présentes, et rendu réel de chaque guide.
+
+### Dossiers internes
+
 | Dossier | Contenu |
 |---|---|
 | `docs/analyse/` | comptes rendus numérotés (001 → 025) : chaque correctif, sa cause, sa preuve |
 | `docs/architecture/` | vue d'ensemble, IA multi-fournisseurs, e-mails |
 | `docs/api/` | contrat des routes |
-| `docs/operations/` | activer comptes et e-mails, déploiement |
+| `docs/operations/` | activer comptes et e-mails, déploiement, redéployer Vercel |
 | `docs/security/` | durcissement, sessions, jetons |
 | `docs/database/` | modèle logique |
 
