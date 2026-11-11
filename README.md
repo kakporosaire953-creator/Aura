@@ -21,6 +21,8 @@ réellement** ; ce qui n'existe pas est dit, jamais simulé en silence.
 | Connexion Google | **Live** (code) | `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` côté Vercel |
 | E-mails transactionnels | **Live** (code) | un fournisseur (`brevo` ou `resend`) + `AURA_PUBLIC_ORIGIN` |
 | Confirmation d'adresse **bloquante** | **Désactivée par défaut** | `AURA_VERIFICATION_EMAIL_OBLIGATOIRE=1` |
+| Application installable (PWA) | **Live** | rien à configurer — HTTPS suffit (section 10) |
+| Panneau d'administration | **Live** (code) | `AURA_ADMIN_EMAILS` côté Vercel (section 4.6) |
 | Génération d'images, pièces jointes | **Non livré** | — (aucune fausse promesse dans l'interface) |
 
 ---
@@ -124,6 +126,23 @@ jamais construits depuis l'en-tête `Host` d'une requête (usurpable).
 | `AURA_JETON_REINITIALISATION_MINUTES` | Durée du lien de réinitialisation | 30 min (5–120) |
 | `PORT` | Port du serveur local | `3000` |
 | `AURA_TRUST_PROXY=1` | Derrière un proxy de confiance (Vercel le règle seul) | désactivé |
+| `AURA_ADMIN_EMAILS` | Adresses autorisées à ouvrir `/admin` (séparateur virgule, point-virgule ou espace) | **aucune** → panneau fermé |
+
+### 3.7 Administration
+
+Le panneau `/admin` n'existe pour personne tant que `AURA_ADMIN_EMAILS` est
+absente : `/api/v1/admin/*` répond alors `503 admin-non-configure`. Ce n'est
+pas un bouton caché dans l'interface — c'est le serveur qui refuse.
+
+| Situation | Réponse |
+|---|---|
+| Variable absente | `503 admin-non-configure` |
+| Visiteur non connecté | `401 anonyme` |
+| Compte ordinaire | `403 admin-refuse` |
+| Adresse listée et connectée | les données |
+
+Le rôle est **relu à chaque requête** depuis la variable : retirer une adresse
+puis redéployer suffit à retirer le pouvoir, sans toucher au compte.
 
 ---
 
@@ -212,13 +231,60 @@ consentement → **Publier l'application** (gratuit ; les scopes
 3. Deploy. `vercel.json` déclare les en-têtes de sécurité et le routage SPA.
 4. Contrôler : `https://votre-domaine/api/status`.
 
+### 4.6 Ouvrir le panneau d'administration (5 min)
+
+Aucune ligne de code à changer : une variable suffit.
+
+1. **Vercel** → projet → *Settings* → *Environment Variables* → *Add New* :
+   - Name : `AURA_ADMIN_EMAILS`
+   - Value : `vous@exemple.com` (plusieurs adresses : séparées par des virgules)
+   - Environments : **Production** (ajouter *Preview* si vous testez une branche).
+2. **Deployments** → dernier déploiement → **⋯ → Redeploy**. Une variable
+   ajoutée n'atteint pas un déploiement déjà construit : sans redéploiement,
+   rien ne change.
+3. Se **connecter normalement** avec cette adresse (mot de passe ou Google).
+   Le rôle ne s'applique qu'à une session ouverte avec l'adresse listée.
+4. Dans le workspace, la section **Personnel** de la barre latérale affiche
+   désormais **Administration** (`/admin`).
+
+Contrôle sans navigateur :
+
+```bash
+curl -s https://votre-domaine/api/v1/admin/etat -H "Cookie: aura_session=…"
+# {"admin":true,"configure":true}
+```
+
+(Le cookie reste dans votre navigateur ; l'appel se fait aussi très bien
+depuis l'onglet *Network* une fois connecté.)
+
+**Ce que le panneau montre et permet** — tout est lu sur le stockage réel,
+rien n'est simulé :
+
+| Écran | Contenu |
+|---|---|
+| Vue d'ensemble | comptes, adresses confirmées, comptes Google, suspendus, sessions actives, inscriptions 7 j, conversations, messages, créations |
+| Comptes | recherche (adresse, nom, identifiant), pagination 25/page, état, nombre de sessions |
+| Détail | sessions (appareil, dernière activité), volumes d'activité, suspension motivée, fermeture des sessions, suppression |
+| Journal | 200 dernières actions : qui, quand, sur qui, motif |
+
+Ce qu'il ne fait pas : changer un mot de passe à la place d'un utilisateur,
+lire le contenu de ses conversations (seuls les compteurs sont exposés),
+et un administrateur **ne peut ni se suspendre ni se supprimer** lui-même
+(`400 soi-meme`) — pour ne pas se verrouiller dehors.
+
+Une **suspension** conserve les données : le compte est fermé, ses sessions
+sont révoquées, la connexion répond `403 compte-banni`, et son adresse reste
+« déjà utilisée » (aucune fuite d'existence). Un **rétablissement** rouvre
+l'accès sans rien perdre. La **suppression** est définitive et exige de
+recopier l'adresse exacte du compte.
+
 ---
 
 ## 5. Vérifier une installation (sans navigateur)
 
 | Commande | Ce qu'elle prouve |
 |---|---|
-| `npm test` | 292 tests : auth, e-mails, IA, Google, API v1, responsive |
+| `npm test` | 328 tests : auth, e-mails, IA, Google, API v1, administration, PWA, responsive |
 | `npm run verif:prod` | le build n'active aucune simulation en production |
 | `npm run verif:mail -- adresse@exemple.tld` | envoi réel, cause exacte d'un refus (401/403/422/429/réseau) |
 | `npm run diagnostic -- https://votre-site` | état public de l'API en ligne (lecture seule) |
@@ -274,6 +340,11 @@ Détail : `docs/api/README.md`.
 - Limitation de débit par IP **et** par identifiant (connexion, inscription,
   renvoi, réinitialisation, chat, changements sensibles).
 - Aucun secret côté navigateur ; aucun jeton en clair dans les journaux.
+- Administration : rôle décidé par `AURA_ADMIN_EMAILS`, relu à chaque requête
+  côté serveur (le lien de l'interface n'est qu'un confort). Limite de
+  120 requêtes / 5 min par compte admin. Auto-suspension et auto-suppression
+  refusées (`400 soi-meme`). Chaque action est journalisée, et le journal ne
+  contient ni mot de passe, ni jeton, ni empreinte de session.
 
 ---
 
@@ -329,7 +400,76 @@ Journal : `[ia] tentative N échouée (fournisseur, code)` puis
 
 ---
 
-## 10. Documentation
+## 10. Application installable (PWA)
+
+Aura s'installe depuis le navigateur, **sans boutique, sans compte
+supplémentaire et sans frais**. Ce n'est pas un portage : c'est le même site,
+affiché en plein écran, qui s'ouvre plus vite et reste lisible quand le
+réseau manque.
+
+**Condition** : HTTPS (Vercel l'impose déjà) et le manifeste à la racine.
+
+### Installer
+
+| Appareil | Geste |
+|---|---|
+| Android (Chrome) | bandeau « Installer Aura », ou menu ⋮ → *Installer l'application* |
+| Ordinateur (Chrome, Edge) | icône d'installation dans la barre d'adresse, ou le bouton dans la barre latérale |
+| iPhone / iPad (Safari) | bouton **Partager** → *Sur l'écran d'accueil* |
+
+Le bouton dans la barre latérale n'apparaît que si le navigateur a réellement
+émis son invite (`beforeinstallprompt`) : il n'est jamais affiché « au cas
+où ». Sur iOS, qui n'expose pas cette invite, le geste est expliqué dans
+**Paramètres → Application**. Sans réseau, une page dédiée prend le relais et
+dit franchement que la connexion manque.
+
+### Ce qui fonctionne hors ligne — et ce qui ne peut pas
+
+| Élément | Hors ligne |
+|---|---|
+| Coque de l'application (HTML, scripts, styles, icônes) | oui, en cache |
+| Pages déjà consultées | oui |
+| Conversations, recherche, créations, administration | **non** — le réseau est requis, et c'est voulu |
+| Envoi de messages en attente | non : Aura ne fait pas semblant de mettre en file |
+
+Règle tenue par le service worker : **aucune réponse `/api/*` n'est mise en
+cache**. Un compte suspendu, une session fermée ou une conversation supprimée
+doivent être vus immédiatement — jamais resservis depuis un cache.
+
+### Mises à jour
+
+Une nouvelle version est détectée en arrière-plan, puis **proposée** par un
+bandeau « Une nouvelle version d'Aura est prête → Recharger ». Aucun
+rechargement imposé : on ne coupe pas une phrase en cours. `/sw.js` et le
+manifeste sont servis en `no-cache` (Vercel et serveur auto-hébergé), sinon un
+navigateur pourrait garder une version des semaines.
+
+### Fichiers
+
+| Fichier | Rôle |
+|---|---|
+| `public/manifest.webmanifest` | nom, icônes, `start_url` (`/app`), raccourcis Conversation / Projets / Missions |
+| `public/sw.js` | coque en cache, données jamais ; réseau d'abord pour la navigation |
+| `public/hors-ligne.html` | page de secours autonome (aucune ressource distante) |
+| `public/icones/` | 192, 512, maskable 512, icône Apple 180 |
+| `src/app/pwa.ts` | enregistrement, invite d'installation, mise à jour |
+| `src/components/pwa/` | bouton « Installer Aura », bandeau de mise à jour |
+
+Le service worker n'est enregistré **qu'en production** (`main.tsx`) : en
+développement, un cache fausserait le rechargement à chaud.
+
+### Vérifier
+
+- `npm test` — manifeste, tailles réelles des icônes (lues dans l'en-tête PNG),
+  absence de cache sur `/api`, en-têtes `no-cache`, page hors ligne autonome,
+  invite d'installation et mise à jour sur clic.
+- Dans le navigateur : DevTools → *Application* → *Manifest* et *Service
+  Workers*. L'installation réelle, l'écran d'accueil et le mode plein écran se
+  vérifient **sur l'appareil**, pas en test automatisé.
+
+---
+
+## 11. Documentation
 
 | Dossier | Contenu |
 |---|---|
@@ -350,7 +490,7 @@ Quelques lectures utiles :
 
 ---
 
-## 11. Identité
+## 12. Identité
 
 - Logo officiel : `public/assets/` (ne jamais redessiner, recolorer ni déformer).
 - Palette dérivée du logo : vert `#43BC2C`, lime `#A5E838`, or `#EACB37`, feu `#FF790D`.

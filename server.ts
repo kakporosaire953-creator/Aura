@@ -2,7 +2,7 @@ import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { configurerConfianceProxy, createApiApp } from './server/api';
-import { appliquerEnTetesDocument } from './server/en-tetes';
+import { appliquerEnTetesDocument, poserEntetesPwa } from './server/en-tetes';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isProd = process.env.NODE_ENV === 'production';
@@ -15,6 +15,9 @@ async function main() {
   const app = express();
   // Un seul proxy de confiance (Vercel) ou aucun : voir server/api.ts.
   configurerConfianceProxy(app);
+  // Service worker et manifeste : revalidés à chaque visite (voir en-tetes.ts).
+  app.use(poserEntetesPwa);
+
   app.use('/api', createApiApp());
 
   if (!isProd) {

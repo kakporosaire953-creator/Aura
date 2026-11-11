@@ -30,6 +30,7 @@ import { StudioPage } from './pages/StudioPage';
 import { MissionsPage } from './pages/MissionsPage';
 import { HistoriquePage } from './pages/HistoriquePage';
 import { ParametresPage } from './pages/ParametresPage';
+import { AdminPage } from './pages/AdminPage';
 import { ProjetsPage, ProjetDetailPage } from './pages/ProjetsPage';
 import { MemoirePage } from './pages/MemoirePage';
 import { WorkspaceLayout } from './components/layout/WorkspaceLayout';
@@ -37,6 +38,7 @@ import { NotFoundPage } from './pages/NotFoundPage';
 import { MotDePasseOubliePage } from './pages/MotDePasseOubliePage';
 import { ReinitialiserPage } from './pages/ReinitialiserPage';
 import { VerifierEmailPage } from './pages/VerifierEmailPage';
+import { BandeauMiseAJour } from './components/pwa/BandeauMiseAJour';
 
 const ScrollToTop: React.FC = () => {
   const location = useLocation();
@@ -85,10 +87,12 @@ export const App: React.FC = () => {
                 <Route path="/missions" element={<MissionsPage />} />
                 <Route path="/memoire" element={<MemoirePage />} />
                 <Route path="/parametres" element={<ParametresPage />} />
+                <Route path="/admin" element={<AdminPage />} />
               </Route>
             </Route>
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
+          <BandeauMiseAJour />
         </BrowserRouter>
       </SessionProvider>
     </PrefsProvider>

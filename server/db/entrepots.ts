@@ -29,6 +29,7 @@ import {
   type EvenementUsage,
   type Memoire,
   type Message,
+  type JournalAdmin,
   type Mission,
   type Jeton,
   type Projet,
@@ -186,6 +187,46 @@ export class EntrepotComptes {
   async enregistrer(compte: Compte): Promise<void> {
     await this.base.ecrire(CLE.compte(compte.id), compte);
     await this.base.ecrire(CLE.compteParEmail(compte.email), compte.id);
+  }
+
+  /**
+   * Tous les comptes — usage administratif uniquement.
+   * Le préfixe `aurav1:compte:` ne peut pas attraper l'index e-mail
+   * (`aurav1:email:`) ni les sessions : aucune fuite de structure.
+   */
+  async listerTous(): Promise<Compte[]> {
+    const cles = await this.base.lister('aurav1:compte:');
+    const comptes: Compte[] = [];
+    for (const cle of cles) {
+      const c = await this.base.lire<Compte>(cle);
+      if (c && c.id) comptes.push(c);
+    }
+    return comptes;
+  }
+
+  /** Sessions encore valides, tous comptes confondus (statistiques). */
+  async sessionsActives(): Promise<Session[]> {
+    const cles = await this.base.lister('aurav1:session:');
+    const out: Session[] = [];
+    const maintenant = Date.now();
+    for (const cle of cles) {
+      const s = await this.base.lire<Session>(cle);
+      if (s && s.expire > maintenant) out.push(s);
+    }
+    return out;
+  }
+
+  /** Journal d'administration : 200 dernières entrées, la plus récente en tête. */
+  async journalAjouter(entree: JournalAdmin): Promise<void> {
+    await modifier<JournalAdmin[]>(this.base, CLE.journalAdmin, [], (liste) => {
+      const suite = [entree, ...(Array.isArray(liste) ? liste : [])];
+      return suite.slice(0, 200);
+    });
+  }
+
+  async journalLire(): Promise<JournalAdmin[]> {
+    const brut = await this.base.lire<JournalAdmin[]>(CLE.journalAdmin);
+    return Array.isArray(brut) ? brut : [];
   }
 
   async creerSession(session: Session): Promise<void> {
@@ -759,3 +800,7 @@ export function entrepotDonnees(userId: string): EntrepotDonnees {
 }
 
 export { migrationFaite };
+
+
+/** Entrée du journal d'administration — jamais de secret, jamais de hash. */
+export type { JournalAdmin };

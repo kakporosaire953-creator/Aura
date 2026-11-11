@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#fbfaf5" />
+    <meta name="robots" content="noindex" />
+    <title>Aura — hors ligne</title>
+    <style>
+      :root {
+        --encre: #12211b;
+        --encre-2: #244034;
+        --ivoire: #fbfaf5;
+        --brume: #eceade;
+        --feu: #ff790d;
+        --vert: #43bc2c;
+        --ruban: linear-gradient(100deg, #a5e838 0%, #43bc2c 22%, #eacb37 55%, #ff790d 100%);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: var(--ivoire);
+        color: var(--encre);
+        font-family: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      }
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: clamp(1.2rem, 5vw, 3rem);
+      }
+      main {
+        width: 100%;
+        max-width: 30rem;
+        text-align: center;
+      }
+      .fleche {
+        width: 3.4rem;
+        height: 3.4rem;
+        margin: 0 auto 1.4rem;
+        border-radius: 999px;
+        background: var(--ruban);
+        opacity: 0.85;
+      }
+      h1 {
+        font-family: 'Fraunces', Georgia, serif;
+        font-size: clamp(1.6rem, 6vw, 2.3rem);
+        line-height: 1.15;
+        margin: 0 0 0.8rem;
+        letter-spacing: -0.01em;
+      }
+      p {
+        margin: 0 0 0.9rem;
+        line-height: 1.6;
+        color: var(--encre-2);
+      }
+      .note {
+        font-size: 0.86rem;
+        color: var(--encre-2);
+        opacity: 0.8;
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.7rem;
+        justify-content: center;
+        margin-top: 1.6rem;
+      }
+      button,
+      a {
+        font: inherit;
+        font-weight: 600;
+        padding: 0.7rem 1.3rem;
+        border-radius: 999px;
+        cursor: pointer;
+        text-decoration: none;
+        border: 1px solid var(--brume);
+        background: #fff;
+        color: var(--encre);
+        min-height: 44px;
+      }
+      button {
+        border: 0;
+        background: var(--encre);
+        color: var(--ivoire);
+        padding-inline: 1.5rem;
+      }
+      button:focus-visible,
+      a:focus-visible {
+        outline: 2px solid var(--feu);
+        outline-offset: 3px;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --encre: #eceade;
+          --encre-2: #c9c6b8;
+          --ivoire: #0d1712;
+          --brume: #23342b;
+        }
+        button {
+          background: #eceade;
+          color: #0d1712;
+        }
+        a {
+          background: transparent;
+          color: #eceade;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="fleche" aria-hidden="true"></div>
+      <h1>Aura est hors ligne.</h1>
+      <p>
+        Vous n'avez pas de connexion. La conversation, la recherche et les
+        créations reprendront dès que le réseau reviendra — rien n'est perdu
+        côté serveur.
+      </p>
+      <p class="note">
+        Les pages déjà ouvertes restent consultables dans l'application.
+      </p>
+      <div class="actions">
+        <button type="button" onclick="location.reload()">Réessayer</button>
+        <a href="/app">Retour à l'espace</a>
+      </div>
+    </main>
+    <script>
+      // Reconnexion détectée : on propose de reprendre, sans forcer.
+      window.addEventListener('online', function () {
+        var bouton = document.querySelector('button');
+        if (bouton) bouton.textContent = 'Reconnecté — reprendre';
+      });
+    </script>
+  </body>
+</html>

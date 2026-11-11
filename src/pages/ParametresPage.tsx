@@ -8,6 +8,7 @@ import * as api from '../services/api';
 import type { CompteV1 } from '../services/types';
 import { Icone } from '../components/ui/Icone';
 import { SecuriteCompte } from '../components/auth/SecuriteCompte';
+import { useInstallation } from '../app/pwa';
 
 /**
  * Paramètres — réglages réels uniquement : compte, profil contextuel
@@ -22,6 +23,7 @@ export const ParametresPage: React.FC = () => {
   const navigate = useNavigate();
   const sim = simulationActivee();
   const simDisponible = simulationDisponible();
+  const { etat: etatInstallation, installer, plateforme } = useInstallation();
 
   const [profil, setProfil] = useState<CompteV1['profil'] | null>(null);
   const [prefs, setPrefs] = useState<CompteV1['preferences'] | null>(null);
@@ -293,6 +295,32 @@ export const ParametresPage: React.FC = () => {
             </button>
           </div>
         </div>
+      </section>
+
+      <section className="param-section">
+        <h2>{t.pwa.application}</h2>
+        <p className="corps">{t.pwa.applicationSous}</p>
+        {etatInstallation === 'installee' ? (
+          <p className="form-note form-info" role="status">
+            <Icone nom="circle-info" /> {t.pwa.installee}
+          </p>
+        ) : etatInstallation === 'installable' ? (
+          <button type="button" className="btn-ligne" onClick={() => void installer()}>
+            <Icone nom="download" /> {t.pwa.installer}
+          </button>
+        ) : (
+          <p className="corps">
+            {plateforme === 'ios'
+              ? t.pwa.iosAide
+              : plateforme === 'android'
+                ? t.pwa.androidAide
+                : t.pwa.ordinateurAide}
+          </p>
+        )}
+        <p className="form-note">
+          <Icone nom="circle-info" /> <strong>{t.pwa.horsLigneTitre}. </strong>
+          {t.pwa.horsLigneTexte}
+        </p>
       </section>
 
       {simDisponible && (

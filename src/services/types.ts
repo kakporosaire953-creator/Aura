@@ -211,3 +211,55 @@ export type PropositionMission = {
   echeance: string | null;
   sousTaches: string[];
 };
+
+
+/* ── Administration ── */
+
+export type AdminUtilisateur = {
+  id: string;
+  email: string;
+  nom: string;
+  cree: string;
+  emailVerifie: boolean;
+  googleLie: boolean;
+  motDePasseDefini: boolean;
+  banni: boolean;
+  motifBannissement: string | null;
+  banniLe: string | null;
+  sessions: number;
+};
+
+export type AdminStatistiques = {
+  comptes: number;
+  verifies: number;
+  google: number;
+  bannis: number;
+  sessionsActives: number;
+  inscriptions7j: number;
+  conversations: number;
+  messages: number;
+  creations: number;
+};
+
+export type AdminJournalEntree = {
+  id: string;
+  le: string;
+  par: string;
+  action: 'bannir' | 'debannir' | 'revoquer-sessions' | 'supprimer';
+  cible: string;
+  motif: string | null;
+};
+
+export type AdminSession = {
+  id: string;
+  cree: string;
+  expire: number;
+  derniereActivite: number | null;
+  agent: string | null;
+};
+
+export type AdminDetail = {
+  utilisateur: AdminUtilisateur & { bannissement: { le: string; motif: string | null } | null };
+  sessions: AdminSession[];
+  activite: { conversations: number; messages: number; projets: number; missions: number; creations: number };
+};
