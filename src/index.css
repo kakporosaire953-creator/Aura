@@ -7966,3 +7966,254 @@ svg {
     max-width: 76ch;
   }
 }
+
+/* ═══════════════════════════════════════════
+   ADMINISTRATION — tableau de bord et modération
+   ═══════════════════════════════════════════ */
+.admin-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.6rem;
+}
+
+.admin-entete h1 {
+  margin-bottom: 0.4rem;
+}
+
+.admin-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  gap: 0.9rem;
+}
+
+.admin-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(18, 33, 27, 0.12);
+  border-radius: 16px;
+  background: rgba(18, 33, 27, 0.02);
+}
+
+.admin-stat strong {
+  font-family: var(--font-titre);
+  font-size: 1.7rem;
+  line-height: 1;
+}
+
+.admin-stat span {
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  color: var(--encre-2);
+}
+
+.admin-recherche {
+  display: flex;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+
+.admin-recherche .form-champ {
+  flex: 1 1 240px;
+}
+
+.admin-tableau-cadre {
+  overflow-x: auto;
+  border: 1px solid rgba(18, 33, 27, 0.12);
+  border-radius: 16px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.admin-tableau {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.admin-tableau th,
+.admin-tableau td {
+  padding: 0.75rem 0.9rem;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid rgba(18, 33, 27, 0.08);
+}
+
+.admin-tableau th {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--encre-2);
+  background: rgba(18, 33, 27, 0.03);
+  white-space: nowrap;
+}
+
+.admin-tableau tr:last-child td {
+  border-bottom: 0;
+}
+
+.admin-ligne-suspendue {
+  background: rgba(255, 121, 13, 0.06);
+}
+
+.admin-nom {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--encre-2);
+}
+
+.admin-vide {
+  text-align: center;
+  color: var(--encre-2);
+  padding: 1.6rem;
+}
+
+.admin-badges {
+  display: inline-flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.admin-badge {
+  font-style: normal;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 0.18em 0.55em;
+  border-radius: 999px;
+  background: rgba(67, 188, 44, 0.14);
+  color: var(--vert-profond);
+  white-space: nowrap;
+}
+
+.admin-badge-faible {
+  background: rgba(18, 33, 27, 0.07);
+  color: var(--encre-2);
+}
+
+.admin-badge-danger {
+  background: rgba(255, 121, 13, 0.16);
+  color: var(--feu);
+}
+
+.admin-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.admin-btn {
+  padding: 0.4em 0.8em;
+  border-radius: 999px;
+  font-size: 0.78rem;
+}
+
+.admin-btn-danger {
+  color: var(--feu);
+  border-color: rgba(255, 121, 13, 0.5);
+}
+
+.admin-btn-danger:hover {
+  border-color: var(--feu);
+  background: rgba(255, 121, 13, 0.08);
+}
+
+.admin-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  font-size: 0.85rem;
+  color: var(--encre-2);
+  flex-wrap: wrap;
+}
+
+.admin-detail,
+.admin-journal {
+  border: 1px solid rgba(18, 33, 27, 0.12);
+  border-radius: 18px;
+  padding: 1.3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  background: #fff;
+}
+
+.admin-detail-entete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.admin-detail-adresse {
+  font-weight: 700;
+  word-break: break-all;
+}
+
+.admin-danger {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid rgba(18, 33, 27, 0.1);
+}
+
+.admin-danger h3 {
+  font-size: 0.95rem;
+}
+
+.admin-danger-actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 0.3rem;
+}
+
+.admin-journal-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  font-size: 0.82rem;
+  color: var(--encre-2);
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.admin-journal-liste strong {
+  color: var(--encre);
+}
+
+[data-theme='dark'] .admin-stat,
+[data-theme='dark'] .admin-tableau-cadre,
+[data-theme='dark'] .admin-detail,
+[data-theme='dark'] .admin-journal {
+  border-color: rgba(242, 241, 233, 0.16);
+  background: rgba(242, 241, 233, 0.03);
+}
+
+[data-theme='dark'] .admin-tableau th {
+  background: rgba(242, 241, 233, 0.05);
+}
+
+[data-theme='dark'] .admin-tableau th,
+[data-theme='dark'] .admin-tableau td {
+  border-color: rgba(242, 241, 233, 0.1);
+}
+
+@media (max-width: 520px) {
+  .admin-stat {
+    padding: 0.8rem 0.9rem;
+  }
+
+  .admin-stat strong {
+    font-size: 1.4rem;
+  }
+
+  .admin-detail,
+  .admin-journal {
+    padding: 1rem;
+  }
+}

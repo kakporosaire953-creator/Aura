@@ -50,6 +50,8 @@ export const CLE = {
   jeton: (empreinte: string) => `aurav1:jeton:${empreinte}`,
   jetonActif: (userId: string, type: string) => `aurav1:jeton-actif:${userId}:${type}`,
   jetonVerrou: (empreinte: string) => `aurav1:jeton-verrou:${empreinte}`,
+  // Journal des actions d'administration (200 dernières).
+  journalAdmin: 'aurav1:admin:journal',
   // Ancien dépôt (comptes.json / aura:comptes) — lu pour migration.
   ancienKv: 'aura:comptes',
 } as const;

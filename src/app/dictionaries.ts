@@ -631,6 +631,65 @@ export interface Content {
     exporterMarkdown: string;
     exporterChoisir: string;
   };
+  admin: {
+    titre: string;
+    sous: string;
+    accesRefuse: string;
+    nonConfigure: string;
+    statsTitre: string;
+    comptes: string;
+    verifies: string;
+    google: string;
+    bannis: string;
+    sessionsActives: string;
+    inscriptions7j: string;
+    conversations: string;
+    messages: string;
+    creations: string;
+    rechercheLabel: string;
+    recherchePlaceholder: string;
+    rechercher: string;
+    colonnesUtilisateur: string;
+    colonnesCree: string;
+    colonnesEtat: string;
+    colonnesSessions: string;
+    colonnesActions: string;
+    verifie: string;
+    nonVerifie: string;
+    googleLie: string;
+    banni: string;
+    voir: string;
+    bannir: string;
+    debannir: string;
+    revoquer: string;
+    supprimer: string;
+    fermer: string;
+    bannirTitre: string;
+    motifLabel: string;
+    motifPlaceholder: string;
+    bannirConfirmer: string;
+    supprimerTitre: string;
+    supprimerAide: string;
+    supprimerConfirmer: string;
+    journalTitre: string;
+    journalVide: string;
+    chargement: string;
+    aucunResultat: string;
+    erreur: string;
+    faitBanni: string;
+    faitDebanni: string;
+    faitSessions: string;
+    faitSupprime: string;
+    page: string;
+    precedent: string;
+    suivant: string;
+    detailTitre: string;
+    activite: string;
+    sessionsTitre: string;
+    derniereActivite: string;
+    appareil: string;
+    jamais: string;
+  };
 }
 
 const etapesFr: Etape[] = [
@@ -1547,6 +1606,67 @@ const contentFr: Content = {
     exporterMarkdown: 'Markdown (.md)',
     exporterChoisir: 'Choisir un format…',
   },
+  admin: {
+    titre: 'Administration',
+    sous: 'Vue réelle des comptes et modération. Chaque action est journalisée.',
+    accesRefuse: 'Cette page est réservée à l’administration.',
+    nonConfigure:
+      'L’administration n’est pas configurée sur cet environnement : ajoutez AURA_ADMIN_EMAILS côté serveur.',
+    statsTitre: 'Vue d’ensemble',
+    comptes: 'Comptes',
+    verifies: 'Adresses confirmées',
+    google: 'Comptes Google',
+    bannis: 'Comptes suspendus',
+    sessionsActives: 'Sessions actives',
+    inscriptions7j: 'Inscriptions (7 j)',
+    conversations: 'Conversations',
+    messages: 'Messages',
+    creations: 'Créations',
+    rechercheLabel: 'Rechercher un compte',
+    recherchePlaceholder: 'Adresse, nom ou identifiant',
+    rechercher: 'Rechercher',
+    colonnesUtilisateur: 'Compte',
+    colonnesCree: 'Créé le',
+    colonnesEtat: 'État',
+    colonnesSessions: 'Sessions',
+    colonnesActions: 'Actions',
+    verifie: 'Confirmé',
+    nonVerifie: 'Non confirmé',
+    googleLie: 'Google',
+    banni: 'Suspendu',
+    voir: 'Détail',
+    bannir: 'Suspendre',
+    debannir: 'Rétablir',
+    revoquer: 'Fermer les sessions',
+    supprimer: 'Supprimer',
+    fermer: 'Fermer',
+    bannirTitre: 'Suspendre ce compte',
+    motifLabel: 'Motif (facultatif, visible dans le journal)',
+    motifPlaceholder: 'Ex. usage abusif, fraude…',
+    bannirConfirmer: 'Confirmer la suspension',
+    supprimerTitre: 'Supprimer définitivement ce compte',
+    supprimerAide:
+      'Les conversations, projets, missions et créations seront supprimés avec le compte. Saisissez l’adresse exacte pour confirmer.',
+    supprimerConfirmer: 'Supprimer définitivement',
+    journalTitre: 'Journal des actions',
+    journalVide: 'Aucune action enregistrée pour le moment.',
+    chargement: 'Chargement…',
+    aucunResultat: 'Aucun compte ne correspond à cette recherche.',
+    erreur: 'L’action n’a pas abouti. Réessayez.',
+    faitBanni: 'Compte suspendu, sessions fermées.',
+    faitDebanni: 'Compte rétabli.',
+    faitSessions: 'Sessions fermées.',
+    faitSupprime: 'Compte supprimé.',
+    page: 'Page',
+    precedent: 'Précédent',
+    suivant: 'Suivant',
+    detailTitre: 'Détail du compte',
+    activite: 'Activité',
+    sessionsTitre: 'Sessions',
+    derniereActivite: 'Dernière activité',
+    appareil: 'Appareil',
+    jamais: 'jamais',
+  },
 };
 
 const contentEn: Content = {
@@ -2387,6 +2507,67 @@ const contentEn: Content = {
     exporterHtml: 'HTML page (.html)',
     exporterMarkdown: 'Markdown (.md)',
     exporterChoisir: 'Choose a format…',
+  },
+  admin: {
+    titre: 'Administration',
+    sous: 'Real view of accounts and moderation. Every action is logged.',
+    accesRefuse: 'This page is restricted to administrators.',
+    nonConfigure:
+      'Administration is not configured on this environment: add AURA_ADMIN_EMAILS on the server.',
+    statsTitre: 'Overview',
+    comptes: 'Accounts',
+    verifies: 'Confirmed addresses',
+    google: 'Google accounts',
+    bannis: 'Suspended accounts',
+    sessionsActives: 'Active sessions',
+    inscriptions7j: 'Sign-ups (7 d)',
+    conversations: 'Conversations',
+    messages: 'Messages',
+    creations: 'Creations',
+    rechercheLabel: 'Search an account',
+    recherchePlaceholder: 'Address, name or identifier',
+    rechercher: 'Search',
+    colonnesUtilisateur: 'Account',
+    colonnesCree: 'Created',
+    colonnesEtat: 'State',
+    colonnesSessions: 'Sessions',
+    colonnesActions: 'Actions',
+    verifie: 'Confirmed',
+    nonVerifie: 'Not confirmed',
+    googleLie: 'Google',
+    banni: 'Suspended',
+    voir: 'Details',
+    bannir: 'Suspend',
+    debannir: 'Restore',
+    revoquer: 'Close sessions',
+    supprimer: 'Delete',
+    fermer: 'Close',
+    bannirTitre: 'Suspend this account',
+    motifLabel: 'Reason (optional, kept in the log)',
+    motifPlaceholder: 'E.g. abuse, fraud…',
+    bannirConfirmer: 'Confirm suspension',
+    supprimerTitre: 'Permanently delete this account',
+    supprimerAide:
+      'Conversations, projects, missions and creations will be deleted with the account. Type the exact address to confirm.',
+    supprimerConfirmer: 'Delete permanently',
+    journalTitre: 'Action log',
+    journalVide: 'No action recorded yet.',
+    chargement: 'Loading…',
+    aucunResultat: 'No account matches this search.',
+    erreur: 'The action did not complete. Try again.',
+    faitBanni: 'Account suspended, sessions closed.',
+    faitDebanni: 'Account restored.',
+    faitSessions: 'Sessions closed.',
+    faitSupprime: 'Account deleted.',
+    page: 'Page',
+    precedent: 'Previous',
+    suivant: 'Next',
+    detailTitre: 'Account details',
+    activite: 'Activity',
+    sessionsTitre: 'Sessions',
+    derniereActivite: 'Last activity',
+    appareil: 'Device',
+    jamais: 'never',
   },
 };
 

@@ -6,6 +6,7 @@
 import type { NextFunction, Request, Response } from 'express';
 import { empreinteJeton, lireJetonSession } from '../accounts.js';
 import { accesAutorise, MESSAGE_EMAIL_NON_VERIFIE } from '../auth/verification.js';
+import { suspensionActive } from '../auth/admin.js';
 import {
   baseDeDonnees,
   entrepotComptes,
@@ -26,6 +27,8 @@ export type ReqV1 = Request & {
   sessionExpiree?: boolean;
   /** La lecture du stockage a échoué : anonyme par accident, pas par nature. */
   stockageIndisponible?: boolean;
+  /** Le compte est suspendu : la session ne doit plus rien ouvrir. */
+  compteBanni?: boolean;
 };
 
 export function versPublicV1(c: Compte): ComptePublic {
@@ -40,6 +43,7 @@ export function versPublicV1(c: Compte): ComptePublic {
     emailVerifie: c.emailVerifie === true,
     googleLie: typeof c.googleSub === 'string' && c.googleSub.length > 0,
     motDePasseDefini: c.motDePasseDefini !== false,
+    banni: Boolean(c.bannissement),
   };
 }
 
@@ -59,7 +63,10 @@ export async function attacherCompteV1(req: ReqV1, _res: Response, next: NextFun
       const session = await req.comptes.sessionParEmpreinte(empreinteJeton(jeton));
       if (session) {
         const compte = await req.comptes.parId(session.userId);
-        if (compte) {
+        if (compte && suspensionActive(compte)) {
+          // Suspension : la session est ignorée (et sera fermée côté admin).
+          req.compteBanni = true;
+        } else if (compte) {
           req.compte = compte;
           req.session = session;
           req.donnees = entrepotDonnees(compte.id);
@@ -84,6 +91,13 @@ export async function attacherCompteV1(req: ReqV1, _res: Response, next: NextFun
 
 /** Refuse toute route privée sans compte authentifié. */
 export function authRequise(req: ReqV1, res: Response, next: NextFunction) {
+  if (req.compteBanni) {
+    res.status(403).json({
+      error: 'Ce compte a été suspendu. Contactez l’administration.',
+      code: 'compte-banni',
+    });
+    return;
+  }
   if (req.compte && req.donnees) {
     next();
     return;

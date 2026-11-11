@@ -61,6 +61,7 @@ import {
 } from './auth/verification.js';
 import { langueDepuis } from './mail/gabarits.js';
 import { createRoutesGoogle, googleConfigure } from './auth/google.js';
+import { suspensionActive } from './auth/admin.js';
 
 const comptes = entrepotComptes();
 
@@ -70,6 +71,8 @@ type ReqAuth = Request & {
   sessionExpiree?: boolean;
   /** Lecture du stockage impossible : anonyme par accident, pas par nature. */
   stockageIndisponible?: boolean;
+  /** Compte suspendu : le cookie ne vaut plus rien. */
+  compteBanni?: boolean;
 };
 
 /**
@@ -96,6 +99,7 @@ function versPublic(u: Compte): ComptePublic {
     emailVerifie: u.emailVerifie === true,
     googleLie: typeof u.googleSub === 'string' && u.googleSub.length > 0,
     motDePasseDefini: u.motDePasseDefini !== false,
+    banni: Boolean(u.bannissement),
   };
 }
 
@@ -106,7 +110,8 @@ async function attacherCompte(req: ReqAuth, _res: Response, next: NextFunction) 
       const session = await comptes.sessionParEmpreinte(empreinteJeton(jeton));
       if (session) {
         const utilisateur = await comptes.parId(session.userId);
-        if (utilisateur) req.compte = { utilisateur };
+        if (utilisateur && suspensionActive(utilisateur)) req.compteBanni = true;
+        else if (utilisateur) req.compte = { utilisateur };
         else req.sessionExpiree = true;
       } else {
         req.sessionExpiree = true;
@@ -314,6 +319,15 @@ export function createApiApp(): express.Router {
       refus();
       return;
     }
+    // Le mot de passe est correct : parler de suspension ne révèle donc rien
+    // que l'utilisateur ne sache déjà.
+    if (suspensionActive(utilisateur)) {
+      res.status(403).json({
+        error: 'Ce compte a été suspendu. Contactez l’administration.',
+        code: 'compte-banni',
+      });
+      return;
+    }
 
     const { jeton, session } = creerSession(userAgent(req));
     session.userId = utilisateur.id;
@@ -340,6 +354,13 @@ export function createApiApp(): express.Router {
   /* ── Compte courant ── */
   api.get('/me', (req, res) => {
     const reqAuth = req as ReqAuth;
+    if (reqAuth.compteBanni) {
+      res.status(403).json({
+        error: 'Ce compte a été suspendu. Contactez l’administration.',
+        code: 'compte-banni',
+      });
+      return;
+    }
     if (!reqAuth.compte) {
       // Une panne de stockage ne doit jamais être présentée comme un anonymat.
       if (reqAuth.stockageIndisponible) {
@@ -366,6 +387,13 @@ export function createApiApp(): express.Router {
   /* ── Onboarding ── */
   api.patch('/me/onboarding', asyncRoute(async (req, res) => {
     const reqAuth = req as ReqAuth;
+    if (reqAuth.compteBanni) {
+      res.status(403).json({
+        error: 'Ce compte a été suspendu. Contactez l’administration.',
+        code: 'compte-banni',
+      });
+      return;
+    }
     if (!reqAuth.compte) {
       res.status(401).json({ error: 'non connecté', code: 'anonyme' });
       return;

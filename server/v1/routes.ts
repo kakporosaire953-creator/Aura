@@ -38,6 +38,7 @@ import { enregistrerUsage, consommationParFournisseur } from '../ai/usage.js';
 import type { ImageAi, MessageAi } from '../ai/types.js';
 import { createRoutesTravail } from './routesTravail.js';
 import { createRoutesCompte } from './routesCompte.js';
+import { createRoutesAdmin } from './routesAdmin.js';
 import { createRoutesCreation } from './routesCreation.js';
 import {
   empreinteJeton,
@@ -185,6 +186,9 @@ export function createApiV1(): express.Router {
     /^\/ai\/usage$/,
     /^\/me\/sessions(\/|$)/,
     /^\/me\/password$/,
+    // L'administration n'est pas du contenu du workspace : un compte suspendu
+    // ou non confirmé qui administre ne doit pas se retrouver bloqué.
+    /^\/admin(\/|$)/,
   ];
   v1.use((req, res, next) => {
     const chemin = cheminSousRouteur(req);
@@ -197,6 +201,9 @@ export function createApiV1(): express.Router {
 
   // Sécurité du compte : mot de passe, sessions actives, renvoi de vérification.
   v1.use(createRoutesCompte());
+
+  // Administration : rôle porté par AURA_ADMIN_EMAILS, jamais par la base.
+  v1.use('/admin', createRoutesAdmin());
 
   /* ── Compte & profil ── */
 

@@ -9,6 +9,11 @@
 import { simulationActivee } from '../app/simulation';
 import * as local from './local';
 import type {
+  AdminDetail,
+  AdminJournalEntree,
+  AdminSession,
+  AdminStatistiques,
+  AdminUtilisateur,
   Capabilities,
   CompteV1,
   Conversation,
@@ -596,4 +601,79 @@ export async function changerMotDePasse(
 ): Promise<ReponseApi<{ ok: boolean; sessionsFermees: number }>> {
   if (simulationActivee()) return indisponibleEnSimulation();
   return apiAppel('/me/password', { methode: 'POST', corps: { actuel, nouveau } });
+}
+
+
+/* ───────────────────────── Administration ───────────────────────── */
+
+/**
+ * État d'accès : seule information disponible sans être administrateur.
+ * Elle sert à masquer le lien, jamais à autoriser quoi que ce soit — le
+ * serveur revérifie à chaque appel.
+ */
+export async function adminEtat(): Promise<ReponseApi<{ admin: boolean; configure: boolean }>> {
+  if (simulationActivee()) return succes({ admin: false, configure: false });
+  return apiAppel('/admin/etat');
+}
+
+export async function adminStatistiques(): Promise<ReponseApi<AdminStatistiques>> {
+  if (simulationActivee()) return indisponibleEnSimulation();
+  return apiAppel('/admin/statistiques');
+}
+
+export async function adminUtilisateurs(
+  opts: { recherche?: string; page?: number; taille?: number } = {},
+): Promise<
+  ReponseApi<{ total: number; page: number; taille: number; pages: number; utilisateurs: AdminUtilisateur[] }>
+> {
+  if (simulationActivee()) return indisponibleEnSimulation();
+  const p = new URLSearchParams();
+  if (opts.recherche) p.set('recherche', opts.recherche);
+  if (opts.page) p.set('page', String(opts.page));
+  if (opts.taille) p.set('taille', String(opts.taille));
+  const q = p.toString();
+  return apiAppel(`/admin/utilisateurs${q ? `?${q}` : ''}`);
+}
+
+export async function adminUtilisateur(id: string): Promise<ReponseApi<AdminDetail>> {
+  if (simulationActivee()) return indisponibleEnSimulation();
+  return apiAppel(`/admin/utilisateurs/${encodeURIComponent(id)}`);
+}
+
+export async function adminBannir(
+  id: string,
+  motif: string,
+): Promise<ReponseApi<{ ok: boolean; sessionsFermees: number }>> {
+  if (simulationActivee()) return indisponibleEnSimulation();
+  return apiAppel(`/admin/utilisateurs/${encodeURIComponent(id)}/bannir`, {
+    methode: 'POST',
+    corps: { motif },
+  });
+}
+
+export async function adminDebannir(id: string): Promise<ReponseApi<{ ok: boolean }>> {
+  if (simulationActivee()) return indisponibleEnSimulation();
+  return apiAppel(`/admin/utilisateurs/${encodeURIComponent(id)}/debannir`, { methode: 'POST' });
+}
+
+export async function adminRevoquerSessions(
+  id: string,
+): Promise<ReponseApi<{ ok: boolean; sessionsFermees: number }>> {
+  if (simulationActivee()) return indisponibleEnSimulation();
+  return apiAppel(`/admin/utilisateurs/${encodeURIComponent(id)}/sessions/revoquer`, {
+    methode: 'POST',
+  });
+}
+
+export async function adminSupprimer(id: string, confirmation: string): Promise<ReponseApi<{ ok: boolean }>> {
+  if (simulationActivee()) return indisponibleEnSimulation();
+  return apiAppel(`/admin/utilisateurs/${encodeURIComponent(id)}/supprimer`, {
+    methode: 'POST',
+    corps: { confirmation },
+  });
+}
+
+export async function adminJournal(): Promise<ReponseApi<{ entrees: AdminJournalEntree[] }>> {
+  if (simulationActivee()) return indisponibleEnSimulation();
+  return apiAppel('/admin/journal');
 }

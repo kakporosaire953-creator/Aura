@@ -5,6 +5,7 @@ import { useT, usePrefs } from '../../app/prefs';
 import { useSession } from '../../app/session';
 import { simulationActivee, simulationDisponible, definirSimulation } from '../../app/simulation';
 import { Icone } from '../ui/Icone';
+import { useAdmin } from '../../app/admin';
 
 /**
  * Coque du workspace — sidebar structurée (sections évolutives), barre
@@ -20,6 +21,7 @@ export const WorkspaceLayout: React.FC = () => {
   const t = useT();
   const { theme, toggleTheme, lang, setLang } = usePrefs();
   const { statut, compte, deconnecter } = useSession();
+  const admin = useAdmin();
   const location = useLocation();
   const navigate = useNavigate();
   const [repliee, setRepliee] = useState(() => {
@@ -91,6 +93,8 @@ export const WorkspaceLayout: React.FC = () => {
       entrees: [
         { to: '/memoire', icone: 'brain', label: t.ws.memoireNav },
         { to: '/parametres', icone: 'sliders', label: t.ws.parametresNav },
+        // Visible seulement si le serveur reconnaît un administrateur.
+        ...(admin ? [{ to: '/admin', icone: 'shield-halved', label: t.admin.titre }] : []),
       ],
     },
   ];

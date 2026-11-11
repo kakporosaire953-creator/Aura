@@ -303,7 +303,7 @@ export async function echangerCode(code: string, config: ConfigGoogle): Promise<
 
 export type ResultatCompte =
   | { ok: true; compte: Compte; cree: boolean }
-  | { ok: false; raison: 'conflit' | 'stockage' };
+  | { ok: false; raison: 'conflit' | 'stockage' | 'banni' };
 
 /**
  * Un compte Google devient un compte AURA.
@@ -324,6 +324,8 @@ export async function compteDepuisIdentite(identite: IdentiteGoogle): Promise<Re
     const maintenant = new Date().toISOString();
 
     if (existant) {
+      // Un compte suspendu ne se rouvre pas par une autre porte.
+      if (existant.bannissement) return { ok: false, raison: 'banni' };
       if (existant.googleSub && existant.googleSub !== identite.sub) {
         return { ok: false, raison: 'conflit' };
       }

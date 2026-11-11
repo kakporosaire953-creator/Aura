@@ -29,6 +29,14 @@ export type PreferencesUtilisateur = {
   langueReponse: 'auto' | 'fr' | 'en';
 };
 
+/** Suspension administrative d'un compte (jamais une suppression). */
+export type Bannissement = {
+  le: string;
+  motif: string | null;
+  /** Adresse de l'administrateur qui a prononcé la suspension. */
+  par: string;
+};
+
 export type Compte = {
   id: Identifiant;
   email: string;
@@ -58,6 +66,8 @@ export type Compte = {
    * n'en a pas défini un. Absent = vrai (comptes historiques).
    */
   motDePasseDefini?: boolean;
+  /** Présent = compte suspendu : connexion refusée, sessions révoquées. */
+  bannissement?: Bannissement;
 };
 
 export type ComptePublic = {
@@ -73,6 +83,8 @@ export type ComptePublic = {
   googleLie: boolean;
   /** Un mot de passe utilisable existe-t-il ? (faux pour un compte Google seul) */
   motDePasseDefini: boolean;
+  /** Compte suspendu par l'administration. */
+  banni: boolean;
 };
 
 export type Session = {
@@ -88,6 +100,17 @@ export type Session = {
   agent?: string | null;
   /** Dernière requête authentifiée, mise à jour au plus une fois par 5 min. */
   derniereActivite?: number;
+};
+
+/** Entrée du journal d'administration (qui a fait quoi, quand, sur qui). */
+export type JournalAdmin = {
+  id: string;
+  le: string;
+  /** Adresse de l'administrateur — jamais un jeton ni un secret. */
+  par: string;
+  action: 'bannir' | 'debannir' | 'revoquer-sessions' | 'supprimer';
+  cible: string;
+  motif: string | null;
 };
 
 /* ── Jetons à usage unique (vérification d'e-mail, réinitialisation) ── */
