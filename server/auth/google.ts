@@ -389,7 +389,17 @@ export function createRoutesGoogle(): express.Router {
 
   /** Disponibilité — information publique, aucun secret. */
   r.get('/statut', (_req, res) => {
-    res.json({ disponible: googleConfigure() });
+    const etat = configurationGoogle();
+    // `raison` est un texte fixe (jamais un identifiant, jamais le secret) :
+    // il dit à l'exploitant ce qui manque, sans exposer la configuration.
+    res.json(
+      etat.ok
+        ? {
+            disponible: true,
+            uriRetour: etat.config.redirectUri,
+          }
+        : { disponible: false, raison: etat.raison },
+    );
   });
 
   /** Départ : pose l'état anti-CSRF puis redirige vers Google. */
