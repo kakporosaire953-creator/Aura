@@ -173,15 +173,28 @@ describe('Sans configuration, la connexion Google est dite indisponible', () => 
     assert.equal(google.googleConfigure(), false);
   });
 
-  test('le statut public ne divulgue que la disponibilité', async () => {
+  test('le statut public ne divulgue que la disponibilité et la raison', async () => {
     delete process.env.GOOGLE_CLIENT_ID;
+    delete process.env.GOOGLE_CLIENT_SECRET;
     const statut = await appel('/auth/google/statut');
     assert.equal(statut.statut, 200);
+    assert.equal(google.googleConfigure(), false);
+
+    // La raison dit ce qui manque, sans jamais reprendre un identifiant.
+    const corps = await (await fetchReel(`${base}/auth/google/statut`)).json() as {
+      disponible: boolean;
+      raison?: string;
+      uriRetour?: string;
+    };
+    assert.equal(corps.disponible, false);
+    assert.match(String(corps.raison), /Google/);
+    assert.equal(corps.uriRetour, undefined);
+
     const r = await appel('/status');
     const texte = JSON.stringify(r);
-    assert.equal(google.googleConfigure(), false);
     assert.ok(!texte.includes('secret-de-test'));
   });
+
 
   test('un retour sans configuration ne délivre aucune session', async () => {
     delete process.env.GOOGLE_CLIENT_ID;
@@ -195,6 +208,17 @@ describe('Sans configuration, la connexion Google est dite indisponible', () => 
 /* ─────────────────────────────── Départ ─────────────────────────────── */
 
 describe('Départ vers Google', () => {
+  test('configuré : le statut annonce l’URI de retour exacte à déclarer chez Google', async () => {
+    const corps = (await (await fetchReel(`${base}/auth/google/statut`)).json()) as {
+      disponible: boolean;
+      uriRetour?: string;
+      raison?: string;
+    };
+    assert.equal(corps.disponible, true);
+    assert.equal(corps.uriRetour, COMPTE_RETOUR);
+    assert.equal(corps.raison, undefined);
+  });
+
   test('redirige avec client_id, scope, état aléatoire et URI de retour déclarée', async () => {
     const r = await appel('/auth/google/demarrer?retour=/projets');
     assert.equal(r.statut, 302);
